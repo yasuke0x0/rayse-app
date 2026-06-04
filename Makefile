@@ -1,4 +1,4 @@
-.PHONY: web android ios clean get analyze
+.PHONY: web android ios clean get analyze build-apk commit save
 
 web:
 	flutter run -d chrome
@@ -22,4 +22,7 @@ build-apk:
 	flutter build apk --release
 
 commit:
+	git add . && git commit -m "$(m)" && git push
+
+save:
 	git add . && git commit -m "$(m)" && git push
