@@ -5,6 +5,7 @@ import 'package:rayse/features/auth/screens/onboarding_screen.dart';
 import 'package:rayse/features/auth/screens/signup_screen.dart';
 import 'package:rayse/features/auth/screens/splash_screen.dart';
 import 'package:rayse/features/content/screens/home_screen.dart';
+import 'package:rayse/features/content/screens/tutorial_detail_screen.dart';
 
 final appRouter = GoRouter(
   initialLocation: '/splash',
@@ -32,6 +33,12 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/home',
       builder: (context, state) => const HomeScreen(),
+    ),
+    GoRoute(
+      path: '/tutorial/:id',
+      builder: (context, state) => TutorialDetailScreen(
+        id: state.pathParameters['id']!,
+      ),
     ),
   ],
 );

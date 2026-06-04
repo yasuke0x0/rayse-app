@@ -53,3 +53,35 @@
 ### Gotchas
 - supabase_flutter v2 uses onAuthStateChange stream returning AuthState objects; session != null means signed in
 - AuthGate uses ref.listen (not ref.watch) for navigation side-effects — avoids calling context.go during build
+
+## 2026-06-04 — Phase 3: Home screen + Content library
+
+### What was built
+- Tutorial model with fromJson/toJson
+- 6 mock tutorials (placeholder @samsjump YouTube IDs — replace when verified)
+- ContentRepository: getTutorials / getTutorialsByLevel / getTutorialById (mock data, Supabase-ready)
+- Riverpod providers: tutorialsProvider, tutorialsByLevelProvider, tutorialByIdProvider (family)
+- TutorialCard widget: 200px wide, YouTube thumbnail via cached_network_image, level badge, duration badge, tap → /tutorial/:id
+- HomeScreen rebuilt: greeting header, featured challenge card, "Free Tutorials" horizontal scroll, "Your Level" filtered scroll, IndexedStack for tab persistence
+- TutorialDetailScreen: YoutubePlayerBuilder + YoutubePlayer, back arrow overlay, badges, description, "More Like This" related cards
+- Router: /tutorial/:id route added
+- AppColors: levelBeginner / levelIntermediate / levelAdvanced added
+
+### Files touched
+- pubspec.yaml (added youtube_player_flutter, cached_network_image)
+- lib/core/theme/app_colors.dart
+- lib/core/router/app_router.dart
+- lib/features/content/models/tutorial.dart (new)
+- lib/features/content/data/mock_tutorials.dart (new)
+- lib/features/content/repository/content_repository.dart (new)
+- lib/features/content/providers/content_provider.dart (new)
+- lib/features/content/widgets/tutorial_card.dart (new)
+- lib/features/content/screens/home_screen.dart (rewritten)
+- lib/features/content/screens/tutorial_detail_screen.dart (new)
+- CLAUDE.md
+
+### Gotchas
+- youtube_player_flutter uses flutter_inappwebview which prints a Swift Package Manager warning on iOS — not an error, safe to ignore until plugin updates
+- Video playback works on Android/iOS only; web shows a blank player area
+- Mock YouTube IDs are placeholders — user should replace with real @samsjump video IDs
+- Dart 3 wildcard `_` can be repeated in param lists; `(_, __)` → `(_, _)` to satisfy unnecessary_underscores lint
