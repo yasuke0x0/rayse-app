@@ -89,8 +89,8 @@ Commit types: feat / fix / chore / style / refactor
 - [x] Project scaffolded
 - [x] Git + GitHub configured (yasuke0x0/rayse-app)
 - [x] Makefile (web / android / phone / save)
-- [~] Phase 1 — theme, splash, onboarding, home placeholder
-- [ ] Phase 2 — Auth (Supabase login / signup)
+- [x] Phase 1 — theme, splash, onboarding, home placeholder
+- [x] Phase 2 — Auth (Supabase login / signup)
 - [ ] Phase 3 — Home + content library
 - [ ] Phase 4 — Skill tree
 - [ ] Phase 5 — Subscriptions (RevenueCat)

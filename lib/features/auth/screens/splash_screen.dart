@@ -33,7 +33,7 @@ class _SplashScreenState extends State<SplashScreen>
     _fadeController.forward();
 
     Timer(const Duration(milliseconds: 2500), () {
-      if (mounted) context.go('/onboarding');
+      if (mounted) context.go('/auth-gate');
     });
   }
 

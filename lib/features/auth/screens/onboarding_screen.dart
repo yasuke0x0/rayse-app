@@ -56,7 +56,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     onNext: _nextPage,
                   ),
                   _ChallengePage(
-                    onStart: () => context.go('/home'),
+                    onStart: () => context.go('/login'),
                   ),
                 ],
               ),
