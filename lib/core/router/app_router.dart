@@ -45,12 +45,14 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/workout',
       builder: (context, state) => const DailyWorkoutScreen(),
-    ),
-    GoRoute(
-      path: '/workout/play/:id',
-      builder: (context, state) => WorkoutPlayerScreen(
-        workoutId: state.pathParameters['id']!,
-      ),
+      routes: [
+        GoRoute(
+          path: 'play/:id',
+          builder: (context, state) => WorkoutPlayerScreen(
+            workoutId: state.pathParameters['id']!,
+          ),
+        ),
+      ],
     ),
   ],
 );
