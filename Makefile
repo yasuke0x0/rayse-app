@@ -4,7 +4,10 @@ web:
 	flutter run -d chrome
 
 android:
-	flutter run -d android
+	flutter run -d R8AIB700F616YMH
+
+phone:
+	flutter run -d R8AIB700F616YMH
 
 ios:
 	flutter run -d ios

@@ -3,6 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/services/supabase_service.dart';
 import '../../../core/theme/app_colors.dart';
+import 'package:go_router/go_router.dart';
+import '../../auth/providers/auth_provider.dart';
+import '../../skill_tree/screens/skill_tree_screen.dart';
 import '../providers/content_provider.dart';
 import '../widgets/tutorial_card.dart';
 
@@ -18,15 +21,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(authStateProvider, (_, state) {
+      state.whenData((authState) {
+        if (authState.session == null) {
+          context.go('/login');
+        }
+      });
+    });
     return Scaffold(
       backgroundColor: AppColors.background,
       body: IndexedStack(
         index: _currentIndex,
         children: [
           _HomeTabBody(onSwitchTab: (i) => setState(() => _currentIndex = i)),
-          _PlaceholderTab(label: 'Learn', icon: Icons.play_circle),
+          const SkillTreeScreen(),
           _PlaceholderTab(label: 'Challenges', icon: Icons.emoji_events),
-          _PlaceholderTab(label: 'Profile', icon: Icons.person),
+          const _ProfileTab(),
         ],
       ),
       bottomNavigationBar: Column(
@@ -326,6 +336,76 @@ class _HomeTabBody extends ConsumerWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+// ─── Profile tab ──────────────────────────────────────────────────────────────
+
+class _ProfileTab extends ConsumerWidget {
+  const _ProfileTab();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final user = SupabaseService.client.auth.currentUser;
+    final email = user?.email ?? '';
+
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'PROFILE',
+                style: GoogleFonts.poppins(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimary,
+                  letterSpacing: 0.5,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                email,
+                style: GoogleFonts.inter(
+                  fontSize: 14,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+              const Spacer(),
+              SizedBox(
+                width: double.infinity,
+                child: TextButton(
+                  onPressed: () async {
+                    await ref.read(authRepositoryProvider).signOut();
+                  },
+                  style: TextButton.styleFrom(
+                    backgroundColor: AppColors.surface,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      side: const BorderSide(color: AppColors.border),
+                    ),
+                  ),
+                  child: Text(
+                    'LOG OUT',
+                    style: GoogleFonts.inter(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textSecondary,
+                      letterSpacing: 0.8,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
