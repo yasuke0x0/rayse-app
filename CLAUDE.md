@@ -94,5 +94,5 @@ Commit types: feat / fix / chore / style / refactor
 - [x] Phase 3 — Home + content library
 - [x] Phase 4 — Skill tree
 - [x] Phase 5 — Challenges + leaderboard
-- [ ] Phase 6 — Daily workout program
+- [x] Phase 6 — Daily workout program
 - [ ] Phase 7 — Subscriptions (RevenueCat)

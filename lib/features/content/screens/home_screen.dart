@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../skill_tree/screens/skill_tree_screen.dart';
 import '../../challenges/screens/challenges_screen.dart';
+import '../../workout/providers/workout_provider.dart';
 import '../providers/content_provider.dart';
 import '../widgets/tutorial_card.dart';
 
@@ -161,10 +162,18 @@ class _HomeTabBody extends ConsumerWidget {
                 ),
               ),
 
-              // ── Featured challenge card ───────────────────────────────────
+              // ── Today's workout card ──────────────────────────────────────
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(24, 28, 24, 0),
+                  child: _TodayWorkoutBanner(),
+                ),
+              ),
+
+              // ── Featured challenge card ───────────────────────────────────
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 12, 24, 0),
                   child: GestureDetector(
                     onTap: () => onSwitchTab(2),
                     child: Container(
@@ -337,6 +346,105 @@ class _HomeTabBody extends ConsumerWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+// ─── Today's workout banner ───────────────────────────────────────────────────
+
+class _TodayWorkoutBanner extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final todayAsync = ref.watch(todayWorkoutProvider);
+    final completed = ref.watch(completedWorkoutsProvider);
+
+    return todayAsync.when(
+      loading: () => Container(
+        height: 72,
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.border),
+        ),
+      ),
+      error: (_, _) => const SizedBox.shrink(),
+      data: (workout) {
+        final isDone = completed.contains(workout.id);
+        return GestureDetector(
+          onTap: () => context.push('/workout'),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: isDone
+                    ? const Color(0xFF22C55E)
+                    : AppColors.accent.withValues(alpha: 0.5),
+              ),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: isDone
+                        ? const Color(0xFF22C55E).withValues(alpha: 0.15)
+                        : AppColors.accent.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(
+                    isDone ? Icons.check : Icons.fitness_center_outlined,
+                    color: isDone
+                        ? const Color(0xFF22C55E)
+                        : AppColors.accent,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        isDone ? 'WORKOUT DONE' : "TODAY'S WORKOUT",
+                        style: GoogleFonts.inter(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          color: isDone
+                              ? const Color(0xFF22C55E)
+                              : AppColors.accent,
+                          letterSpacing: 0.8,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        workout.title,
+                        style: GoogleFonts.inter(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Text(
+                  '${workout.durationMinutes} min',
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    color: AppColors.textMuted,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                const Icon(Icons.arrow_forward_ios,
+                    color: AppColors.textMuted, size: 14),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }

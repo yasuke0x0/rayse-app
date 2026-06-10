@@ -136,3 +136,34 @@
 ### Gotchas
 - Leaderboard rank colors use `switch` expression (Dart 3) — gold #FBBF24, silver #94A3B8, bronze #D97706
 - joinedChallengesProvider is in-memory only until Supabase challenge_participants table is wired in Phase 7+ work
+
+## 2026-06-11 — Phase 6: Daily Workout Program
+
+### What was built
+- Exercise model: name, instruction, sets, reps (nullable), durationSeconds (nullable), restSeconds; computed targetLabel
+- Workout model: id, title, description, weekday (1=Mon–7=Sun), durationMinutes, difficulty, focusArea, exercises list
+- 7 mock workouts (Mon–Sun): Foundation, Endurance, Technique, Power, Flow, Challenge Day, Active Recovery — each with 3 exercises
+- getTodayWorkout() helper that selects by DateTime.now().weekday
+- WorkoutRepository: getWorkouts, getTodayWorkout, getWorkoutById (Supabase-ready)
+- allWorkoutsProvider, todayWorkoutProvider, workoutByIdProvider (FutureProvider.family), completedWorkoutsProvider (NotifierProvider<Set<String>>)
+- DailyWorkoutScreen: today's hero card (orange/green accent, exercise list, START WORKOUT CTA) + week overview rows with day labels, duration, and completion dot
+- WorkoutPlayerScreen: step-through player with progress bar + dots, set counter, rest view (shows rest duration + "up next"), completion dialog; state managed with _exerciseIndex / _currentSet / _isResting
+- _TodayWorkoutBanner widget on HomeScreen: tappable banner showing today's workout name, duration, and done/not-done state
+- Router: /workout and /workout/play/:id routes added
+
+### Files touched
+- lib/features/workout/models/exercise.dart (new)
+- lib/features/workout/models/workout.dart (new)
+- lib/features/workout/data/mock_workouts.dart (new)
+- lib/features/workout/repository/workout_repository.dart (new)
+- lib/features/workout/providers/workout_provider.dart (new)
+- lib/features/workout/screens/daily_workout_screen.dart (new)
+- lib/features/workout/screens/workout_player_screen.dart (new)
+- lib/core/router/app_router.dart (added /workout and /workout/play/:id)
+- lib/features/content/screens/home_screen.dart (added _TodayWorkoutBanner)
+- CLAUDE.md (Phase 6 checked off)
+
+### Gotchas
+- WorkoutRepository.getTodayWorkout() uses a namespaced import (data.getTodayWorkout()) to avoid infinite recursion with identically-named method
+- completedWorkoutsProvider is in-memory only — needs Supabase workout_completions table before Phase 7
+- WorkoutPlayerScreen uses setState (local UI state) — acceptable per conventions since _exerciseIndex/_currentSet/_isResting are purely local player state

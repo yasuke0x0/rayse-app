@@ -6,6 +6,8 @@ import 'package:rayse/features/auth/screens/signup_screen.dart';
 import 'package:rayse/features/auth/screens/splash_screen.dart';
 import 'package:rayse/features/content/screens/home_screen.dart';
 import 'package:rayse/features/content/screens/tutorial_detail_screen.dart';
+import 'package:rayse/features/workout/screens/daily_workout_screen.dart';
+import 'package:rayse/features/workout/screens/workout_player_screen.dart';
 
 final appRouter = GoRouter(
   initialLocation: '/splash',
@@ -38,6 +40,16 @@ final appRouter = GoRouter(
       path: '/tutorial/:id',
       builder: (context, state) => TutorialDetailScreen(
         id: state.pathParameters['id']!,
+      ),
+    ),
+    GoRoute(
+      path: '/workout',
+      builder: (context, state) => const DailyWorkoutScreen(),
+    ),
+    GoRoute(
+      path: '/workout/play/:id',
+      builder: (context, state) => WorkoutPlayerScreen(
+        workoutId: state.pathParameters['id']!,
       ),
     ),
   ],
