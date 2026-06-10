@@ -109,3 +109,30 @@
 ### Gotchas
 - SkillTreeScreen imported directly into home_screen.dart; no new router route needed (tab uses IndexedStack)
 - Auth redirect uses ref.listen in build — consistent with the pattern established in Phase 2 (avoids calling context.go during build phase)
+
+## 2026-06-10 — Phase 5: Challenges + Leaderboard
+
+### What was built
+- Challenge model with id, title, description, type (reps/time/streak), targetValue, unit, durationDays, startDate, participantCount, isActive; computed daysLeft and endDate
+- LeaderboardEntry model with rank, username, score, unit, isCurrentUser flag
+- 4 mock challenges: "100 Double Unders" (active), "30-Day Jump Streak", "500 Single Bounces", "Speed DU — Under 60s"
+- Mock leaderboard with 5 entries including a "You" row highlighted in orange
+- ChallengeRepository: getChallenges, getLeaderboard, joinChallenge, submitEntry (mock, Supabase-ready)
+- challengesProvider (FutureProvider), leaderboardProvider (FutureProvider.family), joinedChallengesProvider (NotifierProvider<Set<String>>)
+- ChallengesScreen: hero active challenge card (orange accent border, countdown, participant count, JOIN button), top-5 leaderboard with gold/silver/bronze rank colors, "More Challenges" list with per-card JOIN pills
+- Removed _PlaceholderTab (fully unused after Phases 4 and 5)
+- Wired ChallengesScreen into HomeScreen IndexedStack (tab index 2)
+
+### Files touched
+- lib/features/challenges/models/challenge.dart (new)
+- lib/features/challenges/models/leaderboard_entry.dart (new)
+- lib/features/challenges/data/mock_challenges.dart (new)
+- lib/features/challenges/repository/challenge_repository.dart (new)
+- lib/features/challenges/providers/challenge_provider.dart (new)
+- lib/features/challenges/screens/challenges_screen.dart (new)
+- lib/features/content/screens/home_screen.dart (wire ChallengesScreen, remove _PlaceholderTab)
+- CLAUDE.md (Phase 5 checked off)
+
+### Gotchas
+- Leaderboard rank colors use `switch` expression (Dart 3) — gold #FBBF24, silver #94A3B8, bronze #D97706
+- joinedChallengesProvider is in-memory only until Supabase challenge_participants table is wired in Phase 7+ work

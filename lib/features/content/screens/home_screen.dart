@@ -6,6 +6,7 @@ import '../../../core/theme/app_colors.dart';
 import 'package:go_router/go_router.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../skill_tree/screens/skill_tree_screen.dart';
+import '../../challenges/screens/challenges_screen.dart';
 import '../providers/content_provider.dart';
 import '../widgets/tutorial_card.dart';
 
@@ -35,7 +36,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         children: [
           _HomeTabBody(onSwitchTab: (i) => setState(() => _currentIndex = i)),
           const SkillTreeScreen(),
-          _PlaceholderTab(label: 'Challenges', icon: Icons.emoji_events),
+          const ChallengesScreen(),
           const _ProfileTab(),
         ],
       ),
@@ -405,33 +406,6 @@ class _ProfileTab extends ConsumerWidget {
             ],
           ),
         ),
-      ),
-    );
-  }
-}
-
-// ─── Placeholder tabs ─────────────────────────────────────────────────────────
-
-class _PlaceholderTab extends StatelessWidget {
-  final String label;
-  final IconData icon;
-
-  const _PlaceholderTab({required this.label, required this.icon});
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 48, color: AppColors.accent),
-          const SizedBox(height: 12),
-          Text(
-            label,
-            style: GoogleFonts.inter(
-                fontSize: 14, color: AppColors.textSecondary),
-          ),
-        ],
       ),
     );
   }
