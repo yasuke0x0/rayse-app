@@ -92,7 +92,7 @@ Commit types: feat / fix / chore / style / refactor
 - [x] Phase 1 — theme, splash, onboarding, home placeholder
 - [x] Phase 2 — Auth (Supabase login / signup)
 - [x] Phase 3 — Home + content library
-- [ ] Phase 4 — Skill tree
+- [x] Phase 4 — Skill tree
 - [ ] Phase 5 — Subscriptions (RevenueCat)
 - [ ] Phase 6 — Challenges + leaderboard
 - [ ] Phase 7 — Daily workout program

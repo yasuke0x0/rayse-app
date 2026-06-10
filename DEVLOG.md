@@ -85,3 +85,27 @@
 - Video playback works on Android/iOS only; web shows a blank player area
 - Mock YouTube IDs are placeholders — user should replace with real @samsjump video IDs
 - Dart 3 wildcard `_` can be repeated in param lists; `(_, __)` → `(_, _)` to satisfy unnecessary_underscores lint
+
+## 2026-06-10 — Phase 4: Skill tree + Profile tab
+
+### What was built
+- SkillNode model with id, title, description, level, isUnlocked, isCompleted, prerequisiteIds
+- skill_tree_data.dart: static list of mock skill nodes (beginner → intermediate → advanced progression)
+- skillTreeProvider (Riverpod): exposes skill node list, unlock/complete actions
+- SkillTreeScreen: scrollable visual skill tree with node cards, lock/unlock states, progress indicators
+- _ProfileTab wired into HomeScreen (Profile tab): shows current user email + LOG OUT button using authRepositoryProvider.signOut()
+- Auth listener added to HomeScreen: redirects to /login when session ends
+- Makefile: added `phone` target pointing to physical device ID; fixed missing newline at EOF
+
+### Files touched
+- lib/features/skill_tree/models/skill_node.dart (new)
+- lib/features/skill_tree/data/skill_tree_data.dart (new)
+- lib/features/skill_tree/providers/skill_tree_provider.dart (new)
+- lib/features/skill_tree/screens/skill_tree_screen.dart (new)
+- lib/features/content/screens/home_screen.dart (added SkillTreeScreen, _ProfileTab, auth listener)
+- Makefile (added phone target, fixed EOF newline)
+- CLAUDE.md (Phase 4 checked off)
+
+### Gotchas
+- SkillTreeScreen imported directly into home_screen.dart; no new router route needed (tab uses IndexedStack)
+- Auth redirect uses ref.listen in build — consistent with the pattern established in Phase 2 (avoids calling context.go during build phase)
