@@ -57,6 +57,9 @@ class _SkillDetailScreenState extends ConsumerState<SkillDetailScreen>
 
     controller.addListener(_onVideoUpdate);
 
+    // Already practiced before — no need to re-watch
+    if (skill.sessionsCompleted > 0) _hasWatchedEnough = true;
+
     // Init tip animations
     _tipControllers = List.generate(
       skill.tips.length,
