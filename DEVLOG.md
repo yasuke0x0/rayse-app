@@ -167,3 +167,39 @@
 - WorkoutRepository.getTodayWorkout() uses a namespaced import (data.getTodayWorkout()) to avoid infinite recursion with identically-named method
 - completedWorkoutsProvider is in-memory only — needs Supabase workout_completions table before Phase 7
 - WorkoutPlayerScreen uses setState (local UI state) — acceptable per conventions since _exerciseIndex/_currentSet/_isResting are purely local player state
+
+## 2026-06-13 — Skill tree full flow with XP and mastery system
+
+### What was built
+- Skill model (lib/features/skill_tree/models/skill.dart): SkillStatus enum + immutable Skill with copyWith
+- SkillSession model (lib/features/skill_tree/models/skill_session.dart)
+- mock_skills.dart: buildMockSkills() with 11 full skills — YouTube IDs, 5 coaching tips each, unlock graph, XP rewards, free/premium flags
+- skill_provider.dart: XPNotifier/xpProvider, userTierProvider (stubbed 'free'), SkillsNotifier/skillsProvider — completeSession() handles sessions 1→2→3, auto-unlocks downstream skills, awards XP
+- SkillDetailScreen: YouTube embed with 80% watch gate, staggered tip animations, session progress dots, status badge, premium lock overlay
+- PracticeScreen: 60-second circular countdown timer with CustomPainter arc, rotating coaching tip via FadeTransition, haptic on completion
+- ResultScreen: animated trophy icon, rep counter +/- widget, session progress dots, XP float animation, "I GOT IT" → completeSession → mastered or snackbar flow
+- MasteredScreen: confetti CustomPainter, elastic star scale animation, XP count-up (IntTween), share card, Share.share() via share_plus
+- PaywallScreen: pricing card, feature list, grid overlay, RevenueCat stub snackbar
+- Updated skill_tree_screen.dart: uses skillsProvider + xpProvider + userTierProvider, XP badge in header, 4-state node visuals (locked/available/completed/mastered), taps navigate to /skill-detail or /paywall
+- Router: 5 new routes — /skill-detail/:skillId, /skill-practice/:skillId, /skill-result/:skillId, /skill-mastered/:skillId, /paywall
+
+### Files touched
+- lib/features/skill_tree/models/skill.dart (new)
+- lib/features/skill_tree/models/skill_session.dart (new)
+- lib/features/skill_tree/data/mock_skills.dart (new)
+- lib/features/skill_tree/providers/skill_provider.dart (new)
+- lib/features/skill_tree/screens/skill_detail_screen.dart (new)
+- lib/features/skill_tree/screens/practice_screen.dart (new)
+- lib/features/skill_tree/screens/result_screen.dart (new)
+- lib/features/skill_tree/screens/mastered_screen.dart (new)
+- lib/features/skill_tree/screens/skill_tree_screen.dart (rewritten)
+- lib/features/subscription/screens/paywall_screen.dart (new)
+- lib/core/router/app_router.dart (5 new routes added)
+- pubspec.yaml (share_plus: ^10.0.0 added)
+- DEVLOG.md
+
+### Gotchas
+- share_plus v10 uses static Share.share(text) API — not SharePlus.instance.share(ShareParams(...)) which is v13+ syntax
+- AnimatedBuilder builder: (_, __) triggers unnecessary_underscores lint in Dart 3 — use (_, child) or named second param instead
+- ScaffoldMessenger.of(context) must be captured before context.pop() to avoid deactivated context exception in result_screen
+- SkillsNotifier stores Ref internally (not WidgetRef) to call xpProvider from inside StateNotifier

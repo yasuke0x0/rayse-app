@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/app_colors.dart';
 import '../data/skill_tree_data.dart';
+import '../models/skill.dart';
 import '../models/skill_node.dart';
-import '../providers/skill_tree_provider.dart';
+import '../providers/skill_provider.dart';
 
 const double _topPad = 80;
 const double _tierGap = 150;
@@ -16,9 +18,13 @@ class SkillTreeScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final completed = ref.watch(skillTreeProvider);
-    final total = kSkillTree.length;
-    final mastered = completed.length;
+    final skills = ref.watch(skillsProvider);
+    final totalXP = ref.watch(xpProvider);
+    final userTier = ref.watch(userTierProvider);
+
+    final mastered =
+        skills.where((s) => s.status == SkillStatus.mastered).length;
+    final total = skills.length;
     final progress = total > 0 ? mastered / total : 0.0;
 
     return Scaffold(
@@ -33,24 +39,47 @@ class SkillTreeScreen extends ConsumerWidget {
                 // Header
                 Padding(
                   padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  child: Row(
                     children: [
-                      Text(
-                        'SKILL TREE',
-                        style: GoogleFonts.poppins(
-                          fontSize: 24,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.textPrimary,
-                          letterSpacing: 0.5,
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'SKILL TREE',
+                              style: GoogleFonts.poppins(
+                                fontSize: 24,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.textPrimary,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              '$mastered / $total SKILLS MASTERED',
+                              style: GoogleFonts.inter(
+                                fontSize: 13,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        '$mastered / $total SKILLS MASTERED',
-                        style: GoogleFonts.inter(
-                          fontSize: 13,
-                          color: AppColors.textSecondary,
+                      // XP badge
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF7C2D12),
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: Text(
+                          '⚡ $totalXP XP',
+                          style: GoogleFonts.inter(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.accent,
+                          ),
                         ),
                       ),
                     ],
@@ -81,8 +110,6 @@ class SkillTreeScreen extends ConsumerWidget {
                         final width = constraints.maxWidth;
                         final canvasHeight =
                             _topPad + 4 * _tierGap + _bottomPad;
-
-                        // Build positions map
                         final positions = <String, Offset>{};
                         for (final node in kSkillTree) {
                           final x = width * node.xFraction;
@@ -95,30 +122,38 @@ class SkillTreeScreen extends ConsumerWidget {
                           height: canvasHeight,
                           child: Stack(
                             children: [
-                              // Connector lines
                               CustomPaint(
                                 size: Size(width, canvasHeight),
                                 painter: _TreeLinePainter(
                                   positions: positions,
-                                  completed: completed,
+                                  skills: skills,
                                 ),
                               ),
-                              // Nodes
                               for (final node in kSkillTree)
-                                Positioned(
-                                  left: positions[node.id]!.dx - _nodeRadius,
-                                  top: positions[node.id]!.dy - _nodeRadius,
-                                  child: _SkillNodeWidget(
-                                    node: node,
-                                    completed: completed,
-                                    onTap: () => _showSkillSheet(
-                                      context,
-                                      ref,
-                                      node,
-                                      completed,
+                                Builder(builder: (ctx) {
+                                  Skill? skill;
+                                  try {
+                                    skill = skills
+                                        .firstWhere((s) => s.id == node.id);
+                                  } catch (_) {}
+                                  if (skill == null) {
+                                    return const SizedBox.shrink();
+                                  }
+                                  return Positioned(
+                                    left: positions[node.id]!.dx - _nodeRadius,
+                                    top: positions[node.id]!.dy - _nodeRadius,
+                                    child: _SkillNodeWidget(
+                                      node: node,
+                                      skill: skill,
+                                      onTap: () => _handleNodeTap(
+                                        context,
+                                        ref,
+                                        skill!,
+                                        userTier,
+                                      ),
                                     ),
-                                  ),
-                                ),
+                                  );
+                                }),
                             ],
                           ),
                         );
@@ -133,18 +168,44 @@ class SkillTreeScreen extends ConsumerWidget {
       ),
     );
   }
+
+  void _handleNodeTap(
+    BuildContext context,
+    WidgetRef ref,
+    Skill skill,
+    String userTier,
+  ) {
+    if (skill.status == SkillStatus.locked) {
+      if (!skill.isFreeNode && userTier == 'free') {
+        context.push('/paywall');
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Complete previous skills first',
+              style: GoogleFonts.inter(color: Colors.white),
+            ),
+            backgroundColor: AppColors.surface,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } else {
+      context.push('/skill-detail/${skill.id}');
+    }
+  }
 }
 
 // ─── Skill node widget ────────────────────────────────────────────────────────
 
 class _SkillNodeWidget extends StatelessWidget {
   final SkillNode node;
-  final Set<String> completed;
+  final Skill skill;
   final VoidCallback onTap;
 
   const _SkillNodeWidget({
     required this.node,
-    required this.completed,
+    required this.skill,
     required this.onTap,
   });
 
@@ -177,58 +238,70 @@ class _SkillNodeWidget extends StatelessWidget {
     }
   }
 
-  Color _iconColorFor(String id) {
-    switch (id) {
-      case 'basic_bounce':
-      case 'double_unders':
-      case 'triple_unders':
-      case 'freestyle':
-        return AppColors.accent;
-      default:
-        return Colors.white;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    final isCompleted = completed.contains(node.id);
-    final isUnlocked = node.isUnlocked(completed);
-
+    final status = skill.status;
     Widget circleContent;
     BoxDecoration circleDecoration;
 
-    if (isCompleted) {
-      circleDecoration = const BoxDecoration(
-        color: AppColors.accent,
-        shape: BoxShape.circle,
-      );
-      circleContent = const Icon(
-        Icons.check_rounded,
-        color: Colors.white,
-        size: 28,
-      );
-    } else if (isUnlocked) {
-      circleDecoration = BoxDecoration(
-        color: AppColors.surface,
-        shape: BoxShape.circle,
-        border: Border.all(color: AppColors.accent, width: 2),
-      );
-      circleContent = Icon(
-        _iconFor(node.id),
-        color: _iconColorFor(node.id),
-        size: 28,
-      );
-    } else {
-      circleDecoration = BoxDecoration(
-        color: AppColors.surface,
-        shape: BoxShape.circle,
-        border: Border.all(color: AppColors.border, width: 1),
-      );
-      circleContent = const Icon(
-        Icons.lock_outline,
-        color: AppColors.textMuted,
-        size: 22,
-      );
+    switch (status) {
+      case SkillStatus.mastered:
+        circleDecoration = const BoxDecoration(
+          color: AppColors.accent,
+          shape: BoxShape.circle,
+        );
+        circleContent = const Icon(Icons.star_rounded,
+            color: Colors.white, size: 28);
+      case SkillStatus.completed:
+        circleDecoration = BoxDecoration(
+          color: const Color(0xFF3F3F46),
+          shape: BoxShape.circle,
+          border: Border.all(color: AppColors.accent, width: 2),
+        );
+        circleContent = Stack(
+          alignment: Alignment.center,
+          children: [
+            Icon(_iconFor(node.id), color: AppColors.accent, size: 24),
+            Positioned(
+              bottom: 0,
+              right: 0,
+              child: Container(
+                width: 16,
+                height: 16,
+                decoration: const BoxDecoration(
+                  color: AppColors.accent,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.check_rounded,
+                    color: Colors.white, size: 10),
+              ),
+            ),
+          ],
+        );
+      case SkillStatus.available:
+        circleDecoration = BoxDecoration(
+          color: const Color(0xFF3F3F46),
+          shape: BoxShape.circle,
+          border:
+              Border.all(color: AppColors.accent.withValues(alpha: 0.6), width: 2),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.accent.withValues(alpha: 0.2),
+              blurRadius: 12,
+              spreadRadius: 2,
+            )
+          ],
+        );
+        circleContent =
+            Icon(_iconFor(node.id), color: Colors.white, size: 28);
+      case SkillStatus.locked:
+        circleDecoration = BoxDecoration(
+          color: const Color(0xFF27272A),
+          shape: BoxShape.circle,
+          border: Border.all(color: AppColors.border, width: 1),
+        );
+        circleContent = const Icon(Icons.lock_outline_rounded,
+            color: AppColors.textMuted, size: 22);
     }
 
     return GestureDetector(
@@ -249,7 +322,9 @@ class _SkillNodeWidget extends StatelessWidget {
               node.title,
               style: GoogleFonts.inter(
                 fontSize: 10,
-                color: AppColors.textSecondary,
+                color: status == SkillStatus.locked
+                    ? AppColors.textMuted
+                    : AppColors.textSecondary,
               ),
               textAlign: TextAlign.center,
               maxLines: 2,
@@ -262,246 +337,13 @@ class _SkillNodeWidget extends StatelessWidget {
   }
 }
 
-// ─── Skill detail bottom sheet ────────────────────────────────────────────────
-
-void _showSkillSheet(
-  BuildContext context,
-  WidgetRef ref,
-  SkillNode node,
-  Set<String> completed,
-) {
-  showModalBottomSheet(
-    context: context,
-    backgroundColor: Colors.transparent,
-    isScrollControlled: true,
-    builder: (ctx) => _SkillSheet(node: node, completed: completed, ref: ref),
-  );
-}
-
-class _SkillSheet extends StatelessWidget {
-  final SkillNode node;
-  final Set<String> completed;
-  final WidgetRef ref;
-
-  const _SkillSheet({
-    required this.node,
-    required this.completed,
-    required this.ref,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final isCompleted = completed.contains(node.id);
-    final isUnlocked = node.isUnlocked(completed);
-
-    return Container(
-      decoration: const BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      padding: EdgeInsets.only(
-        left: 24,
-        right: 24,
-        top: 24,
-        bottom: 16 + MediaQuery.of(context).viewInsets.bottom,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Drag pill
-          Center(
-            child: Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: const Color(0xFF3F3F46),
-                borderRadius: BorderRadius.circular(999),
-              ),
-            ),
-          ),
-          const SizedBox(height: 20),
-
-          // Subtitle badge row
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: isUnlocked ? AppColors.accent : AppColors.surface,
-                  borderRadius: BorderRadius.circular(999),
-                  border: isUnlocked
-                      ? null
-                      : Border.all(color: AppColors.border),
-                ),
-                child: Text(
-                  node.subtitle,
-                  style: GoogleFonts.inter(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    color: isUnlocked ? Colors.white : AppColors.textMuted,
-                    letterSpacing: 0.8,
-                  ),
-                ),
-              ),
-              const Spacer(),
-              if (isCompleted)
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF166534),
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                  child: Text(
-                    'MASTERED',
-                    style: GoogleFonts.inter(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      color: const Color(0xFF4ADE80),
-                      letterSpacing: 0.8,
-                    ),
-                  ),
-                ),
-            ],
-          ),
-          const SizedBox(height: 12),
-
-          // Title
-          Text(
-            node.title,
-            style: GoogleFonts.poppins(
-              fontSize: 22,
-              fontWeight: FontWeight.w700,
-              color: AppColors.textPrimary,
-            ),
-          ),
-          const SizedBox(height: 8),
-
-          // Description
-          Text(
-            node.description,
-            style: GoogleFonts.inter(
-              fontSize: 14,
-              color: AppColors.textSecondary,
-              height: 1.5,
-            ),
-          ),
-          const SizedBox(height: 24),
-
-          // Locked: show prerequisites
-          if (!isUnlocked) ...[
-            Text(
-              'PREREQUISITES REQUIRED',
-              style: GoogleFonts.inter(
-                fontSize: 12,
-                color: AppColors.textMuted,
-                letterSpacing: 0.8,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: node.prerequisiteIds.map((pid) {
-                final prereq = kSkillTree.firstWhere((n) => n.id == pid);
-                return Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(999),
-                    border: Border.all(color: AppColors.border),
-                  ),
-                  child: Text(
-                    prereq.title,
-                    style: GoogleFonts.inter(
-                      fontSize: 12,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                );
-              }).toList(),
-            ),
-            const SizedBox(height: 24),
-          ],
-
-          // Action button
-          if (!isCompleted && isUnlocked)
-            SizedBox(
-              width: double.infinity,
-              child: TextButton(
-                onPressed: () {
-                  ref
-                      .read(skillTreeProvider.notifier)
-                      .toggleSkill(node.id);
-                  Navigator.pop(context);
-                },
-                style: TextButton.styleFrom(
-                  backgroundColor: AppColors.accent,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: Text(
-                  'MARK AS MASTERED',
-                  style: GoogleFonts.inter(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                    letterSpacing: 0.8,
-                  ),
-                ),
-              ),
-            ),
-
-          if (isCompleted)
-            SizedBox(
-              width: double.infinity,
-              child: TextButton(
-                onPressed: () {
-                  ref
-                      .read(skillTreeProvider.notifier)
-                      .toggleSkill(node.id);
-                  Navigator.pop(context);
-                },
-                style: TextButton.styleFrom(
-                  backgroundColor: AppColors.surface,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    side: const BorderSide(color: AppColors.border),
-                  ),
-                ),
-                child: Text(
-                  'MARK INCOMPLETE',
-                  style: GoogleFonts.inter(
-                    fontSize: 13,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-              ),
-            ),
-
-          const SizedBox(height: 16),
-        ],
-      ),
-    );
-  }
-}
-
 // ─── Tree line painter ────────────────────────────────────────────────────────
 
 class _TreeLinePainter extends CustomPainter {
   final Map<String, Offset> positions;
-  final Set<String> completed;
+  final List<Skill> skills;
 
-  const _TreeLinePainter({
-    required this.positions,
-    required this.completed,
-  });
+  const _TreeLinePainter({required this.positions, required this.skills});
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -511,14 +353,27 @@ class _TreeLinePainter extends CustomPainter {
         final to = positions[node.id];
         if (from == null || to == null) continue;
 
-        final bothCompleted =
-            completed.contains(prereqId) && completed.contains(node.id);
-        final parentCompleted = completed.contains(prereqId);
+        Skill? fromSkill;
+        Skill? toSkill;
+        try {
+          fromSkill = skills.firstWhere((s) => s.id == prereqId);
+        } catch (_) {}
+        try {
+          toSkill = skills.firstWhere((s) => s.id == node.id);
+        } catch (_) {}
+
+        final bothActive =
+            (fromSkill?.status == SkillStatus.completed ||
+                fromSkill?.status == SkillStatus.mastered) &&
+            (toSkill?.status == SkillStatus.completed ||
+                toSkill?.status == SkillStatus.mastered);
+        final parentActive = fromSkill?.status == SkillStatus.completed ||
+            fromSkill?.status == SkillStatus.mastered;
 
         final Color lineColor;
-        if (bothCompleted) {
+        if (bothActive) {
           lineColor = AppColors.accent.withValues(alpha: 0.8);
-        } else if (parentCompleted) {
+        } else if (parentActive) {
           lineColor = AppColors.accent.withValues(alpha: 0.4);
         } else {
           lineColor = const Color(0xFF3F3F46);
@@ -528,14 +383,13 @@ class _TreeLinePainter extends CustomPainter {
           ..color = lineColor
           ..strokeWidth = 2.0
           ..style = PaintingStyle.stroke;
-
         canvas.drawLine(from, to, paint);
       }
     }
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+  bool shouldRepaint(covariant CustomPainter _) => true;
 }
 
 // ─── Grid overlay ─────────────────────────────────────────────────────────────
@@ -563,5 +417,5 @@ class _GridPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  bool shouldRepaint(covariant CustomPainter _) => false;
 }

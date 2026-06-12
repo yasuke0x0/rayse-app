@@ -6,6 +6,11 @@ import 'package:rayse/features/auth/screens/signup_screen.dart';
 import 'package:rayse/features/auth/screens/splash_screen.dart';
 import 'package:rayse/features/content/screens/home_screen.dart';
 import 'package:rayse/features/content/screens/tutorial_detail_screen.dart';
+import 'package:rayse/features/skill_tree/screens/skill_detail_screen.dart';
+import 'package:rayse/features/skill_tree/screens/practice_screen.dart';
+import 'package:rayse/features/skill_tree/screens/result_screen.dart';
+import 'package:rayse/features/skill_tree/screens/mastered_screen.dart';
+import 'package:rayse/features/subscription/screens/paywall_screen.dart';
 import 'package:rayse/features/workout/screens/daily_workout_screen.dart';
 import 'package:rayse/features/workout/screens/workout_player_screen.dart';
 
@@ -53,6 +58,34 @@ final appRouter = GoRouter(
           ),
         ),
       ],
+    ),
+    GoRoute(
+      path: '/skill-detail/:skillId',
+      builder: (context, state) => SkillDetailScreen(
+        skillId: state.pathParameters['skillId']!,
+      ),
+    ),
+    GoRoute(
+      path: '/skill-practice/:skillId',
+      builder: (context, state) => PracticeScreen(
+        skillId: state.pathParameters['skillId']!,
+      ),
+    ),
+    GoRoute(
+      path: '/skill-result/:skillId',
+      builder: (context, state) => ResultScreen(
+        skillId: state.pathParameters['skillId']!,
+      ),
+    ),
+    GoRoute(
+      path: '/skill-mastered/:skillId',
+      builder: (context, state) => MasteredScreen(
+        skillId: state.pathParameters['skillId']!,
+      ),
+    ),
+    GoRoute(
+      path: '/paywall',
+      builder: (context, state) => const PaywallScreen(),
     ),
   ],
 );
