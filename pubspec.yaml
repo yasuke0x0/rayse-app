@@ -18,6 +18,8 @@ dependencies:
   supabase_flutter: ^2.8.4
   flutter_dotenv: ^5.1.0
   youtube_player_flutter: ^9.1.1
+  video_player: ^2.9.2
+  chewie: ^1.8.5
   cached_network_image: ^3.4.1
   share_plus: ^10.0.0
 

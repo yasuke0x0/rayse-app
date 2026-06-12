@@ -7,7 +7,7 @@ class Skill {
   final String id;
   final String title;
   final String description;
-  final String youtubeId;
+  final String videoUrl;
   final List<String> tips;
   final List<String> unlockIds;
   final int xpReward;
@@ -20,7 +20,7 @@ class Skill {
     required this.id,
     required this.title,
     required this.description,
-    required this.youtubeId,
+    required this.videoUrl,
     required this.tips,
     required this.unlockIds,
     required this.xpReward,
@@ -34,7 +34,7 @@ class Skill {
     String? id,
     String? title,
     String? description,
-    String? youtubeId,
+    String? videoUrl,
     List<String>? tips,
     List<String>? unlockIds,
     int? xpReward,
@@ -47,7 +47,7 @@ class Skill {
       id: id ?? this.id,
       title: title ?? this.title,
       description: description ?? this.description,
-      youtubeId: youtubeId ?? this.youtubeId,
+      videoUrl: videoUrl ?? this.videoUrl,
       tips: tips ?? this.tips,
       unlockIds: unlockIds ?? this.unlockIds,
       xpReward: xpReward ?? this.xpReward,

@@ -1,8 +1,9 @@
+import 'package:chewie/chewie.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:youtube_player_flutter/youtube_player_flutter.dart';
+import 'package:video_player/video_player.dart';
 import '../../../core/theme/app_colors.dart';
 import '../models/skill.dart';
 import '../providers/skill_provider.dart';
@@ -17,29 +18,44 @@ class SkillDetailScreen extends ConsumerStatefulWidget {
 
 class _SkillDetailScreenState extends ConsumerState<SkillDetailScreen>
     with TickerProviderStateMixin {
-  YoutubePlayerController? _ytController;
+  VideoPlayerController? _videoController;
+  ChewieController? _chewieController;
+  bool _videoInitialized = false;
   bool _hasWatchedEnough = false;
+
   late List<AnimationController> _tipControllers;
   late List<Animation<double>> _tipAnimations;
-  bool _controllersInitialized = false;
+  bool _tipsInitialized = false;
 
   @override
   void initState() {
     super.initState();
-    // Initialize YouTube controller after first frame
-    WidgetsBinding.instance.addPostFrameCallback((_) => _initYouTube());
+    WidgetsBinding.instance.addPostFrameCallback((_) => _initVideo());
   }
 
-  void _initYouTube() {
+  Future<void> _initVideo() async {
     final skill = ref.read(skillsProvider).firstWhere(
-      (s) => s.id == widget.skillId,
-      orElse: () => ref.read(skillsProvider).first,
+          (s) => s.id == widget.skillId,
+          orElse: () => ref.read(skillsProvider).first,
+        );
+
+    final controller =
+        VideoPlayerController.networkUrl(Uri.parse(skill.videoUrl));
+    _videoController = controller;
+
+    await controller.initialize();
+    if (!mounted) return;
+
+    _chewieController = ChewieController(
+      videoPlayerController: controller,
+      autoPlay: false,
+      looping: false,
+      aspectRatio: 16 / 9,
+      allowFullScreen: true,
+      placeholder: Container(color: AppColors.surface),
     );
-    _ytController = YoutubePlayerController(
-      initialVideoId: skill.youtubeId,
-      flags: const YoutubePlayerFlags(autoPlay: false, mute: false),
-    );
-    _ytController!.addListener(_onPlayerUpdate);
+
+    controller.addListener(_onVideoUpdate);
 
     // Init tip animations
     _tipControllers = List.generate(
@@ -52,31 +68,33 @@ class _SkillDetailScreenState extends ConsumerState<SkillDetailScreen>
     _tipAnimations = _tipControllers
         .map((c) => CurvedAnimation(parent: c, curve: Curves.easeOut))
         .toList();
-    _controllersInitialized = true;
+    _tipsInitialized = true;
 
-    // Staggered animation for tips
     for (int i = 0; i < _tipControllers.length; i++) {
       Future.delayed(Duration(milliseconds: 100 * i), () {
         if (mounted) _tipControllers[i].forward();
       });
     }
-    setState(() {});
+
+    setState(() => _videoInitialized = true);
   }
 
-  void _onPlayerUpdate() {
-    if (_ytController == null || _hasWatchedEnough) return;
-    final dur = _ytController!.metadata.duration;
-    final pos = _ytController!.value.position;
-    if (dur.inSeconds > 0 && pos.inSeconds / dur.inSeconds >= 0.8) {
+  void _onVideoUpdate() {
+    if (_videoController == null || _hasWatchedEnough) return;
+    final dur = _videoController!.value.duration;
+    final pos = _videoController!.value.position;
+    if (dur.inMilliseconds > 0 &&
+        pos.inMilliseconds / dur.inMilliseconds >= 0.8) {
       setState(() => _hasWatchedEnough = true);
     }
   }
 
   @override
   void dispose() {
-    _ytController?.removeListener(_onPlayerUpdate);
-    _ytController?.dispose();
-    if (_controllersInitialized) {
+    _videoController?.removeListener(_onVideoUpdate);
+    _chewieController?.dispose();
+    _videoController?.dispose();
+    if (_tipsInitialized) {
       for (final c in _tipControllers) {
         c.dispose();
       }
@@ -104,21 +122,15 @@ class _SkillDetailScreenState extends ConsumerState<SkillDetailScreen>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Header
                   _buildHeader(context, skill),
-                  // Video section
                   _buildVideoSection(skill, isPremiumLocked),
-                  // Skill info
                   _buildSkillInfo(skill),
-                  // Tips section
-                  if (_controllersInitialized) _buildTips(skill),
-                  // Progress section
+                  if (_tipsInitialized) _buildTips(skill),
                   _buildProgress(skill),
                   const SizedBox(height: 100),
                 ],
               ),
             ),
-            // Bottom CTA
             Positioned(
               bottom: 0,
               left: 0,
@@ -153,8 +165,7 @@ class _SkillDetailScreenState extends ConsumerState<SkillDetailScreen>
       case SkillStatus.locked:
         return _pill('🔒 LOCKED', const Color(0xFF3F3F46), AppColors.textMuted);
       case SkillStatus.available:
-        return _pill(
-            'READY', const Color(0xFF27272A), AppColors.textSecondary);
+        return _pill('READY', const Color(0xFF27272A), AppColors.textSecondary);
       case SkillStatus.completed:
         return _pill(
             '✓ COMPLETED', const Color(0xFF14532D), const Color(0xFF4ADE80));
@@ -184,19 +195,23 @@ class _SkillDetailScreenState extends ConsumerState<SkillDetailScreen>
         child: ClipRRect(
           borderRadius: BorderRadius.circular(16),
           child: Stack(
+            fit: StackFit.expand,
             children: [
-              if (_ytController != null)
-                YoutubePlayer(controller: _ytController!)
+              // Player or loading state
+              if (_videoInitialized && _chewieController != null)
+                Chewie(controller: _chewieController!)
               else
                 Container(
-                    color: AppColors.surface,
-                    child: const Center(
-                        child: CircularProgressIndicator(
-                      color: AppColors.accent,
-                    ))),
+                  color: AppColors.surface,
+                  child: const Center(
+                    child: CircularProgressIndicator(color: AppColors.accent),
+                  ),
+                ),
+
+              // Premium lock overlay
               if (isPremiumLocked)
                 Container(
-                  color: Colors.black.withValues(alpha: 0.7),
+                  color: Colors.black.withValues(alpha: 0.75),
                   child: Center(
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
@@ -250,8 +265,8 @@ class _SkillDetailScreenState extends ConsumerState<SkillDetailScreen>
           Row(children: [
             _pill(tierLabel, AppColors.surface, AppColors.textSecondary),
             const SizedBox(width: 8),
-            _pill(
-                '+ ${skill.xpReward} XP', const Color(0xFF7C2D12), AppColors.accent),
+            _pill('+ ${skill.xpReward} XP', const Color(0xFF7C2D12),
+                AppColors.accent),
           ]),
           const SizedBox(height: 12),
           Text(
@@ -378,14 +393,14 @@ class _SkillDetailScreenState extends ConsumerState<SkillDetailScreen>
         color: AppColors.background,
         border: Border(top: BorderSide(color: AppColors.border)),
       ),
-      child: Builder(builder: (context) {
+      child: Builder(builder: (ctx) {
         if (isPremiumLocked || isLocked) {
           return SizedBox(
             width: double.infinity,
             child: _ctaButton(
               label: 'UNLOCK WITH PREMIUM',
               color: AppColors.accent,
-              onTap: () => context.push('/paywall'),
+              onTap: () => ctx.push('/paywall'),
             ),
           );
         }
@@ -395,7 +410,7 @@ class _SkillDetailScreenState extends ConsumerState<SkillDetailScreen>
             child: _ctaButton(
               label: '⭐ MASTERED — PRACTICE AGAIN',
               color: const Color(0xFF3F3F46),
-              onTap: () => context.push('/skill-practice/${widget.skillId}'),
+              onTap: () => ctx.push('/skill-practice/${widget.skillId}'),
             ),
           );
         }
@@ -405,11 +420,10 @@ class _SkillDetailScreenState extends ConsumerState<SkillDetailScreen>
             label: _hasWatchedEnough
                 ? 'START PRACTICE →'
                 : 'WATCH THE VIDEO FIRST',
-            color: _hasWatchedEnough
-                ? AppColors.accent
-                : const Color(0xFF3F3F46),
+            color:
+                _hasWatchedEnough ? AppColors.accent : const Color(0xFF3F3F46),
             onTap: _hasWatchedEnough
-                ? () => context.push('/skill-practice/${widget.skillId}')
+                ? () => ctx.push('/skill-practice/${widget.skillId}')
                 : null,
           ),
         );
