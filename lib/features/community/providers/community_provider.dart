@@ -32,7 +32,12 @@ final isCreatorProvider = FutureProvider<bool>((ref) async {
 class PendingVideosNotifier extends AsyncNotifier<List<CommunityVideo>> {
   @override
   Future<List<CommunityVideo>> build() async {
-    return ref.read(communityVideoRepositoryProvider).fetchPendingVideos();
+    try {
+      return await ref.read(communityVideoRepositoryProvider).fetchPendingVideos();
+    } catch (e, st) {
+      print('[ADMIN] fetchPendingVideos error: $e\n$st');
+      rethrow;
+    }
   }
 
   Future<void> approve(String id, {bool samyApproved = false}) async {
