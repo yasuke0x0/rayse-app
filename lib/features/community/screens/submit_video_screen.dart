@@ -19,6 +19,7 @@ class _SubmitVideoScreenState extends ConsumerState<SubmitVideoScreen> {
   int _step = 1;
   XFile? _pickedFile;
   String _videoExtension = 'mp4';
+  String _mimeType = 'video/mp4';
   String _caption = '';
   bool _uploading = false;
   bool _submitted = false;
@@ -38,9 +39,14 @@ class _SubmitVideoScreenState extends ConsumerState<SubmitVideoScreen> {
       maxDuration: const Duration(seconds: 60),
     );
     if (file != null) {
+      // On web, file.path is a blob URL — use file.name for the real extension
+      final ext = file.name.contains('.')
+          ? file.name.split('.').last.toLowerCase()
+          : 'mp4';
       setState(() {
         _pickedFile = file;
-        _videoExtension = file.path.split('.').last;
+        _videoExtension = ext;
+        _mimeType = file.mimeType ?? 'video/mp4';
       });
     }
   }
@@ -66,6 +72,7 @@ class _SubmitVideoScreenState extends ConsumerState<SubmitVideoScreen> {
         skillId: widget.skillId,
         bytes: bytes,
         extension: _videoExtension,
+        mimeType: _mimeType,
       );
       await repo.submitVideo(
         userId: userId,

@@ -13,6 +13,7 @@ class CommunityVideoRepository {
     required String skillId,
     required Uint8List bytes,
     required String extension,
+    String? mimeType,
   }) async {
     final path =
         '$userId/$skillId/${DateTime.now().millisecondsSinceEpoch}.$extension';
@@ -21,7 +22,7 @@ class CommunityVideoRepository {
           bytes,
           fileOptions: FileOptions(
             upsert: false,
-            contentType: 'video/$extension',
+            contentType: mimeType ?? 'video/mp4',
           ),
         );
     return _client.storage.from('community-videos').getPublicUrl(path);
