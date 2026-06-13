@@ -103,16 +103,18 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/admin',
       builder: (context, state) => const AdminPanelScreen(),
-    ),
-    GoRoute(
-      path: '/admin/users',
-      builder: (context, state) => const AdminUsersScreen(),
-    ),
-    GoRoute(
-      path: '/admin/user-detail',
-      builder: (context, state) => AdminUserDetailScreen(
-        user: state.extra as Map<String, dynamic>,
-      ),
+      routes: [
+        GoRoute(
+          path: 'users',
+          builder: (context, state) => const AdminUsersScreen(),
+        ),
+        GoRoute(
+          path: 'user-detail',
+          builder: (context, state) => AdminUserDetailScreen(
+            user: state.extra as Map<String, dynamic>,
+          ),
+        ),
+      ],
     ),
     GoRoute(
       path: '/community',

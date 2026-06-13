@@ -51,9 +51,15 @@ class AdminPanelScreen extends ConsumerWidget {
           children: [
             // Header
             Padding(
-              padding: const EdgeInsets.fromLTRB(24, 20, 16, 8),
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
               child: Row(
                 children: [
+                  GestureDetector(
+                    onTap: () => context.pop(),
+                    child: const Icon(Icons.arrow_back_ios_new_rounded,
+                        color: AppColors.textSecondary, size: 20),
+                  ),
+                  const SizedBox(width: 14),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -61,16 +67,16 @@ class AdminPanelScreen extends ConsumerWidget {
                         Text(
                           'ADMIN PANEL',
                           style: GoogleFonts.poppins(
-                            fontSize: 24,
-                            fontWeight: FontWeight.w900,
+                            fontSize: 20,
+                            fontWeight: FontWeight.w700,
                             color: AppColors.textPrimary,
-                            letterSpacing: -0.5,
+                            letterSpacing: 0.3,
                           ),
                         ),
                         Text(
                           'Pending community videos',
                           style: GoogleFonts.inter(
-                            fontSize: 13,
+                            fontSize: 12,
                             color: AppColors.textSecondary,
                           ),
                         ),
