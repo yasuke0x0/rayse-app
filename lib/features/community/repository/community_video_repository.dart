@@ -8,7 +8,7 @@ const _selectWithReviewer =
     '*, profiles!community_videos_user_id_fkey(username), reviewer:profiles!community_videos_reviewed_by_fkey(username)';
 
 // Select string for queries that don't need reviewer info
-const _selectBasic = '*, profiles(username)';
+const _selectBasic = '*, profiles!community_videos_user_id_fkey(username)';
 
 class CommunityVideoRepository {
   final SupabaseClient _client = SupabaseService.client;
