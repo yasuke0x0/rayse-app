@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -18,7 +17,7 @@ class SubmitVideoScreen extends ConsumerStatefulWidget {
 
 class _SubmitVideoScreenState extends ConsumerState<SubmitVideoScreen> {
   int _step = 1;
-  File? _pickedFile;
+  XFile? _pickedFile;
   String _videoExtension = 'mp4';
   String _caption = '';
   bool _uploading = false;
@@ -40,7 +39,7 @@ class _SubmitVideoScreenState extends ConsumerState<SubmitVideoScreen> {
     );
     if (file != null) {
       setState(() {
-        _pickedFile = File(file.path);
+        _pickedFile = file;
         _videoExtension = file.path.split('.').last;
       });
     }
@@ -60,11 +59,12 @@ class _SubmitVideoScreenState extends ConsumerState<SubmitVideoScreen> {
 
     setState(() => _uploading = true);
     try {
+      final bytes = await _pickedFile!.readAsBytes();
       final repo = ref.read(communityVideoRepositoryProvider);
       final videoUrl = await repo.uploadVideo(
         userId: userId,
         skillId: widget.skillId,
-        file: _pickedFile!,
+        bytes: bytes,
         extension: _videoExtension,
       );
       await repo.submitVideo(

@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'dart:typed_data';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/services/supabase_service.dart';
 import '../models/community_video.dart';
@@ -6,20 +6,23 @@ import '../models/community_video.dart';
 class CommunityVideoRepository {
   final SupabaseClient _client = SupabaseService.client;
 
-  // Upload video file to Supabase Storage
+  // Upload video bytes to Supabase Storage (web + mobile compatible)
   // Returns the public URL
   Future<String> uploadVideo({
     required String userId,
     required String skillId,
-    required File file,
+    required Uint8List bytes,
     required String extension,
   }) async {
     final path =
         '$userId/$skillId/${DateTime.now().millisecondsSinceEpoch}.$extension';
-    await _client.storage.from('community-videos').upload(
+    await _client.storage.from('community-videos').uploadBinary(
           path,
-          file,
-          fileOptions: const FileOptions(upsert: false),
+          bytes,
+          fileOptions: FileOptions(
+            upsert: false,
+            contentType: 'video/$extension',
+          ),
         );
     return _client.storage.from('community-videos').getPublicUrl(path);
   }
