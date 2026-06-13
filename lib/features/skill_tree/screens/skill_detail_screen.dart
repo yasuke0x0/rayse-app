@@ -129,7 +129,6 @@ class _SkillDetailScreenState extends ConsumerState<SkillDetailScreen>
                   _buildVideoSection(skill, isPremiumLocked),
                   _buildSkillInfo(skill),
                   if (_tipsInitialized) _buildTips(skill),
-                  _buildProgress(skill),
                   const SizedBox(height: 100),
                 ],
               ),
@@ -157,21 +156,59 @@ class _SkillDetailScreenState extends ConsumerState<SkillDetailScreen>
                 color: AppColors.textSecondary, size: 20),
           ),
           const Spacer(),
-          _buildStatusBadge(skill.status),
+          _buildStatusBadge(skill),
         ],
       ),
     );
   }
 
-  Widget _buildStatusBadge(SkillStatus status) {
-    switch (status) {
+  Widget _buildStatusBadge(Skill skill) {
+    switch (skill.status) {
       case SkillStatus.locked:
         return _pill('🔒 LOCKED', const Color(0xFF3F3F46), AppColors.textMuted);
       case SkillStatus.available:
         return _pill('READY', const Color(0xFF27272A), AppColors.textSecondary);
       case SkillStatus.completed:
-        return _pill(
-            '✓ COMPLETED', const Color(0xFF14532D), const Color(0xFF4ADE80));
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          decoration: BoxDecoration(
+            color: const Color(0xFF27272A),
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(color: AppColors.accent.withValues(alpha: 0.4)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ...List.generate(3, (i) => Container(
+                width: 7,
+                height: 7,
+                margin: const EdgeInsets.only(right: 3),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: i < skill.sessionsCompleted
+                      ? AppColors.accent
+                      : Colors.transparent,
+                  border: Border.all(
+                    color: i < skill.sessionsCompleted
+                        ? AppColors.accent
+                        : const Color(0xFF52525B),
+                    width: 1.5,
+                  ),
+                ),
+              )),
+              const SizedBox(width: 4),
+              Text(
+                '${skill.sessionsCompleted}/3',
+                style: GoogleFonts.inter(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.accent,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ],
+          ),
+        );
       case SkillStatus.mastered:
         return _pill('⭐ MASTERED', const Color(0xFF7C2D12), AppColors.accent);
     }
@@ -343,50 +380,6 @@ class _SkillDetailScreenState extends ConsumerState<SkillDetailScreen>
     );
   }
 
-  Widget _buildProgress(Skill skill) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 24, 16, 0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('YOUR PROGRESS',
-              style: GoogleFonts.inter(
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-                color: AppColors.textSecondary,
-                letterSpacing: 1.5,
-              )),
-          const SizedBox(height: 12),
-          Row(
-              children: List.generate(
-                  3,
-                  (i) => Container(
-                        width: 24,
-                        height: 24,
-                        margin: const EdgeInsets.only(right: 8),
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: i < skill.sessionsCompleted
-                              ? AppColors.accent
-                              : Colors.transparent,
-                          border: Border.all(
-                            color: i < skill.sessionsCompleted
-                                ? AppColors.accent
-                                : const Color(0xFF3F3F46),
-                            width: 2,
-                          ),
-                        ),
-                      ))),
-          const SizedBox(height: 8),
-          Text('${skill.sessionsCompleted} / 3 sessions to master',
-              style: GoogleFonts.inter(
-                fontSize: 13,
-                color: AppColors.textSecondary,
-              )),
-        ],
-      ),
-    );
-  }
 
   Widget _buildBottomCTA(BuildContext context, Skill skill, bool isPremiumLocked,
       bool isLocked) {
