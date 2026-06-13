@@ -15,6 +15,8 @@ import 'package:rayse/features/workout/screens/daily_workout_screen.dart';
 import 'package:rayse/features/workout/screens/workout_player_screen.dart';
 import 'package:rayse/features/community/screens/submit_video_screen.dart';
 import 'package:rayse/features/community/screens/admin_panel_screen.dart';
+import 'package:rayse/features/community/screens/admin_users_screen.dart';
+import 'package:rayse/features/community/screens/admin_user_detail_screen.dart';
 import 'package:rayse/features/community/screens/community_screen.dart';
 import 'package:rayse/features/community/screens/community_video_detail_screen.dart';
 import 'package:rayse/features/community/models/community_video.dart';
@@ -101,6 +103,16 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/admin',
       builder: (context, state) => const AdminPanelScreen(),
+    ),
+    GoRoute(
+      path: '/admin/users',
+      builder: (context, state) => const AdminUsersScreen(),
+    ),
+    GoRoute(
+      path: '/admin/user-detail',
+      builder: (context, state) => AdminUserDetailScreen(
+        user: state.extra as Map<String, dynamic>,
+      ),
     ),
     GoRoute(
       path: '/community',

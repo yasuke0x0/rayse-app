@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/app_colors.dart';
 import '../models/community_video.dart';
@@ -81,6 +82,41 @@ class AdminPanelScreen extends ConsumerWidget {
                     onPressed: () => ref.invalidate(pendingVideosProvider),
                   ),
                 ],
+              ),
+            ),
+            // Manage Users button
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 0, 24, 12),
+              child: GestureDetector(
+                onTap: () => context.push('/admin/users'),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 16, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppColors.border),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.people_outline,
+                          color: AppColors.accent, size: 20),
+                      const SizedBox(width: 12),
+                      Text(
+                        'MANAGE USERS',
+                        style: GoogleFonts.inter(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textPrimary,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                      const Spacer(),
+                      const Icon(Icons.arrow_forward_ios,
+                          color: AppColors.textMuted, size: 14),
+                    ],
+                  ),
+                ),
               ),
             ),
             const Divider(color: AppColors.border, height: 1),

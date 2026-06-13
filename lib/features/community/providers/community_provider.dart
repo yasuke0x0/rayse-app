@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../repository/community_video_repository.dart';
+import '../repository/user_repository.dart';
 import '../models/community_video.dart';
 
 final communityVideoRepositoryProvider = Provider<CommunityVideoRepository>(
@@ -51,6 +52,57 @@ final pendingVideosProvider =
     AsyncNotifierProvider<PendingVideosNotifier, List<CommunityVideo>>(
   PendingVideosNotifier.new,
 );
+
+// ─── User management (admin) ──────────────────────────────────────────────────
+
+final userRepositoryProvider = Provider<UserRepository>(
+  (_) => UserRepository(),
+);
+
+class AllUsersNotifier extends AsyncNotifier<List<Map<String, dynamic>>> {
+  @override
+  Future<List<Map<String, dynamic>>> build() async {
+    return ref.read(userRepositoryProvider).fetchAllUsers();
+  }
+
+  Future<void> updateRole(
+    String userId, {
+    bool? isPremium,
+    bool? isCreator,
+  }) async {
+    await ref
+        .read(userRepositoryProvider)
+        .updateUserRole(userId, isPremium: isPremium, isCreator: isCreator);
+    ref.invalidateSelf();
+  }
+
+  Future<void> ban(String userId) async {
+    await ref.read(userRepositoryProvider).banUser(userId);
+    ref.invalidateSelf();
+  }
+
+  Future<void> unban(String userId) async {
+    await ref.read(userRepositoryProvider).unbanUser(userId);
+    ref.invalidateSelf();
+  }
+}
+
+final allUsersProvider =
+    AsyncNotifierProvider<AllUsersNotifier, List<Map<String, dynamic>>>(
+  AllUsersNotifier.new,
+);
+
+// User videos for admin detail view (all statuses)
+final adminUserVideosProvider =
+    FutureProvider.family<List<CommunityVideo>, String>((ref, userId) async {
+  return ref.read(userRepositoryProvider).fetchUserVideos(userId);
+});
+
+// User XP for admin detail view
+final adminUserXPProvider =
+    FutureProvider.family<int, String>((ref, userId) async {
+  return ref.read(userRepositoryProvider).fetchUserXP(userId);
+});
 
 // ─── My total submissions count ───────────────────────────────────────────────
 
