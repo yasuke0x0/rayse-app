@@ -77,6 +77,28 @@ class CommunityVideoRepository {
     }).eq('id', id);
   }
 
+  // Fetch top N approved videos for a specific skill this week
+  Future<List<CommunityVideo>> fetchTopVideosForSkill({
+    required String skillId,
+    required int weekNumber,
+    required int weekYear,
+    int limit = 3,
+  }) async {
+    final data = await _client
+        .from('community_videos')
+        .select('*, profiles(username)')
+        .eq('status', 'approved')
+        .eq('skill_id', skillId)
+        .eq('week_number', weekNumber)
+        .eq('week_year', weekYear)
+        .order('score', ascending: false)
+        .limit(limit);
+    return (data as List)
+        .map((m) =>
+            CommunityVideo.fromMap(Map<String, dynamic>.from(m as Map)))
+        .toList();
+  }
+
   // Fetch user's own submissions for a skill
   Future<List<CommunityVideo>> fetchMyVideos(
       String userId, String skillId) async {

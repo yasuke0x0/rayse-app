@@ -52,6 +52,29 @@ final pendingVideosProvider =
   PendingVideosNotifier.new,
 );
 
+// ─── My submissions for a specific skill ──────────────────────────────────────
+
+final mySkillVideosProvider =
+    FutureProvider.family<List<CommunityVideo>, String>((ref, skillId) async {
+  final userId = Supabase.instance.client.auth.currentUser?.id;
+  if (userId == null) return [];
+  return ref
+      .read(communityVideoRepositoryProvider)
+      .fetchMyVideos(userId, skillId);
+});
+
+// ─── Top 3 community videos for a skill this week ─────────────────────────────
+
+final topSkillVideosProvider =
+    FutureProvider.family<List<CommunityVideo>, String>((ref, skillId) async {
+  final now = DateTime.now().toUtc();
+  return ref.read(communityVideoRepositoryProvider).fetchTopVideosForSkill(
+        skillId: skillId,
+        weekNumber: CommunityVideoRepository.isoWeek(now),
+        weekYear: now.year,
+      );
+});
+
 // ─── Approved videos (family by week) ─────────────────────────────────────────
 
 class ApprovedVideosNotifier
