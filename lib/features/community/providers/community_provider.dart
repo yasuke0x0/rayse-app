@@ -70,20 +70,26 @@ class PendingVideosNotifier extends AsyncNotifier<List<CommunityVideo>> {
 
   Future<void> approve(String id, {bool samyApproved = false}) async {
     final userId = Supabase.instance.client.auth.currentUser?.id;
+    // Optimistically remove from pending list immediately
+    state.whenData((videos) {
+      state = AsyncData(videos.where((v) => v.id != id).toList());
+    });
     await ref
         .read(communityVideoRepositoryProvider)
         .approveVideo(id, samyApproved: samyApproved, reviewedBy: userId);
     _invalidateCommunityData();
-    ref.invalidateSelf();
   }
 
   Future<void> reject(String id) async {
     final userId = Supabase.instance.client.auth.currentUser?.id;
+    // Optimistically remove from pending list immediately
+    state.whenData((videos) {
+      state = AsyncData(videos.where((v) => v.id != id).toList());
+    });
     await ref
         .read(communityVideoRepositoryProvider)
         .rejectVideo(id, reviewedBy: userId);
     _invalidateCommunityData();
-    ref.invalidateSelf();
   }
 
   void _invalidateCommunityData() {
