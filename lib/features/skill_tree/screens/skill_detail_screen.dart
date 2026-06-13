@@ -132,11 +132,8 @@ class _SkillDetailScreenState extends ConsumerState<SkillDetailScreen>
                   _buildVideoSection(skill, isPremiumLocked),
                   _buildSkillInfo(skill),
                   if (_tipsInitialized) _buildTips(skill),
-                  if (skill.status == SkillStatus.mastered) ...[
-                    _buildTopSkillVideos(skill),
-                    _buildMySubmissions(skill),
-                    _buildCommunityCTA(context, skill, userTier),
-                  ],
+                  if (skill.status == SkillStatus.mastered)
+                    _buildCommunitySection(skill, userTier),
                   const SizedBox(height: 100),
                 ],
               ),
@@ -389,281 +386,12 @@ class _SkillDetailScreenState extends ConsumerState<SkillDetailScreen>
   }
 
 
-  Widget _buildTopSkillVideos(Skill skill) {
-    final topAsync = ref.watch(topSkillVideosProvider(skill.id));
-    return topAsync.when(
-      loading: () => const SizedBox.shrink(),
-      error: (e, st) => const SizedBox.shrink(),
-      data: (videos) {
-        if (videos.isEmpty) return const SizedBox.shrink();
-        return Padding(
-          padding: const EdgeInsets.fromLTRB(16, 24, 16, 0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                "THIS WEEK'S TOP",
-                style: GoogleFonts.inter(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.accent,
-                  letterSpacing: 1.5,
-                ),
-              ),
-              const SizedBox(height: 10),
-              ...List.generate(videos.length, (i) {
-                final v = videos[i];
-                return GestureDetector(
-                  onTap: () => context.push('/community-video', extra: v),
-                  child: Container(
-                    margin: const EdgeInsets.only(bottom: 8),
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 10),
-                    decoration: BoxDecoration(
-                      color: AppColors.surface,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: i == 0
-                            ? AppColors.accent.withValues(alpha: 0.4)
-                            : AppColors.border,
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 28,
-                          height: 28,
-                          decoration: BoxDecoration(
-                            color: i == 0
-                                ? AppColors.accent
-                                : const Color(0xFF3F3F46),
-                            shape: BoxShape.circle,
-                          ),
-                          child: Center(
-                            child: Text(
-                              '#${i + 1}',
-                              style: GoogleFonts.inter(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w800,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                '@${v.username}',
-                                style: GoogleFonts.inter(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w600,
-                                  color: AppColors.textPrimary,
-                                ),
-                              ),
-                              if (v.caption.isNotEmpty)
-                                Text(
-                                  v.caption,
-                                  style: GoogleFonts.inter(
-                                    fontSize: 12,
-                                    color: AppColors.textSecondary,
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                            ],
-                          ),
-                        ),
-                        Row(
-                          children: [
-                            const Text('🔥',
-                                style: TextStyle(fontSize: 12)),
-                            const SizedBox(width: 4),
-                            Text(
-                              '${v.score}',
-                              style: GoogleFonts.inter(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w700,
-                                color: AppColors.accent,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(width: 4),
-                        const Icon(Icons.chevron_right_rounded,
-                            color: AppColors.textMuted, size: 18),
-                      ],
-                    ),
-                  ),
-                );
-              }),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
   String _timeAgo(DateTime dt) {
     final diff = DateTime.now().difference(dt);
     if (diff.inDays > 0) return '${diff.inDays}d ago';
     if (diff.inHours > 0) return '${diff.inHours}h ago';
     if (diff.inMinutes > 0) return '${diff.inMinutes}m ago';
     return 'just now';
-  }
-
-  Widget _buildMySubmissions(Skill skill) {
-    final myAsync = ref.watch(mySkillVideosProvider(skill.id));
-    final userTier = ref.watch(userTierProvider).valueOrNull ?? 'free';
-    final now = DateTime.now().toUtc();
-    final currentWeek = CommunityVideoRepository.isoWeek(now);
-    final currentYear = now.year;
-
-    return myAsync.when(
-      loading: () => const SizedBox.shrink(),
-      error: (e, st) => const SizedBox.shrink(),
-      data: (videos) {
-        final hasThisWeek = videos.any(
-            (v) => v.weekNumber == currentWeek && v.weekYear == currentYear);
-
-        return Padding(
-          padding: const EdgeInsets.fromLTRB(16, 24, 16, 0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'MY SUBMISSIONS',
-                style: GoogleFonts.inter(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.accent,
-                  letterSpacing: 1.5,
-                ),
-              ),
-              const SizedBox(height: 10),
-              // Encourage submission if none this week
-              if (!hasThisWeek)
-                GestureDetector(
-                  onTap: () => userTier == 'premium'
-                      ? context.push('/submit-video/${skill.id}')
-                      : context.push('/paywall'),
-                  child: Container(
-                    margin: const EdgeInsets.only(bottom: 10),
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: AppColors.accent.withValues(alpha: 0.08),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                          color: AppColors.accent.withValues(alpha: 0.3)),
-                    ),
-                    child: Row(
-                      children: [
-                        const Text('🎥', style: TextStyle(fontSize: 18)),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'No video this week yet!',
-                                style: GoogleFonts.inter(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w600,
-                                  color: AppColors.textPrimary,
-                                ),
-                              ),
-                              Text(
-                                'Submit your ${skill.title} and compete for the top 10',
-                                style: GoogleFonts.inter(
-                                  fontSize: 12,
-                                  color: AppColors.textSecondary,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const Icon(Icons.arrow_forward_ios,
-                            color: AppColors.accent, size: 14),
-                      ],
-                    ),
-                  ),
-                ),
-              if (videos.isEmpty)
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppColors.border),
-                  ),
-                  child: Center(
-                    child: Text(
-                      "You haven't submitted any videos for this skill yet",
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.inter(
-                          fontSize: 13, color: AppColors.textMuted),
-                    ),
-                  ),
-                ),
-              ...videos.map((v) => GestureDetector(
-                    onTap: () =>
-                        context.push('/community-video', extra: v),
-                    child: Container(
-                      margin: const EdgeInsets.only(bottom: 8),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 10),
-                      decoration: BoxDecoration(
-                        color: AppColors.surface,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: AppColors.border),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.play_circle_outline_rounded,
-                              color: AppColors.textMuted, size: 20),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  v.caption.isNotEmpty
-                                      ? v.caption
-                                      : 'No caption',
-                                  style: GoogleFonts.inter(
-                                    fontSize: 13,
-                                    color: v.caption.isNotEmpty
-                                        ? AppColors.textPrimary
-                                        : AppColors.textMuted,
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  _timeAgo(v.submittedAt),
-                                  style: GoogleFonts.inter(
-                                    fontSize: 11,
-                                    color: AppColors.textMuted,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          _statusPill(v.status),
-                        ],
-                      ),
-                    ),
-                  )),
-            ],
-          ),
-        );
-      },
-    );
   }
 
   Widget _statusPill(VideoStatus status) {
@@ -702,13 +430,23 @@ class _SkillDetailScreenState extends ConsumerState<SkillDetailScreen>
     );
   }
 
-  Widget _buildCommunityCTA(
-      BuildContext context, Skill skill, String userTier) {
+  Widget _buildCommunitySection(Skill skill, String userTier) {
+    final topAsync = ref.watch(topSkillVideosProvider(skill.id));
+    final myAsync = ref.watch(mySkillVideosProvider(skill.id));
+    final now = DateTime.now().toUtc();
+    final currentWeek = CommunityVideoRepository.isoWeek(now);
+    final currentYear = now.year;
+
+    final topVideos = topAsync.valueOrNull ?? [];
+    final myVideos = myAsync.valueOrNull ?? [];
+    final hasThisWeek = myVideos.any(
+        (v) => v.weekNumber == currentWeek && v.weekYear == currentYear);
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 24, 16, 0),
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: AppColors.surface,
           borderRadius: BorderRadius.circular(16),
@@ -717,31 +455,216 @@ class _SkillDetailScreenState extends ConsumerState<SkillDetailScreen>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // ── Header ──
             Row(
               children: [
-                const Text('🎥', style: TextStyle(fontSize: 18)),
+                const Text('🎥', style: TextStyle(fontSize: 16)),
                 const SizedBox(width: 8),
-                Text(
-                  'COMMUNITY CHALLENGE',
-                  style: GoogleFonts.inter(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.accent,
-                    letterSpacing: 1.5,
+                Expanded(
+                  child: Text(
+                    'COMMUNITY CHALLENGE',
+                    style: GoogleFonts.inter(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.accent,
+                      letterSpacing: 1.5,
+                    ),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 6),
             Text(
-              'Show the community your ${skill.title}. Top 10 this week get featured on @samsjump.',
+              'Show your ${skill.title} — top 10 get featured on @samsjump.',
               style: GoogleFonts.inter(
-                fontSize: 13,
+                fontSize: 12,
                 color: AppColors.textSecondary,
-                height: 1.5,
+                height: 1.4,
               ),
             ),
+
+            // ── This week's top ──
+            if (topVideos.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              Text(
+                "THIS WEEK'S TOP",
+                style: GoogleFonts.inter(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textMuted,
+                  letterSpacing: 1,
+                ),
+              ),
+              const SizedBox(height: 8),
+              ...List.generate(topVideos.length, (i) {
+                final v = topVideos[i];
+                return GestureDetector(
+                  onTap: () => context.push('/community-video', extra: v),
+                  child: Container(
+                    margin: const EdgeInsets.only(bottom: 6),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: AppColors.background,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: i == 0
+                            ? AppColors.accent.withValues(alpha: 0.35)
+                            : AppColors.border,
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 24,
+                          height: 24,
+                          decoration: BoxDecoration(
+                            color: i == 0
+                                ? AppColors.accent
+                                : const Color(0xFF3F3F46),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Center(
+                            child: Text(
+                              '#${i + 1}',
+                              style: GoogleFonts.inter(
+                                fontSize: 9,
+                                fontWeight: FontWeight.w800,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            '@${v.username}',
+                            style: GoogleFonts.inter(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                        ),
+                        const Text('🔥', style: TextStyle(fontSize: 11)),
+                        const SizedBox(width: 3),
+                        Text(
+                          '${v.score}',
+                          style: GoogleFonts.inter(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.accent,
+                          ),
+                        ),
+                        const SizedBox(width: 2),
+                        const Icon(Icons.chevron_right_rounded,
+                            color: AppColors.textMuted, size: 16),
+                      ],
+                    ),
+                  ),
+                );
+              }),
+            ],
+
+            // ── My submissions ──
+            if (myVideos.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              Text(
+                'MY SUBMISSIONS',
+                style: GoogleFonts.inter(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textMuted,
+                  letterSpacing: 1,
+                ),
+              ),
+              const SizedBox(height: 8),
+              ...myVideos.map((v) => GestureDetector(
+                    onTap: () =>
+                        context.push('/community-video', extra: v),
+                    child: Container(
+                      margin: const EdgeInsets.only(bottom: 6),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: AppColors.background,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: AppColors.border),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.play_circle_outline_rounded,
+                              color:
+                                  AppColors.accent.withValues(alpha: 0.6),
+                              size: 18),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  v.caption.isNotEmpty
+                                      ? v.caption
+                                      : 'No caption',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 12,
+                                    color: v.caption.isNotEmpty
+                                        ? AppColors.textPrimary
+                                        : AppColors.textMuted,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                Text(
+                                  _timeAgo(v.submittedAt),
+                                  style: GoogleFonts.inter(
+                                    fontSize: 10,
+                                    color: AppColors.textMuted,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          _statusPill(v.status),
+                        ],
+                      ),
+                    ),
+                  )),
+            ],
+
+            // ── Submit CTA ──
             const SizedBox(height: 14),
+            if (!hasThisWeek) ...[
+              Container(
+                margin: const EdgeInsets.only(bottom: 10),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 12, vertical: 10),
+                decoration: BoxDecoration(
+                  color: AppColors.accent.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                      color: AppColors.accent.withValues(alpha: 0.25)),
+                ),
+                child: Row(
+                  children: [
+                    const Text('💡', style: TextStyle(fontSize: 14)),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        myVideos.isEmpty
+                            ? 'Be the first to submit — show your skills!'
+                            : "You haven't posted this week yet — keep the streak!",
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
             GestureDetector(
               onTap: () => userTier == 'premium'
                   ? context.push('/submit-video/${widget.skillId}')
@@ -752,7 +675,7 @@ class _SkillDetailScreenState extends ConsumerState<SkillDetailScreen>
                 decoration: BoxDecoration(
                   color: userTier == 'premium'
                       ? AppColors.accent
-                      : AppColors.surface,
+                      : AppColors.background,
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(
                     color: userTier == 'premium'
