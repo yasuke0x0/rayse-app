@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../community/providers/community_provider.dart';
+import '../../skill_tree/providers/skill_provider.dart';
 import '../providers/auth_provider.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -14,7 +16,7 @@ class LoginScreen extends ConsumerStatefulWidget {
 
 class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _emailController = TextEditingController(
-    text: const bool.fromEnvironment('dart.vm.product') ? '' : 'yassine.ksabi@gmail.com',
+    text: const bool.fromEnvironment('dart.vm.product') ? '' : 'admin@rayse.com',
   );
   final _passwordController = TextEditingController(
     text: const bool.fromEnvironment('dart.vm.product') ? '' : '212324',
@@ -41,7 +43,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     setState(() => _loading = true);
     try {
       await ref.read(authRepositoryProvider).signIn(email, password);
-      if (mounted) context.go('/home');
+      if (mounted) {
+        // Invalidate all user-specific providers for the new user
+        ref.invalidate(profileProvider);
+        ref.invalidate(userTierProvider);
+        ref.invalidate(isCreatorProvider);
+        ref.invalidate(skillsProvider);
+        ref.invalidate(xpProvider);
+        ref.invalidate(myTotalSubmissionsProvider);
+        ref.invalidate(myAllVideosProvider);
+        ref.invalidate(myReactionsProvider);
+        ref.invalidate(pendingVideosProvider);
+        context.go('/home');
+      }
     } catch (e) {
       if (mounted) _showError(e.toString().replaceFirst('Exception: ', ''));
     } finally {

@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../community/providers/community_provider.dart';
+import '../../skill_tree/providers/skill_provider.dart';
 import '../providers/auth_provider.dart';
 
 class SignupScreen extends ConsumerStatefulWidget {
@@ -40,7 +42,18 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     setState(() => _loading = true);
     try {
       await ref.read(authRepositoryProvider).signUp(email, password);
-      if (mounted) context.go('/home');
+      if (mounted) {
+        ref.invalidate(profileProvider);
+        ref.invalidate(userTierProvider);
+        ref.invalidate(isCreatorProvider);
+        ref.invalidate(skillsProvider);
+        ref.invalidate(xpProvider);
+        ref.invalidate(myTotalSubmissionsProvider);
+        ref.invalidate(myAllVideosProvider);
+        ref.invalidate(myReactionsProvider);
+        ref.invalidate(pendingVideosProvider);
+        context.go('/home');
+      }
     } catch (e) {
       if (mounted) _showError(e.toString().replaceFirst('Exception: ', ''));
     } finally {
