@@ -110,6 +110,14 @@ class _AdminUserDetailScreenState
     ref.invalidate(adminUserVideosProvider(_userId));
   }
 
+  Future<void> _revertToPending(String videoId) async {
+    await ref
+        .read(communityVideoRepositoryProvider)
+        .revertToPending(videoId);
+    ref.invalidate(adminUserVideosProvider(_userId));
+    ref.invalidate(pendingVideosProvider);
+  }
+
   @override
   Widget build(BuildContext context) {
     final xpAsync = ref.watch(adminUserXPProvider(_userId));
@@ -652,35 +660,59 @@ class _AdminUserDetailScreenState
               ],
             ),
           ],
-          // Score for approved videos
-          if (video.status == VideoStatus.approved) ...[
-            const SizedBox(height: 6),
+          // Revert button for approved/rejected videos
+          if (video.status == VideoStatus.approved ||
+              video.status == VideoStatus.rejected) ...[
+            const SizedBox(height: 10),
             Row(
               children: [
-                const Text('🔥', style: TextStyle(fontSize: 12)),
-                const SizedBox(width: 4),
-                Text(
-                  '${video.score} fires',
-                  style: GoogleFonts.inter(
-                    fontSize: 12,
-                    color: AppColors.accent,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                if (video.samyApproved) ...[
-                  const Spacer(),
-                  const Text('🔥', style: TextStyle(fontSize: 10)),
+                if (video.status == VideoStatus.approved) ...[
+                  const Text('🔥', style: TextStyle(fontSize: 12)),
                   const SizedBox(width: 4),
                   Text(
-                    'SAMY APPROVED',
+                    '${video.score} fires',
                     style: GoogleFonts.inter(
-                      fontSize: 9,
-                      fontWeight: FontWeight.w700,
+                      fontSize: 12,
                       color: AppColors.accent,
-                      letterSpacing: 0.5,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
+                  if (video.samyApproved) ...[
+                    const SizedBox(width: 8),
+                    const Text('🔥', style: TextStyle(fontSize: 10)),
+                    const SizedBox(width: 2),
+                    Text(
+                      'SAMY',
+                      style: GoogleFonts.inter(
+                        fontSize: 9,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.accent,
+                      ),
+                    ),
+                  ],
                 ],
+                const Spacer(),
+                GestureDetector(
+                  onTap: () => _revertToPending(video.id),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF27272A),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: AppColors.border),
+                    ),
+                    child: Text(
+                      'REVERT TO PENDING',
+                      style: GoogleFonts.inter(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textSecondary,
+                        letterSpacing: 0.3,
+                      ),
+                    ),
+                  ),
+                ),
               ],
             ),
           ],

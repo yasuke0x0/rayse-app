@@ -69,6 +69,15 @@ class CommunityVideoRepository {
     }).eq('id', id);
   }
 
+  // Revert a video back to pending
+  Future<void> revertToPending(String id) async {
+    await _client.from('community_videos').update({
+      'status': 'pending',
+      'samy_approved': false,
+      'reviewed_at': null,
+    }).eq('id', id);
+  }
+
   // Reject a video
   Future<void> rejectVideo(String id) async {
     await _client.from('community_videos').update({

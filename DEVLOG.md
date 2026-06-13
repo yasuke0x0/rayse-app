@@ -1,4 +1,20 @@
 
+## 2026-06-13 — Admin: Revert approved/rejected videos to pending
+
+### What changed
+- Added `revertToPending(id)` method to `CommunityVideoRepository` — resets status to pending, clears samy_approved and reviewed_at
+- Updated `admin_user_detail_screen.dart` — approved/rejected videos now show a "REVERT TO PENDING" button
+- Invalidates both `adminUserVideosProvider` and `pendingVideosProvider` after revert to keep all admin views in sync
+
+### Files touched
+- lib/features/community/repository/community_video_repository.dart
+- lib/features/community/screens/admin_user_detail_screen.dart
+
+### Gotchas
+- Must invalidate `pendingVideosProvider` too so the main admin panel shows the reverted video in the queue
+
+---
+
 ## 2026-06-13 — Phase B: Community Videos — Top 10 Feed, Reactions, Weekly Tabs, Archive Lock
 
 ### What was built
