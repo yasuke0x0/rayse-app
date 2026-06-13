@@ -16,6 +16,8 @@ class CommunityVideo {
   final bool samyApproved;
   final DateTime submittedAt;
   final String username;
+  final String? reviewedBy; // reviewer username
+  final DateTime? reviewedAt;
 
   const CommunityVideo({
     required this.id,
@@ -30,6 +32,8 @@ class CommunityVideo {
     required this.samyApproved,
     required this.submittedAt,
     required this.username,
+    this.reviewedBy,
+    this.reviewedAt,
   });
 
   CommunityVideo copyWith({int? score}) {
@@ -46,10 +50,21 @@ class CommunityVideo {
       samyApproved: samyApproved,
       submittedAt: submittedAt,
       username: username,
+      reviewedBy: reviewedBy,
+      reviewedAt: reviewedAt,
     );
   }
 
   factory CommunityVideo.fromMap(Map<String, dynamic> map) {
+    // Submitter username from profiles join
+    final submitterProfile = map['profiles'] as Map<String, dynamic>?;
+    final username =
+        submitterProfile?['username'] as String? ?? 'Anonymous';
+
+    // Reviewer username from reviewer join (aliased)
+    final reviewerProfile = map['reviewer'] as Map<String, dynamic>?;
+    final reviewerName = reviewerProfile?['username'] as String?;
+
     return CommunityVideo(
       id: map['id'] as String,
       userId: map['user_id'] as String,
@@ -62,9 +77,11 @@ class CommunityVideo {
       score: map['score'] as int? ?? 0,
       samyApproved: map['samy_approved'] as bool? ?? false,
       submittedAt: DateTime.parse(map['submitted_at'] as String),
-      username: (map['profiles'] as Map<String, dynamic>?)?['username']
-              as String? ??
-          'Anonymous',
+      username: username,
+      reviewedBy: reviewerName,
+      reviewedAt: map['reviewed_at'] != null
+          ? DateTime.parse(map['reviewed_at'] as String)
+          : null,
     );
   }
 

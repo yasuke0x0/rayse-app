@@ -3,11 +3,17 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/services/supabase_service.dart';
 import '../models/community_video.dart';
 
+// Select string that joins both submitter and reviewer profiles
+const _selectWithReviewer =
+    '*, profiles!community_videos_user_id_fkey(username), reviewer:profiles!community_videos_reviewed_by_fkey(username)';
+
+// Select string for queries that don't need reviewer info
+const _selectBasic = '*, profiles(username)';
+
 class CommunityVideoRepository {
   final SupabaseClient _client = SupabaseService.client;
 
   // Upload video bytes to Supabase Storage (web + mobile compatible)
-  // Returns the public URL
   Future<String> uploadVideo({
     required String userId,
     required String skillId,
@@ -51,21 +57,20 @@ class CommunityVideoRepository {
   Future<List<CommunityVideo>> fetchPendingVideos() async {
     final data = await _client
         .from('community_videos')
-        .select('*, profiles(username)')
+        .select(_selectBasic)
         .eq('status', 'pending')
         .order('submitted_at', ascending: true);
-    return (data as List)
-        .map((m) =>
-            CommunityVideo.fromMap(Map<String, dynamic>.from(m as Map)))
-        .toList();
+    return _parseList(data);
   }
 
   // Approve a video
-  Future<void> approveVideo(String id, {bool samyApproved = false}) async {
+  Future<void> approveVideo(String id,
+      {bool samyApproved = false, String? reviewedBy}) async {
     await _client.from('community_videos').update({
       'status': 'approved',
       'samy_approved': samyApproved,
       'reviewed_at': DateTime.now().toIso8601String(),
+      if (reviewedBy != null) 'reviewed_by': reviewedBy,
     }).eq('id', id);
   }
 
@@ -75,15 +80,37 @@ class CommunityVideoRepository {
       'status': 'pending',
       'samy_approved': false,
       'reviewed_at': null,
+      'reviewed_by': null,
     }).eq('id', id);
   }
 
   // Reject a video
-  Future<void> rejectVideo(String id) async {
+  Future<void> rejectVideo(String id, {String? reviewedBy}) async {
     await _client.from('community_videos').update({
       'status': 'rejected',
       'reviewed_at': DateTime.now().toIso8601String(),
+      if (reviewedBy != null) 'reviewed_by': reviewedBy,
     }).eq('id', id);
+  }
+
+  // Fetch filtered videos for admin "All Videos" tab
+  Future<List<CommunityVideo>> fetchFilteredVideos({
+    String? status,
+    String? skillId,
+    int? weekNumber,
+    int? weekYear,
+    int limit = 50,
+  }) async {
+    var query = _client.from('community_videos').select(_selectWithReviewer);
+
+    if (status != null) query = query.eq('status', status);
+    if (skillId != null) query = query.eq('skill_id', skillId);
+    if (weekNumber != null) query = query.eq('week_number', weekNumber);
+    if (weekYear != null) query = query.eq('week_year', weekYear);
+
+    final data =
+        await query.order('submitted_at', ascending: false).limit(limit);
+    return _parseList(data);
   }
 
   // Fetch top N approved videos for a specific skill this week
@@ -95,17 +122,14 @@ class CommunityVideoRepository {
   }) async {
     final data = await _client
         .from('community_videos')
-        .select('*, profiles(username)')
+        .select(_selectBasic)
         .eq('status', 'approved')
         .eq('skill_id', skillId)
         .eq('week_number', weekNumber)
         .eq('week_year', weekYear)
         .order('score', ascending: false)
         .limit(limit);
-    return (data as List)
-        .map((m) =>
-            CommunityVideo.fromMap(Map<String, dynamic>.from(m as Map)))
-        .toList();
+    return _parseList(data);
   }
 
   // Fetch user's own submissions for a skill
@@ -113,14 +137,11 @@ class CommunityVideoRepository {
       String userId, String skillId) async {
     final data = await _client
         .from('community_videos')
-        .select('*, profiles(username)')
+        .select(_selectBasic)
         .eq('user_id', userId)
         .eq('skill_id', skillId)
         .order('submitted_at', ascending: false);
-    return (data as List)
-        .map((m) =>
-            CommunityVideo.fromMap(Map<String, dynamic>.from(m as Map)))
-        .toList();
+    return _parseList(data);
   }
 
   // Fetch approved videos for a week, sorted by score (top 10)
@@ -130,19 +151,16 @@ class CommunityVideoRepository {
   }) async {
     final data = await _client
         .from('community_videos')
-        .select('*, profiles(username)')
+        .select(_selectBasic)
         .eq('status', 'approved')
         .eq('week_number', weekNumber)
         .eq('week_year', weekYear)
         .order('score', ascending: false)
         .limit(10);
-    return (data as List)
-        .map((m) =>
-            CommunityVideo.fromMap(Map<String, dynamic>.from(m as Map)))
-        .toList();
+    return _parseList(data);
   }
 
-  // Toggle fire reaction via RPC — returns true if added, false if removed
+  // Toggle fire reaction via RPC
   Future<bool> toggleReaction(String videoId) async {
     final result = await _client
         .rpc('toggle_reaction', params: {'p_video_id': videoId});
@@ -158,17 +176,14 @@ class CommunityVideoRepository {
     return (data as List).map((m) => m['video_id'] as String).toSet();
   }
 
-  // Fetch all videos submitted by the current user (all skills, all statuses)
+  // Fetch all videos submitted by the current user
   Future<List<CommunityVideo>> fetchAllMyVideos(String userId) async {
     final data = await _client
         .from('community_videos')
-        .select('*, profiles(username)')
+        .select(_selectBasic)
         .eq('user_id', userId)
         .order('submitted_at', ascending: false);
-    return (data as List)
-        .map((m) =>
-            CommunityVideo.fromMap(Map<String, dynamic>.from(m as Map)))
-        .toList();
+    return _parseList(data);
   }
 
   // Total number of videos submitted by the current user
@@ -187,5 +202,12 @@ class CommunityVideoRepository {
     final weekDay = date.weekday;
     final week = ((dayOfYear - weekDay + 10) / 7).floor();
     return week.clamp(1, 53);
+  }
+
+  static List<CommunityVideo> _parseList(dynamic data) {
+    return (data as List)
+        .map((m) =>
+            CommunityVideo.fromMap(Map<String, dynamic>.from(m as Map)))
+        .toList();
   }
 }

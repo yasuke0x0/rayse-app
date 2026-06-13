@@ -69,15 +69,19 @@ class PendingVideosNotifier extends AsyncNotifier<List<CommunityVideo>> {
   }
 
   Future<void> approve(String id, {bool samyApproved = false}) async {
+    final userId = Supabase.instance.client.auth.currentUser?.id;
     await ref
         .read(communityVideoRepositoryProvider)
-        .approveVideo(id, samyApproved: samyApproved);
+        .approveVideo(id, samyApproved: samyApproved, reviewedBy: userId);
     _invalidateCommunityData();
     ref.invalidateSelf();
   }
 
   Future<void> reject(String id) async {
-    await ref.read(communityVideoRepositoryProvider).rejectVideo(id);
+    final userId = Supabase.instance.client.auth.currentUser?.id;
+    await ref
+        .read(communityVideoRepositoryProvider)
+        .rejectVideo(id, reviewedBy: userId);
     _invalidateCommunityData();
     ref.invalidateSelf();
   }
@@ -88,6 +92,7 @@ class PendingVideosNotifier extends AsyncNotifier<List<CommunityVideo>> {
     final year = now.year;
     ref.invalidate(approvedVideosProvider((week, year)));
     ref.invalidate(topSkillVideosProvider);
+    ref.invalidate(adminFilteredVideosProvider);
   }
 }
 
@@ -269,3 +274,19 @@ final myReactionsProvider =
     AsyncNotifierProvider<MyReactionsNotifier, Set<String>>(
   MyReactionsNotifier.new,
 );
+
+// ─── Admin filtered videos (All Videos tab) ─────────────────────────────────
+
+// Filter key: (status?, skillId?, weekNumber?, weekYear?)
+typedef AdminVideoFilter = ({String? status, String? skillId, int? weekNumber, int? weekYear});
+
+final adminFilteredVideosProvider =
+    FutureProvider.family<List<CommunityVideo>, AdminVideoFilter>(
+        (ref, filter) async {
+  return ref.read(communityVideoRepositoryProvider).fetchFilteredVideos(
+        status: filter.status,
+        skillId: filter.skillId,
+        weekNumber: filter.weekNumber,
+        weekYear: filter.weekYear,
+      );
+});

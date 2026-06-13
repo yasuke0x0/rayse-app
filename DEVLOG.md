@@ -1,4 +1,28 @@
 
+## 2026-06-13 — Admin panel redesign: All Videos tab with filters, audit trail, reviewer info
+
+### What changed
+- Redesigned admin panel with two tabs: PENDING (quick review) and ALL VIDEOS (full management)
+- ALL VIDEOS tab: filter chips for status (all/pending/approved/rejected), week (current/previous), and skill
+- Each video row shows submitter, skill pill, status pill, caption, submitted time, reviewer name + reviewed time, fire score, samy badge
+- Reviewer audit trail: approve/reject now records `reviewed_by` UUID; video model includes `reviewedBy` (username) and `reviewedAt`
+- Repository: added `fetchFilteredVideos()` with optional filters, `_selectWithReviewer` PostgREST FK alias join
+- Provider: added `AdminVideoFilter` typedef and `adminFilteredVideosProvider` family provider
+- Revert-to-pending action available on approved/rejected videos in All Videos tab
+- Stats summary bar shows total/pending/approved/rejected counts
+
+### Files touched
+- lib/features/community/models/community_video.dart (reviewedBy, reviewedAt fields)
+- lib/features/community/repository/community_video_repository.dart (fetchFilteredVideos, reviewer join, _parseList)
+- lib/features/community/providers/community_provider.dart (AdminVideoFilter, adminFilteredVideosProvider)
+- lib/features/community/screens/admin_panel_screen.dart (complete rewrite with TabBar)
+
+### Gotchas
+- User must run SQL: `ALTER TABLE community_videos ADD COLUMN IF NOT EXISTS reviewed_by uuid REFERENCES profiles(id);`
+- PostgREST FK alias syntax: `reviewer:profiles!community_videos_reviewed_by_fkey(username)`
+
+---
+
 ## 2026-06-13 — Admin UX: SAMY button, video preview, timestamps + admin gets premium access
 
 ### What changed
