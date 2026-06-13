@@ -80,6 +80,11 @@ class _SubmitVideoScreenState extends ConsumerState<SubmitVideoScreen> {
         videoUrl: videoUrl,
         caption: _caption,
       );
+      // Refresh video lists so skill node + profile show the new submission
+      ref.invalidate(mySkillVideosProvider);
+      ref.invalidate(myAllVideosProvider);
+      ref.invalidate(myTotalSubmissionsProvider);
+      ref.invalidate(pendingVideosProvider);
       setState(() {
         _submitted = true;
         _uploading = false;
