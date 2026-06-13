@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../community/providers/community_provider.dart';
 import '../providers/skill_provider.dart';
 
 class MasteredScreen extends ConsumerStatefulWidget {

@@ -7,6 +7,7 @@ import '../../../core/theme/app_colors.dart';
 import '../data/skill_tree_data.dart';
 import '../models/skill.dart';
 import '../models/skill_node.dart';
+import '../../community/providers/community_provider.dart';
 import '../providers/skill_provider.dart';
 
 const double _topPad = 80;

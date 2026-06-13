@@ -1,6 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../skill_tree/providers/skill_provider.dart';
 import '../repository/community_video_repository.dart';
 import '../repository/user_repository.dart';
 import '../models/community_video.dart';
@@ -9,23 +8,51 @@ final communityVideoRepositoryProvider = Provider<CommunityVideoRepository>(
   (_) => CommunityVideoRepository(),
 );
 
-// ─── Profile of the current user ──────────────────────────────────────────────
+// ─── Profile of the current user (realtime) ─────────────────────────────────
 
-final profileProvider = FutureProvider<Map<String, dynamic>?>((ref) async {
+final profileProvider = StreamProvider<Map<String, dynamic>?>((ref) async* {
   final userId = Supabase.instance.client.auth.currentUser?.id;
-  if (userId == null) return null;
-  final data = await Supabase.instance.client
+  if (userId == null) {
+    yield null;
+    return;
+  }
+
+  // Fetch initial value
+  final initial = await Supabase.instance.client
       .from('profiles')
       .select()
       .eq('id', userId)
       .maybeSingle();
-  return data;
+  yield initial;
+
+  // Listen for realtime changes on this user's profile row
+  final stream = Supabase.instance.client
+      .from('profiles')
+      .stream(primaryKey: ['id'])
+      .eq('id', userId);
+
+  await for (final rows in stream) {
+    if (rows.isNotEmpty) {
+      yield rows.first;
+    }
+  }
 });
 
 // Is the current user a creator (Samy)?
 final isCreatorProvider = FutureProvider<bool>((ref) async {
   final profile = await ref.watch(profileProvider.future);
   return profile?['is_creator'] == true;
+});
+
+// ─── User tier (derives from profileProvider; will swap for RevenueCat in Phase 7) ──
+
+final userTierProvider = FutureProvider<String>((ref) async {
+  final profile = await ref.watch(profileProvider.future);
+  if (profile == null) return 'free';
+  if (profile['is_creator'] == true || profile['is_premium'] == true) {
+    return 'premium';
+  }
+  return 'free';
 });
 
 // ─── Pending videos for admin panel ───────────────────────────────────────────

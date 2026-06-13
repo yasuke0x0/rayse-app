@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../skill_tree/providers/skill_provider.dart';
 import '../models/community_video.dart';
 import '../providers/community_provider.dart';
 import '../repository/community_video_repository.dart';

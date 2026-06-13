@@ -22,22 +22,6 @@ final xpProvider = StateNotifierProvider<XPNotifier, int>(
   (ref) => XPNotifier(),
 );
 
-// ─── User tier provider (reads is_premium from profiles; will swap for RevenueCat in Phase 7) ──
-
-final userTierProvider = FutureProvider<String>((ref) async {
-  final userId = Supabase.instance.client.auth.currentUser?.id;
-  if (userId == null) return 'free';
-  final data = await Supabase.instance.client
-      .from('profiles')
-      .select('is_premium, is_creator')
-      .eq('id', userId)
-      .maybeSingle();
-  if (data?['is_creator'] == true || data?['is_premium'] == true) {
-    return 'premium';
-  }
-  return 'free';
-});
-
 // ─── Skills provider ──────────────────────────────────────────────────────────
 
 class SkillsNotifier extends StateNotifier<List<Skill>> {
