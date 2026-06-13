@@ -198,7 +198,7 @@ class _SkillDetailScreenState extends ConsumerState<SkillDetailScreen>
               )),
               const SizedBox(width: 4),
               Text(
-                '${skill.sessionsCompleted}/3',
+                '${skill.sessionsCompleted}/3 sessions',
                 style: GoogleFonts.inter(
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
