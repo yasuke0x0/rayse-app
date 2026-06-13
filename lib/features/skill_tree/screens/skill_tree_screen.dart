@@ -266,14 +266,20 @@ class _SkillNodeWidget extends StatelessWidget {
               bottom: 0,
               right: 0,
               child: Container(
-                width: 16,
-                height: 16,
-                decoration: const BoxDecoration(
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                decoration: BoxDecoration(
                   color: AppColors.accent,
-                  shape: BoxShape.circle,
+                  borderRadius: BorderRadius.circular(999),
                 ),
-                child: const Icon(Icons.check_rounded,
-                    color: Colors.white, size: 10),
+                child: Text(
+                  '${skill.sessionsCompleted}/3',
+                  style: GoogleFonts.inter(
+                    fontSize: 8,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.white,
+                    height: 1,
+                  ),
+                ),
               ),
             ),
           ],
