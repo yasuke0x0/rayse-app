@@ -11,6 +11,35 @@ class AdminPanelScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final isCreatorAsync = ref.watch(isCreatorProvider);
+
+    return isCreatorAsync.when(
+      loading: () => const Scaffold(
+        backgroundColor: AppColors.background,
+        body: Center(
+            child: CircularProgressIndicator(color: AppColors.accent)),
+      ),
+      error: (e, st) => const Scaffold(
+        backgroundColor: AppColors.background,
+        body: Center(child: Text('Error', style: TextStyle(color: Colors.white))),
+      ),
+      data: (isCreator) {
+        if (!isCreator) {
+          return Scaffold(
+            backgroundColor: AppColors.background,
+            body: Center(
+              child: Text('Access denied.',
+                  style: GoogleFonts.inter(
+                      fontSize: 14, color: AppColors.textMuted)),
+            ),
+          );
+        }
+        return _buildPanel(context, ref);
+      },
+    );
+  }
+
+  Widget _buildPanel(BuildContext context, WidgetRef ref) {
     final pendingAsync = ref.watch(pendingVideosProvider);
 
     return Scaffold(

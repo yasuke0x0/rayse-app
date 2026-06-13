@@ -149,6 +149,15 @@ class CommunityVideoRepository {
     return (data as List).map((m) => m['video_id'] as String).toSet();
   }
 
+  // Total number of videos submitted by the current user
+  Future<int> fetchMyTotalSubmissions(String userId) async {
+    final data = await _client
+        .from('community_videos')
+        .select('id')
+        .eq('user_id', userId);
+    return (data as List).length;
+  }
+
   // ISO week number helper
   static int isoWeek(DateTime date) {
     final dayOfYear =

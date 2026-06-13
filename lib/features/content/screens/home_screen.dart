@@ -8,6 +8,7 @@ import '../../auth/providers/auth_provider.dart';
 import '../../skill_tree/screens/skill_tree_screen.dart';
 import '../../challenges/screens/challenges_screen.dart';
 import '../../community/screens/community_screen.dart';
+import '../../profile/screens/profile_screen.dart';
 import '../../workout/providers/workout_provider.dart';
 import '../providers/content_provider.dart';
 import '../widgets/tutorial_card.dart';
@@ -40,7 +41,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           const SkillTreeScreen(),
           const ChallengesScreen(),
           const CommunityScreen(),
-          const _ProfileTab(),
+          const ProfileScreen(),
         ],
       ),
       bottomNavigationBar: Column(
@@ -456,75 +457,6 @@ class _TodayWorkoutBanner extends ConsumerWidget {
   }
 }
 
-// ─── Profile tab ──────────────────────────────────────────────────────────────
-
-class _ProfileTab extends ConsumerWidget {
-  const _ProfileTab();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final user = SupabaseService.client.auth.currentUser;
-    final email = user?.email ?? '';
-
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'PROFILE',
-                style: GoogleFonts.poppins(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary,
-                  letterSpacing: 0.5,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                email,
-                style: GoogleFonts.inter(
-                  fontSize: 14,
-                  color: AppColors.textSecondary,
-                ),
-              ),
-              const Spacer(),
-              SizedBox(
-                width: double.infinity,
-                child: TextButton(
-                  onPressed: () async {
-                    await ref.read(authRepositoryProvider).signOut();
-                  },
-                  style: TextButton.styleFrom(
-                    backgroundColor: AppColors.surface,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      side: const BorderSide(color: AppColors.border),
-                    ),
-                  ),
-                  child: Text(
-                    'LOG OUT',
-                    style: GoogleFonts.inter(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textSecondary,
-                      letterSpacing: 0.8,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
 
 // ─── Loading / error states ───────────────────────────────────────────────────
 

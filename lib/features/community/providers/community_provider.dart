@@ -52,6 +52,16 @@ final pendingVideosProvider =
   PendingVideosNotifier.new,
 );
 
+// ─── My total submissions count ───────────────────────────────────────────────
+
+final myTotalSubmissionsProvider = FutureProvider<int>((ref) async {
+  final userId = Supabase.instance.client.auth.currentUser?.id;
+  if (userId == null) return 0;
+  return ref
+      .read(communityVideoRepositoryProvider)
+      .fetchMyTotalSubmissions(userId);
+});
+
 // ─── My submissions for a specific skill ──────────────────────────────────────
 
 final mySkillVideosProvider =
