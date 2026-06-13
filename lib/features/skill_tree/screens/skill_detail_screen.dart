@@ -7,6 +7,7 @@ import 'package:video_player/video_player.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../community/models/community_video.dart';
 import '../../community/providers/community_provider.dart';
+import '../../community/repository/community_video_repository.dart';
 import '../models/skill.dart';
 import '../providers/skill_provider.dart';
 
@@ -505,13 +506,28 @@ class _SkillDetailScreenState extends ConsumerState<SkillDetailScreen>
     );
   }
 
+  String _timeAgo(DateTime dt) {
+    final diff = DateTime.now().difference(dt);
+    if (diff.inDays > 0) return '${diff.inDays}d ago';
+    if (diff.inHours > 0) return '${diff.inHours}h ago';
+    if (diff.inMinutes > 0) return '${diff.inMinutes}m ago';
+    return 'just now';
+  }
+
   Widget _buildMySubmissions(Skill skill) {
     final myAsync = ref.watch(mySkillVideosProvider(skill.id));
+    final userTier = ref.watch(userTierProvider).valueOrNull ?? 'free';
+    final now = DateTime.now().toUtc();
+    final currentWeek = CommunityVideoRepository.isoWeek(now);
+    final currentYear = now.year;
+
     return myAsync.when(
       loading: () => const SizedBox.shrink(),
       error: (e, st) => const SizedBox.shrink(),
       data: (videos) {
-        if (videos.isEmpty) return const SizedBox.shrink();
+        final hasThisWeek = videos.any(
+            (v) => v.weekNumber == currentWeek && v.weekYear == currentYear);
+
         return Padding(
           padding: const EdgeInsets.fromLTRB(16, 24, 16, 0),
           child: Column(
@@ -527,38 +543,120 @@ class _SkillDetailScreenState extends ConsumerState<SkillDetailScreen>
                 ),
               ),
               const SizedBox(height: 10),
-              ...videos.map((v) => Container(
-                    margin: const EdgeInsets.only(bottom: 8),
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 10),
+              // Encourage submission if none this week
+              if (!hasThisWeek)
+                GestureDetector(
+                  onTap: () => userTier == 'premium'
+                      ? context.push('/submit-video/${skill.id}')
+                      : context.push('/paywall'),
+                  child: Container(
+                    margin: const EdgeInsets.only(bottom: 10),
+                    padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
-                      color: AppColors.surface,
+                      color: AppColors.accent.withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: AppColors.border),
+                      border: Border.all(
+                          color: AppColors.accent.withValues(alpha: 0.3)),
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.videocam_outlined,
-                            color: AppColors.textMuted, size: 18),
+                        const Text('🎥', style: TextStyle(fontSize: 18)),
                         const SizedBox(width: 10),
                         Expanded(
-                          child: Text(
-                            v.caption.isNotEmpty
-                                ? v.caption
-                                : 'No caption',
-                            style: GoogleFonts.inter(
-                              fontSize: 13,
-                              color: v.caption.isNotEmpty
-                                  ? AppColors.textPrimary
-                                  : AppColors.textMuted,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'No video this week yet!',
+                                style: GoogleFonts.inter(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.textPrimary,
+                                ),
+                              ),
+                              Text(
+                                'Submit your ${skill.title} and compete for the top 10',
+                                style: GoogleFonts.inter(
+                                  fontSize: 12,
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                        const SizedBox(width: 8),
-                        _statusPill(v.status),
+                        const Icon(Icons.arrow_forward_ios,
+                            color: AppColors.accent, size: 14),
                       ],
+                    ),
+                  ),
+                ),
+              if (videos.isEmpty)
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppColors.border),
+                  ),
+                  child: Center(
+                    child: Text(
+                      "You haven't submitted any videos for this skill yet",
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.inter(
+                          fontSize: 13, color: AppColors.textMuted),
+                    ),
+                  ),
+                ),
+              ...videos.map((v) => GestureDetector(
+                    onTap: () =>
+                        context.push('/community-video', extra: v),
+                    child: Container(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: AppColors.surface,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: AppColors.border),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.play_circle_outline_rounded,
+                              color: AppColors.textMuted, size: 20),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  v.caption.isNotEmpty
+                                      ? v.caption
+                                      : 'No caption',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 13,
+                                    color: v.caption.isNotEmpty
+                                        ? AppColors.textPrimary
+                                        : AppColors.textMuted,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  _timeAgo(v.submittedAt),
+                                  style: GoogleFonts.inter(
+                                    fontSize: 11,
+                                    color: AppColors.textMuted,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          _statusPill(v.status),
+                        ],
+                      ),
                     ),
                   )),
             ],

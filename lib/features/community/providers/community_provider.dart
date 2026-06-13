@@ -143,6 +143,17 @@ final adminUserXPProvider =
   return ref.read(userRepositoryProvider).fetchUserXP(userId);
 });
 
+// ─── All my videos (profile tab) ──────────────────────────────────────────────
+
+final myAllVideosProvider =
+    FutureProvider<List<CommunityVideo>>((ref) async {
+  final userId = Supabase.instance.client.auth.currentUser?.id;
+  if (userId == null) return [];
+  return ref
+      .read(communityVideoRepositoryProvider)
+      .fetchAllMyVideos(userId);
+});
+
 // ─── My total submissions count ───────────────────────────────────────────────
 
 final myTotalSubmissionsProvider = FutureProvider<int>((ref) async {

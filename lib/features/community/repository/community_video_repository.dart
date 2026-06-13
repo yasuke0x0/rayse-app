@@ -158,6 +158,19 @@ class CommunityVideoRepository {
     return (data as List).map((m) => m['video_id'] as String).toSet();
   }
 
+  // Fetch all videos submitted by the current user (all skills, all statuses)
+  Future<List<CommunityVideo>> fetchAllMyVideos(String userId) async {
+    final data = await _client
+        .from('community_videos')
+        .select('*, profiles(username)')
+        .eq('user_id', userId)
+        .order('submitted_at', ascending: false);
+    return (data as List)
+        .map((m) =>
+            CommunityVideo.fromMap(Map<String, dynamic>.from(m as Map)))
+        .toList();
+  }
+
   // Total number of videos submitted by the current user
   Future<int> fetchMyTotalSubmissions(String userId) async {
     final data = await _client

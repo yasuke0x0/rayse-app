@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../core/services/supabase_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../auth/providers/auth_provider.dart';
+import '../../community/models/community_video.dart';
 import '../../community/providers/community_provider.dart';
 import '../../skill_tree/models/skill.dart';
 import '../../skill_tree/providers/skill_provider.dart';
@@ -149,6 +150,10 @@ class ProfileScreen extends ConsumerWidget {
                 ],
               ),
               const SizedBox(height: 24),
+
+              // ── My videos ──────────────────────────────────────────────────
+              _buildMyVideosSection(ref),
+              const SizedBox(height: 16),
 
               // ── Admin panel button (creators only) ─────────────────────────
               if (isCreator) ...[
@@ -316,6 +321,165 @@ class ProfileScreen extends ConsumerWidget {
               const SizedBox(height: 16),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMyVideosSection(WidgetRef ref) {
+    final videosAsync = ref.watch(myAllVideosProvider);
+
+    return videosAsync.when(
+      loading: () => const SizedBox.shrink(),
+      error: (e, st) => const SizedBox.shrink(),
+      data: (videos) {
+        if (videos.isEmpty) return const SizedBox.shrink();
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'MY VIDEOS',
+              style: GoogleFonts.inter(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                color: AppColors.accent,
+                letterSpacing: 1.5,
+              ),
+            ),
+            const SizedBox(height: 10),
+            ...videos.map((v) => _VideoRow(video: v)),
+          ],
+        );
+      },
+    );
+  }
+}
+
+// ─── Video row for profile ────────────────────────────────────────────────────
+
+class _VideoRow extends StatelessWidget {
+  final CommunityVideo video;
+  const _VideoRow({required this.video});
+
+  static const _skillLabels = {
+    'basic_bounce': 'Basic Bounce',
+    'forward_jump': 'Forward Jump',
+    'backward_jump': 'Backward Jump',
+    'alt_steps': 'Alternating Steps',
+    'double_unders': 'Double Unders',
+    'cross_overs': 'Cross Overs',
+    'side_swing': 'Side Swing',
+    'triple_unders': 'Triple Unders',
+    'cross_double': 'Cross Double',
+    'releases': 'Releases',
+    'freestyle': 'Freestyle',
+  };
+
+  String _timeAgo(DateTime dt) {
+    final diff = DateTime.now().difference(dt);
+    if (diff.inDays > 0) return '${diff.inDays}d ago';
+    if (diff.inHours > 0) return '${diff.inHours}h ago';
+    if (diff.inMinutes > 0) return '${diff.inMinutes}m ago';
+    return 'just now';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final (statusLabel, statusBg, statusFg) = switch (video.status) {
+      VideoStatus.pending => (
+          'PENDING',
+          const Color(0xFF3F3F46),
+          AppColors.textSecondary
+        ),
+      VideoStatus.approved => (
+          'LIVE',
+          const Color(0xFF14532D),
+          const Color(0xFF4ADE80)
+        ),
+      VideoStatus.rejected => (
+          'REJECTED',
+          const Color(0xFF450A0A),
+          const Color(0xFFF87171)
+        ),
+    };
+
+    return GestureDetector(
+      onTap: () => context.push('/community-video', extra: video),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.play_circle_outline_rounded,
+                color: AppColors.accent.withValues(alpha: 0.7), size: 22),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    _skillLabels[video.skillId] ?? video.skillId,
+                    style: GoogleFonts.inter(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Row(
+                    children: [
+                      Text(
+                        _timeAgo(video.submittedAt),
+                        style: GoogleFonts.inter(
+                          fontSize: 11,
+                          color: AppColors.textMuted,
+                        ),
+                      ),
+                      if (video.caption.isNotEmpty) ...[
+                        Text(' · ',
+                            style: GoogleFonts.inter(
+                                fontSize: 11, color: AppColors.textMuted)),
+                        Expanded(
+                          child: Text(
+                            video.caption,
+                            style: GoogleFonts.inter(
+                              fontSize: 11,
+                              color: AppColors.textSecondary,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: statusBg,
+                borderRadius: BorderRadius.circular(999),
+              ),
+              child: Text(
+                statusLabel,
+                style: GoogleFonts.inter(
+                  fontSize: 9,
+                  fontWeight: FontWeight.w700,
+                  color: statusFg,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
