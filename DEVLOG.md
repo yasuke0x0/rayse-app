@@ -1,4 +1,66 @@
 
+## 2026-06-13 — Phase B: Community Videos — Top 10 Feed, Reactions, Weekly Tabs, Archive Lock
+
+### What was built
+- `CommunityScreen` — main community tab with scrollable week tabs (THIS WEEK + last 4 weeks), top 10 approved videos per week
+- `CommunityVideoDetailScreen` — full-screen video player (Chewie) + reaction count + FIRE IT button
+- Fire reactions — optimistic local state via `MyReactionsNotifier`; score updates immediately in both list and detail without loading flash
+- `ApprovedVideosNotifier` — `FamilyAsyncNotifier` parameterized by `(weekNumber, weekYear)`, exposes `updateScore()` for optimistic score mutation
+- Archive lock — free users see a lock screen + paywall CTA when tapping any past-week tab
+- Samy Approved badge shown on card thumbnails and detail screen
+- Rank badge (`#1` accent-colored, rest semi-transparent black)
+- Community added as 4th tab in bottom nav (`Icons.people`)
+- Routes added: `/community`, `/community-video` (uses `GoRouterState.extra` to pass `CommunityVideo`)
+
+### Files touched
+- lib/features/community/models/community_video.dart (added copyWith)
+- lib/features/community/repository/community_video_repository.dart (fetchApprovedVideos, toggleReaction, fetchMyReactions; _isoWeek→isoWeek public)
+- lib/features/community/providers/community_provider.dart (ApprovedVideosNotifier, MyReactionsNotifier)
+- lib/features/community/screens/community_screen.dart (new)
+- lib/features/community/screens/community_video_detail_screen.dart (new)
+- lib/core/router/app_router.dart (2 new routes)
+- lib/features/content/screens/home_screen.dart (Community tab added)
+
+### Gotchas
+- `FamilyAsyncNotifier<T, (int, int)>` family uses Dart 3 records as key — works correctly because records implement == and hashCode by value
+- Optimistic score update: `updateScore()` mutates the notifier's state directly (no re-fetch), avoiding loading flash in the list when user reacts
+- `_localScore` in detail screen tracks score independently so the fire count updates instantly even though the widget.video is immutable
+- `toggle_reaction` Postgres RPC needed — see SQL below
+
+### SQL to run in Supabase SQL editor
+```sql
+create table if not exists community_reactions (
+  user_id uuid references auth.users(id) on delete cascade,
+  video_id uuid references community_videos(id) on delete cascade,
+  created_at timestamptz default now(),
+  primary key (user_id, video_id)
+);
+alter table community_reactions enable row level security;
+create policy "Read reactions" on community_reactions for select using (true);
+create policy "Manage own reactions" on community_reactions for all using (auth.uid() = user_id);
+
+create or replace function toggle_reaction(p_video_id uuid)
+returns boolean language plpgsql security definer as $$
+declare
+  reacted boolean;
+begin
+  select exists(
+    select 1 from community_reactions
+    where video_id = p_video_id and user_id = auth.uid()
+  ) into reacted;
+  if reacted then
+    delete from community_reactions where video_id = p_video_id and user_id = auth.uid();
+    update community_videos set score = greatest(0, score - 1) where id = p_video_id;
+    return false;
+  else
+    insert into community_reactions (user_id, video_id) values (auth.uid(), p_video_id);
+    update community_videos set score = score + 1 where id = p_video_id;
+    return true;
+  end if;
+end;
+$$;
+```
+
 ## 2026-06-13 — Phase A: Community Videos — Submit Flow + Admin Panel
 
 ### What was built

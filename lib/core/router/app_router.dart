@@ -15,6 +15,9 @@ import 'package:rayse/features/workout/screens/daily_workout_screen.dart';
 import 'package:rayse/features/workout/screens/workout_player_screen.dart';
 import 'package:rayse/features/community/screens/submit_video_screen.dart';
 import 'package:rayse/features/community/screens/admin_panel_screen.dart';
+import 'package:rayse/features/community/screens/community_screen.dart';
+import 'package:rayse/features/community/screens/community_video_detail_screen.dart';
+import 'package:rayse/features/community/models/community_video.dart';
 
 final appRouter = GoRouter(
   initialLocation: '/splash',
@@ -98,6 +101,16 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/admin',
       builder: (context, state) => const AdminPanelScreen(),
+    ),
+    GoRoute(
+      path: '/community',
+      builder: (context, state) => const CommunityScreen(),
+    ),
+    GoRoute(
+      path: '/community-video',
+      builder: (context, state) => CommunityVideoDetailScreen(
+        video: state.extra as CommunityVideo,
+      ),
     ),
   ],
 );

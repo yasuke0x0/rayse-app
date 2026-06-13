@@ -32,6 +32,23 @@ class CommunityVideo {
     required this.username,
   });
 
+  CommunityVideo copyWith({int? score}) {
+    return CommunityVideo(
+      id: id,
+      userId: userId,
+      skillId: skillId,
+      videoUrl: videoUrl,
+      caption: caption,
+      status: status,
+      weekNumber: weekNumber,
+      weekYear: weekYear,
+      score: score ?? this.score,
+      samyApproved: samyApproved,
+      submittedAt: submittedAt,
+      username: username,
+    );
+  }
+
   factory CommunityVideo.fromMap(Map<String, dynamic> map) {
     return CommunityVideo(
       id: map['id'] as String,

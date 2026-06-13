@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../skill_tree/screens/skill_tree_screen.dart';
 import '../../challenges/screens/challenges_screen.dart';
+import '../../community/screens/community_screen.dart';
 import '../../workout/providers/workout_provider.dart';
 import '../providers/content_provider.dart';
 import '../widgets/tutorial_card.dart';
@@ -38,6 +39,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           _HomeTabBody(onSwitchTab: (i) => setState(() => _currentIndex = i)),
           const SkillTreeScreen(),
           const ChallengesScreen(),
+          const CommunityScreen(),
           const _ProfileTab(),
         ],
       ),
@@ -71,6 +73,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 icon: Icon(Icons.emoji_events_outlined),
                 activeIcon: Icon(Icons.emoji_events),
                 label: 'Challenges',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.people_outline),
+                activeIcon: Icon(Icons.people),
+                label: 'Community',
               ),
               BottomNavigationBarItem(
                 icon: Icon(Icons.person_outline),

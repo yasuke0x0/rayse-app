@@ -38,7 +38,7 @@ class CommunityVideoRepository {
       'video_url': videoUrl,
       'caption': caption,
       'status': 'pending',
-      'week_number': _isoWeek(now),
+      'week_number': isoWeek(now),
       'week_year': now.year,
     });
   }
@@ -88,8 +88,43 @@ class CommunityVideoRepository {
         .toList();
   }
 
+  // Fetch approved videos for a week, sorted by score (top 10)
+  Future<List<CommunityVideo>> fetchApprovedVideos({
+    required int weekNumber,
+    required int weekYear,
+  }) async {
+    final data = await _client
+        .from('community_videos')
+        .select('*, profiles(username)')
+        .eq('status', 'approved')
+        .eq('week_number', weekNumber)
+        .eq('week_year', weekYear)
+        .order('score', ascending: false)
+        .limit(10);
+    return (data as List)
+        .map((m) =>
+            CommunityVideo.fromMap(Map<String, dynamic>.from(m as Map)))
+        .toList();
+  }
+
+  // Toggle fire reaction via RPC — returns true if added, false if removed
+  Future<bool> toggleReaction(String videoId) async {
+    final result = await _client
+        .rpc('toggle_reaction', params: {'p_video_id': videoId});
+    return result as bool;
+  }
+
+  // Fetch the set of video IDs the current user has reacted to
+  Future<Set<String>> fetchMyReactions(String userId) async {
+    final data = await _client
+        .from('community_reactions')
+        .select('video_id')
+        .eq('user_id', userId);
+    return (data as List).map((m) => m['video_id'] as String).toSet();
+  }
+
   // ISO week number helper
-  static int _isoWeek(DateTime date) {
+  static int isoWeek(DateTime date) {
     final dayOfYear =
         date.difference(DateTime(date.year, 1, 1)).inDays + 1;
     final weekDay = date.weekday;
