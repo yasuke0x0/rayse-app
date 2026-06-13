@@ -18,7 +18,8 @@ class PracticeScreen extends ConsumerStatefulWidget {
 
 class _PracticeScreenState extends ConsumerState<PracticeScreen>
     with TickerProviderStateMixin {
-  static const int _totalSeconds = 60;
+  static const int _totalSeconds =
+      bool.fromEnvironment('dart.vm.product') ? 60 : 10;
   int _secondsLeft = _totalSeconds;
   Timer? _timer;
   int _tipIndex = 0;

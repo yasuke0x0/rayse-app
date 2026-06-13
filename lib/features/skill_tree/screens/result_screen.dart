@@ -166,58 +166,6 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
                       ],
                     ),
                   ),
-                  const SizedBox(height: 24),
-
-                  // Session progress dots
-                  Column(
-                    children: [
-                      Text(
-                        'SESSION PROGRESS',
-                        style: GoogleFonts.inter(
-                          fontSize: 11,
-                          color: AppColors.textSecondary,
-                          letterSpacing: 1.5,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: List.generate(3, (i) {
-                          // Preview +1 before tapping "I GOT IT";
-                          // after tapping, provider has updated so show real count
-                          final displayCount = _showXpAnim
-                              ? skill.sessionsCompleted
-                              : (skill.sessionsCompleted + 1).clamp(0, 3);
-                          return Container(
-                            width: 24,
-                            height: 24,
-                            margin: const EdgeInsets.symmetric(horizontal: 4),
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: i < displayCount
-                                  ? AppColors.accent
-                                  : Colors.transparent,
-                              border: Border.all(
-                                color: i < displayCount
-                                    ? AppColors.accent
-                                    : const Color(0xFF3F3F46),
-                                width: 2,
-                              ),
-                            ),
-                          );
-                        }),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        '${_showXpAnim ? skill.sessionsCompleted : (skill.sessionsCompleted + 1).clamp(0, 3)} / 3 sessions to master',
-                        style: GoogleFonts.inter(
-                          fontSize: 13,
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                    ],
-                  ),
                 ],
               ),
             ),
