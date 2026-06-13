@@ -2,7 +2,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/services/supabase_service.dart';
 import '../models/video_comment.dart';
 
-const _selectWithProfile = '*, profiles!video_comments_user_id_fkey(username)';
+const _selectWithProfile = '*, profiles!video_comments_user_id_profiles_fkey(username)';
 
 class CommentRepository {
   final SupabaseClient _client = SupabaseService.client;
