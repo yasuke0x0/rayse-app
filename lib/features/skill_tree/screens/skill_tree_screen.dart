@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -253,34 +254,11 @@ class _SkillNodeWidget extends StatelessWidget {
         circleContent = const Icon(Icons.star_rounded,
             color: Colors.white, size: 28);
       case SkillStatus.completed:
-        circleDecoration = BoxDecoration(
-          color: const Color(0xFF3F3F46),
+        circleDecoration = const BoxDecoration(
+          color: Color(0xFF3F3F46),
           shape: BoxShape.circle,
-          border: Border.all(color: AppColors.accent, width: 2),
         );
-        circleContent = Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              '${skill.sessionsCompleted}',
-              style: GoogleFonts.poppins(
-                fontSize: 22,
-                fontWeight: FontWeight.w900,
-                color: AppColors.accent,
-                height: 1,
-              ),
-            ),
-            Text(
-              'of 3',
-              style: GoogleFonts.inter(
-                fontSize: 9,
-                fontWeight: FontWeight.w600,
-                color: AppColors.textSecondary,
-                height: 1,
-              ),
-            ),
-          ],
-        );
+        circleContent = Icon(_iconFor(node.id), color: AppColors.accent, size: 28);
       case SkillStatus.available:
         circleDecoration = BoxDecoration(
           color: const Color(0xFF3F3F46),
@@ -307,17 +285,45 @@ class _SkillNodeWidget extends StatelessWidget {
             color: AppColors.textMuted, size: 22);
     }
 
+    final Widget circle;
+
+    if (status == SkillStatus.completed) {
+      circle = SizedBox(
+        width: 72,
+        height: 72,
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            CustomPaint(
+              size: const Size(72, 72),
+              painter: _ArcProgressPainter(
+                progress: skill.sessionsCompleted / 3,
+              ),
+            ),
+            Container(
+              width: 62,
+              height: 62,
+              decoration: circleDecoration,
+              child: Center(child: circleContent),
+            ),
+          ],
+        ),
+      );
+    } else {
+      circle = Container(
+        width: 72,
+        height: 72,
+        decoration: circleDecoration,
+        child: Center(child: circleContent),
+      );
+    }
+
     return GestureDetector(
       onTap: onTap,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            width: 72,
-            height: 72,
-            decoration: circleDecoration,
-            child: Center(child: circleContent),
-          ),
+          circle,
           const SizedBox(height: 8),
           SizedBox(
             width: 88,
@@ -338,6 +344,49 @@ class _SkillNodeWidget extends StatelessWidget {
       ),
     );
   }
+}
+
+// ─── Arc progress painter (completed nodes) ───────────────────────────────────
+
+class _ArcProgressPainter extends CustomPainter {
+  final double progress; // 0.0 – 1.0
+
+  const _ArcProgressPainter({required this.progress});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = size.width / 2 - 2;
+
+    // Track ring
+    canvas.drawCircle(
+      center,
+      radius,
+      Paint()
+        ..color = const Color(0xFF3F3F46)
+        ..strokeWidth = 3
+        ..style = PaintingStyle.stroke,
+    );
+
+    // Progress arc
+    if (progress > 0) {
+      canvas.drawArc(
+        Rect.fromCircle(center: center, radius: radius),
+        -math.pi / 2,
+        2 * math.pi * progress,
+        false,
+        Paint()
+          ..color = AppColors.accent
+          ..strokeWidth = 3
+          ..style = PaintingStyle.stroke
+          ..strokeCap = StrokeCap.round,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _ArcProgressPainter old) =>
+      old.progress != progress;
 }
 
 // ─── Tree line painter ────────────────────────────────────────────────────────
