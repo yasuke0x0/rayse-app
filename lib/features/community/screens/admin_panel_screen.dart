@@ -278,12 +278,14 @@ class _PendingCardState extends ConsumerState<_PendingCard> {
           .read(pendingVideosProvider.notifier)
           .approve(widget.video.id, samyApproved: samy);
     } catch (e) {
-      setState(() => _processing = false);
       if (mounted) {
+        setState(() => _processing = false);
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text('Error: $e')));
       }
+      return;
     }
+    if (mounted) setState(() => _processing = false);
   }
 
   Future<void> _handleReject() async {
@@ -293,12 +295,14 @@ class _PendingCardState extends ConsumerState<_PendingCard> {
           .read(pendingVideosProvider.notifier)
           .reject(widget.video.id);
     } catch (e) {
-      setState(() => _processing = false);
       if (mounted) {
+        setState(() => _processing = false);
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text('Error: $e')));
       }
+      return;
     }
+    if (mounted) setState(() => _processing = false);
   }
 
   @override
