@@ -73,11 +73,22 @@ class PendingVideosNotifier extends AsyncNotifier<List<CommunityVideo>> {
         .read(communityVideoRepositoryProvider)
         .approveVideo(id, samyApproved: samyApproved);
     ref.invalidateSelf();
+    _invalidateCommunityData();
   }
 
   Future<void> reject(String id) async {
     await ref.read(communityVideoRepositoryProvider).rejectVideo(id);
     ref.invalidateSelf();
+    _invalidateCommunityData();
+  }
+
+  void _invalidateCommunityData() {
+    // Refresh community tab and skill node videos after status changes
+    final now = DateTime.now().toUtc();
+    final week = CommunityVideoRepository.isoWeek(now);
+    final year = now.year;
+    ref.invalidate(approvedVideosProvider((week, year)));
+    ref.invalidate(topSkillVideosProvider);
   }
 }
 

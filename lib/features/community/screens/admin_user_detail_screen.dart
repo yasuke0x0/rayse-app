@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/app_colors.dart';
 import '../models/community_video.dart';
 import '../providers/community_provider.dart';
+import '../repository/community_video_repository.dart';
 
 class AdminUserDetailScreen extends ConsumerStatefulWidget {
   final Map<String, dynamic> user;
@@ -126,6 +127,11 @@ class _AdminUserDetailScreenState
         .revertToPending(videoId);
     ref.invalidate(adminUserVideosProvider(_userId));
     ref.invalidate(pendingVideosProvider);
+    // Refresh community tab
+    final now = DateTime.now().toUtc();
+    final week = CommunityVideoRepository.isoWeek(now);
+    ref.invalidate(approvedVideosProvider((week, now.year)));
+    ref.invalidate(topSkillVideosProvider);
   }
 
   @override
