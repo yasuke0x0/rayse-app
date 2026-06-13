@@ -1,4 +1,20 @@
 
+## 2026-06-13 — Admin UX: SAMY button, video preview, timestamps + admin gets premium access
+
+### What changed
+- Added SAMY approve button to pending videos in admin user detail (was missing — only had APPROVE/REJECT)
+- Video rows now show upload timestamp ("2d ago", "5h ago", etc.)
+- Tapping a video row navigates to the video player screen (`/community-video`)
+- Admin panel main view: "Tap to copy video URL" replaced with "Tap to preview video" that opens the player
+- `userTierProvider` now treats admins (`is_creator`) as premium — admins can access all premium features
+
+### Files touched
+- lib/features/skill_tree/providers/skill_provider.dart (userTierProvider checks is_creator)
+- lib/features/community/screens/admin_user_detail_screen.dart (SAMY btn, timestamps, tap-to-play)
+- lib/features/community/screens/admin_panel_screen.dart (tap-to-preview video)
+
+---
+
 ## 2026-06-13 — Admin: Revert approved/rejected videos to pending
 
 ### What changed

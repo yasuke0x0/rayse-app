@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -296,17 +295,10 @@ class _VideoReviewCardState extends ConsumerState<_VideoReviewCard> {
                   ),
                 ],
                 const SizedBox(height: 12),
-                // Video URL area
+                // Video preview — tap to play
                 GestureDetector(
-                  onTap: () async {
-                    await Clipboard.setData(
-                        ClipboardData(text: video.videoUrl));
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('URL copied')),
-                      );
-                    }
-                  },
+                  onTap: () =>
+                      context.push('/community-video', extra: video),
                   child: Container(
                     width: double.infinity,
                     padding: const EdgeInsets.symmetric(
@@ -317,15 +309,16 @@ class _VideoReviewCardState extends ConsumerState<_VideoReviewCard> {
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.play_circle_outline,
-                            color: Color(0xFF71717A), size: 20),
+                        Icon(Icons.play_circle_filled_rounded,
+                            color: AppColors.accent.withValues(alpha: 0.8),
+                            size: 22),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            'Tap to copy video URL',
+                            'Tap to preview video',
                             style: GoogleFonts.inter(
                               fontSize: 12,
-                              color: AppColors.textMuted,
+                              color: AppColors.textSecondary,
                             ),
                             overflow: TextOverflow.ellipsis,
                           ),

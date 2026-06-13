@@ -29,10 +29,13 @@ final userTierProvider = FutureProvider<String>((ref) async {
   if (userId == null) return 'free';
   final data = await Supabase.instance.client
       .from('profiles')
-      .select('is_premium')
+      .select('is_premium, is_creator')
       .eq('id', userId)
       .maybeSingle();
-  return (data?['is_premium'] == true) ? 'premium' : 'free';
+  if (data?['is_creator'] == true || data?['is_premium'] == true) {
+    return 'premium';
+  }
+  return 'free';
 });
 
 // ─── Skills provider ──────────────────────────────────────────────────────────
