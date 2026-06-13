@@ -21,7 +21,7 @@ class SkillTreeScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final skills = ref.watch(skillsProvider);
     final totalXP = ref.watch(xpProvider);
-    final userTier = ref.watch(userTierProvider);
+    final userTier = ref.watch(userTierProvider).valueOrNull ?? 'free';
 
     final mastered =
         skills.where((s) => s.status == SkillStatus.mastered).length;

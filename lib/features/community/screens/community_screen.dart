@@ -41,7 +41,7 @@ class _CommunityScreenState extends ConsumerState<CommunityScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final userTier = ref.watch(userTierProvider);
+    final userTier = ref.watch(userTierProvider).valueOrNull ?? 'free';
     final selectedWeek = _weeks[_selectedWeekIndex];
     final weekKey = (selectedWeek.week, selectedWeek.year);
     final videosAsync = ref.watch(approvedVideosProvider(weekKey));

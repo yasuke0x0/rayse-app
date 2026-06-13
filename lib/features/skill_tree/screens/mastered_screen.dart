@@ -70,6 +70,7 @@ class _MasteredScreenState extends ConsumerState<MasteredScreen>
     final skills = ref.watch(skillsProvider);
     final skill = skills.firstWhere((s) => s.id == widget.skillId);
     final totalXP = ref.watch(xpProvider);
+    final userTier = ref.watch(userTierProvider).valueOrNull ?? 'free';
     final unlockedNames = skill.unlockIds
         .map((id) {
           try {
@@ -281,8 +282,9 @@ class _MasteredScreenState extends ConsumerState<MasteredScreen>
                         SizedBox(
                           width: double.infinity,
                           child: ElevatedButton(
-                            onPressed: () =>
-                                context.push('/submit-video/${widget.skillId}'),
+                            onPressed: () => userTier == 'premium'
+                                ? context.push('/submit-video/${widget.skillId}')
+                                : context.push('/paywall'),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: AppColors.accent,
                               padding:
@@ -292,7 +294,9 @@ class _MasteredScreenState extends ConsumerState<MasteredScreen>
                               ),
                             ),
                             child: Text(
-                              'SUBMIT YOUR VIDEO',
+                              userTier == 'premium'
+                                  ? 'SUBMIT YOUR VIDEO'
+                                  : '🔒 PREMIUM — SUBMIT VIDEO',
                               style: GoogleFonts.inter(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w700,

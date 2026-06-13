@@ -108,7 +108,7 @@ class _SkillDetailScreenState extends ConsumerState<SkillDetailScreen>
   @override
   Widget build(BuildContext context) {
     final skills = ref.watch(skillsProvider);
-    final userTier = ref.watch(userTierProvider);
+    final userTier = ref.watch(userTierProvider).valueOrNull ?? 'free';
     final skill = skills.firstWhere(
       (s) => s.id == widget.skillId,
       orElse: () => skills.first,

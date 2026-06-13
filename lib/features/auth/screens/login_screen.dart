@@ -13,8 +13,12 @@ class LoginScreen extends ConsumerStatefulWidget {
 }
 
 class _LoginScreenState extends ConsumerState<LoginScreen> {
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
+  final _emailController = TextEditingController(
+    text: const bool.fromEnvironment('dart.vm.product') ? '' : 'yassine.ksabi@gmail.com',
+  );
+  final _passwordController = TextEditingController(
+    text: const bool.fromEnvironment('dart.vm.product') ? '' : '212324',
+  );
   bool _loading = false;
   bool _obscurePassword = true;
 
