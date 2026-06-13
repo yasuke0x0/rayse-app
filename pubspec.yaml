@@ -22,6 +22,7 @@ dependencies:
   chewie: ^1.8.5
   cached_network_image: ^3.4.1
   share_plus: ^10.0.0
+  image_picker: ^1.1.2
 
 dev_dependencies:
   flutter_test:

@@ -1,0 +1,64 @@
+import 'package:flutter/foundation.dart';
+
+enum VideoStatus { pending, approved, rejected }
+
+@immutable
+class CommunityVideo {
+  final String id;
+  final String userId;
+  final String skillId;
+  final String videoUrl;
+  final String caption;
+  final VideoStatus status;
+  final int weekNumber;
+  final int weekYear;
+  final int score;
+  final bool samyApproved;
+  final DateTime submittedAt;
+  final String username;
+
+  const CommunityVideo({
+    required this.id,
+    required this.userId,
+    required this.skillId,
+    required this.videoUrl,
+    required this.caption,
+    required this.status,
+    required this.weekNumber,
+    required this.weekYear,
+    required this.score,
+    required this.samyApproved,
+    required this.submittedAt,
+    required this.username,
+  });
+
+  factory CommunityVideo.fromMap(Map<String, dynamic> map) {
+    return CommunityVideo(
+      id: map['id'] as String,
+      userId: map['user_id'] as String,
+      skillId: map['skill_id'] as String,
+      videoUrl: map['video_url'] as String,
+      caption: map['caption'] as String? ?? '',
+      status: _statusFromString(map['status'] as String),
+      weekNumber: map['week_number'] as int,
+      weekYear: map['week_year'] as int,
+      score: map['score'] as int? ?? 0,
+      samyApproved: map['samy_approved'] as bool? ?? false,
+      submittedAt: DateTime.parse(map['submitted_at'] as String),
+      username: (map['profiles'] as Map<String, dynamic>?)?['username']
+              as String? ??
+          'Anonymous',
+    );
+  }
+
+  static VideoStatus _statusFromString(String s) {
+    switch (s) {
+      case 'approved':
+        return VideoStatus.approved;
+      case 'rejected':
+        return VideoStatus.rejected;
+      default:
+        return VideoStatus.pending;
+    }
+  }
+}

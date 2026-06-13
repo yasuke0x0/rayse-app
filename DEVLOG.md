@@ -1,4 +1,31 @@
 
+## 2026-06-13 — Phase A: Community Videos — Submit Flow + Admin Panel
+
+### What was built
+- `image_picker: ^1.1.2` added to pubspec.yaml
+- `lib/features/community/models/community_video.dart` — CommunityVideo model with VideoStatus enum and `fromMap` factory (handles joined `profiles` table)
+- `lib/features/community/repository/community_video_repository.dart` — uploadVideo (Supabase Storage), submitVideo (insert pending row), fetchPendingVideos, approveVideo, rejectVideo, fetchMyVideos; ISO week helper
+- `lib/features/community/providers/community_provider.dart` — communityVideoRepositoryProvider, profileProvider, isCreatorProvider, PendingVideosNotifier (AsyncNotifier with approve/reject/invalidateSelf)
+- `lib/features/community/screens/submit_video_screen.dart` — 3-step flow (pick video → caption → confirm), image_picker gallery pick max 60s, upload to Supabase Storage, insert row, success state
+- `lib/features/community/screens/admin_panel_screen.dart` — gated admin panel, pendingVideosProvider.when, _VideoReviewCard StatefulWidget with approve/reject/samy_approved actions, clipboard copy for video URL, loading overlay
+- `lib/features/skill_tree/screens/mastered_screen.dart` — added "COMMUNITY CHALLENGE" CTA card with SUBMIT YOUR VIDEO button pushing `/submit-video/:skillId`
+- `lib/core/router/app_router.dart` — added `/submit-video/:skillId` and `/admin` routes
+
+### Files touched
+- pubspec.yaml
+- lib/features/community/models/community_video.dart (new)
+- lib/features/community/repository/community_video_repository.dart (new)
+- lib/features/community/providers/community_provider.dart (new)
+- lib/features/community/screens/submit_video_screen.dart (new)
+- lib/features/community/screens/admin_panel_screen.dart (new)
+- lib/features/skill_tree/screens/mastered_screen.dart (modified)
+- lib/core/router/app_router.dart (modified)
+
+### Gotchas
+- Supabase `maybeSingle()` already returns `Map<String, dynamic>?` — no cast needed (flutter analyze caught it)
+- `image_picker` 1.1.2 resolved to 1.2.2 (compatible)
+- url_launcher not in deps — used `Clipboard.setData` for video URL in admin panel instead
+
 ## 2026-06-04 — Phase 1: Theme + Splash + Onboarding
 
 ### What was built

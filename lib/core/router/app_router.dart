@@ -13,6 +13,8 @@ import 'package:rayse/features/skill_tree/screens/mastered_screen.dart';
 import 'package:rayse/features/subscription/screens/paywall_screen.dart';
 import 'package:rayse/features/workout/screens/daily_workout_screen.dart';
 import 'package:rayse/features/workout/screens/workout_player_screen.dart';
+import 'package:rayse/features/community/screens/submit_video_screen.dart';
+import 'package:rayse/features/community/screens/admin_panel_screen.dart';
 
 final appRouter = GoRouter(
   initialLocation: '/splash',
@@ -86,6 +88,16 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/paywall',
       builder: (context, state) => const PaywallScreen(),
+    ),
+    GoRoute(
+      path: '/submit-video/:skillId',
+      builder: (context, state) => SubmitVideoScreen(
+        skillId: state.pathParameters['skillId']!,
+      ),
+    ),
+    GoRoute(
+      path: '/admin',
+      builder: (context, state) => const AdminPanelScreen(),
     ),
   ],
 );
