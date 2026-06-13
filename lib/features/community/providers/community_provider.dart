@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../skill_tree/providers/skill_provider.dart';
 import '../repository/community_video_repository.dart';
 import '../repository/user_repository.dart';
 import '../models/community_video.dart';
@@ -79,16 +80,22 @@ class AllUsersNotifier extends AsyncNotifier<List<Map<String, dynamic>>> {
         .read(userRepositoryProvider)
         .updateUserRole(userId, isPremium: isPremium, isCreator: isCreator);
     ref.invalidateSelf();
+    // Refresh current user's profile/tier in case we changed our own role
+    ref.invalidate(profileProvider);
+    ref.invalidate(userTierProvider);
+    ref.invalidate(isCreatorProvider);
   }
 
   Future<void> ban(String userId) async {
     await ref.read(userRepositoryProvider).banUser(userId);
     ref.invalidateSelf();
+    ref.invalidate(profileProvider);
   }
 
   Future<void> unban(String userId) async {
     await ref.read(userRepositoryProvider).unbanUser(userId);
     ref.invalidateSelf();
+    ref.invalidate(profileProvider);
   }
 }
 
