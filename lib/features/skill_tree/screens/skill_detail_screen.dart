@@ -129,6 +129,8 @@ class _SkillDetailScreenState extends ConsumerState<SkillDetailScreen>
                   _buildVideoSection(skill, isPremiumLocked),
                   _buildSkillInfo(skill),
                   if (_tipsInitialized) _buildTips(skill),
+                  if (skill.status == SkillStatus.mastered)
+                    _buildCommunityCTA(context, skill, userTier),
                   const SizedBox(height: 100),
                 ],
               ),
@@ -380,6 +382,87 @@ class _SkillDetailScreenState extends ConsumerState<SkillDetailScreen>
     );
   }
 
+
+  Widget _buildCommunityCTA(
+      BuildContext context, Skill skill, String userTier) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 24, 16, 0),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Text('🎥', style: TextStyle(fontSize: 18)),
+                const SizedBox(width: 8),
+                Text(
+                  'COMMUNITY CHALLENGE',
+                  style: GoogleFonts.inter(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.accent,
+                    letterSpacing: 1.5,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Show the community your ${skill.title}. Top 10 this week get featured on @samsjump.',
+              style: GoogleFonts.inter(
+                fontSize: 13,
+                color: AppColors.textSecondary,
+                height: 1.5,
+              ),
+            ),
+            const SizedBox(height: 14),
+            GestureDetector(
+              onTap: () => userTier == 'premium'
+                  ? context.push('/submit-video/${widget.skillId}')
+                  : context.push('/paywall'),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                decoration: BoxDecoration(
+                  color: userTier == 'premium'
+                      ? AppColors.accent
+                      : AppColors.surface,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: userTier == 'premium'
+                        ? AppColors.accent
+                        : AppColors.border,
+                  ),
+                ),
+                child: Center(
+                  child: Text(
+                    userTier == 'premium'
+                        ? 'SUBMIT YOUR VIDEO'
+                        : '🔒 PREMIUM — SUBMIT VIDEO',
+                    style: GoogleFonts.inter(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: userTier == 'premium'
+                          ? Colors.white
+                          : AppColors.textSecondary,
+                      letterSpacing: 0.8,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   Widget _buildBottomCTA(BuildContext context, Skill skill, bool isPremiumLocked,
       bool isLocked) {
