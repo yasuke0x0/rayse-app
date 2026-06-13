@@ -5,6 +5,8 @@ import '../../../core/services/supabase_service.dart';
 import '../../../core/theme/app_colors.dart';
 import 'package:go_router/go_router.dart';
 import '../../auth/providers/auth_provider.dart';
+import '../../community/providers/community_provider.dart';
+import '../../skill_tree/providers/skill_provider.dart';
 import '../../skill_tree/screens/skill_tree_screen.dart';
 import '../../challenges/screens/challenges_screen.dart';
 import '../../community/screens/community_screen.dart';
@@ -25,10 +27,30 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    ref.listen(authStateProvider, (_, state) {
+    ref.listen(authStateProvider, (prev, state) {
       state.whenData((authState) {
         if (authState.session == null) {
+          // Invalidate all user-specific providers on logout
+          ref.invalidate(profileProvider);
+          ref.invalidate(userTierProvider);
+          ref.invalidate(skillsProvider);
+          ref.invalidate(xpProvider);
+          ref.invalidate(myTotalSubmissionsProvider);
+          ref.invalidate(myReactionsProvider);
+          ref.invalidate(pendingVideosProvider);
+          ref.invalidate(isCreatorProvider);
           context.go('/login');
+        } else if (prev?.valueOrNull?.session == null &&
+            authState.session != null) {
+          // New login — invalidate stale data from previous user
+          ref.invalidate(profileProvider);
+          ref.invalidate(userTierProvider);
+          ref.invalidate(skillsProvider);
+          ref.invalidate(xpProvider);
+          ref.invalidate(myTotalSubmissionsProvider);
+          ref.invalidate(myReactionsProvider);
+          ref.invalidate(pendingVideosProvider);
+          ref.invalidate(isCreatorProvider);
         }
       });
     });
