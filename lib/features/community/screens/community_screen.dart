@@ -161,10 +161,14 @@ class _CommunityScreenState extends ConsumerState<CommunityScreen> {
         child: CircularProgressIndicator(color: AppColors.accent),
       ),
       error: (e, st) => Center(
-        child: Text(
-          'Failed to load videos.',
-          style: GoogleFonts.inter(
-              fontSize: 13, color: AppColors.textMuted),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Text(
+            'Error: $e',
+            style: GoogleFonts.inter(
+                fontSize: 13, color: AppColors.textMuted),
+            textAlign: TextAlign.center,
+          ),
         ),
       ),
       data: (videos) {

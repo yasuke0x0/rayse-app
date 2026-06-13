@@ -132,10 +132,14 @@ class AdminPanelScreen extends ConsumerWidget {
                   child: CircularProgressIndicator(color: AppColors.accent),
                 ),
                 error: (e, _) => Center(
-                  child: Text(
-                    'Failed to load',
-                    style: GoogleFonts.inter(
-                        fontSize: 16, color: AppColors.textSecondary),
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Text(
+                      'Error: $e',
+                      style: GoogleFonts.inter(
+                          fontSize: 13, color: AppColors.textSecondary),
+                      textAlign: TextAlign.center,
+                    ),
                   ),
                 ),
                 data: (videos) => videos.isEmpty
