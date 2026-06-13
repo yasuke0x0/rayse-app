@@ -258,28 +258,25 @@ class _SkillNodeWidget extends StatelessWidget {
           shape: BoxShape.circle,
           border: Border.all(color: AppColors.accent, width: 2),
         );
-        circleContent = Stack(
-          alignment: Alignment.center,
+        circleContent = Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(_iconFor(node.id), color: AppColors.accent, size: 24),
-            Positioned(
-              bottom: 0,
-              right: 0,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                decoration: BoxDecoration(
-                  color: AppColors.accent,
-                  borderRadius: BorderRadius.circular(999),
-                ),
-                child: Text(
-                  '${skill.sessionsCompleted}/3',
-                  style: GoogleFonts.inter(
-                    fontSize: 8,
-                    fontWeight: FontWeight.w800,
-                    color: Colors.white,
-                    height: 1,
-                  ),
-                ),
+            Text(
+              '${skill.sessionsCompleted}',
+              style: GoogleFonts.poppins(
+                fontSize: 22,
+                fontWeight: FontWeight.w900,
+                color: AppColors.accent,
+                height: 1,
+              ),
+            ),
+            Text(
+              'of 3',
+              style: GoogleFonts.inter(
+                fontSize: 9,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textSecondary,
+                height: 1,
               ),
             ),
           ],
