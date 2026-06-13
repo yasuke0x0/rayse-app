@@ -7,6 +7,7 @@ import 'package:video_player/video_player.dart';
 import '../../../core/theme/app_colors.dart';
 import '../models/community_video.dart';
 import '../providers/community_provider.dart';
+import '../widgets/comments_section_widget.dart';
 
 class CommunityVideoDetailScreen extends ConsumerStatefulWidget {
   final CommunityVideo video;
@@ -260,6 +261,10 @@ class _CommunityVideoDetailScreenState
                         ),
                       ],
                     ),
+
+                    // Comments section
+                    CommentsSectionWidget(videoId: video.id),
+                    const SizedBox(height: 16),
                   ],
                 ),
               ),

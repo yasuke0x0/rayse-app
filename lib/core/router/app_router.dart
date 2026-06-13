@@ -20,6 +20,7 @@ import 'package:rayse/features/community/screens/admin_user_detail_screen.dart';
 import 'package:rayse/features/community/screens/community_screen.dart';
 import 'package:rayse/features/community/screens/community_video_detail_screen.dart';
 import 'package:rayse/features/community/models/community_video.dart';
+import 'package:rayse/features/notifications/screens/notifications_screen.dart';
 
 final appRouter = GoRouter(
   initialLocation: '/splash',
@@ -125,6 +126,10 @@ final appRouter = GoRouter(
       builder: (context, state) => CommunityVideoDetailScreen(
         video: state.extra as CommunityVideo,
       ),
+    ),
+    GoRoute(
+      path: '/notifications',
+      builder: (context, state) => const NotificationsScreen(),
     ),
   ],
 );

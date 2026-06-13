@@ -6,6 +6,7 @@ import '../../../core/theme/app_colors.dart';
 import 'package:go_router/go_router.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../community/providers/community_provider.dart';
+import '../../notifications/providers/notification_provider.dart';
 import '../../skill_tree/providers/skill_provider.dart';
 import '../../skill_tree/screens/skill_tree_screen.dart';
 import '../../challenges/screens/challenges_screen.dart';
@@ -39,6 +40,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ref.invalidate(myReactionsProvider);
           ref.invalidate(pendingVideosProvider);
           ref.invalidate(isCreatorProvider);
+          ref.invalidate(unreadNotificationCountProvider);
+          ref.invalidate(notificationsProvider);
           context.go('/login');
         } else if (prev?.valueOrNull?.session == null &&
             authState.session != null) {
@@ -51,6 +54,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ref.invalidate(myReactionsProvider);
           ref.invalidate(pendingVideosProvider);
           ref.invalidate(isCreatorProvider);
+          ref.invalidate(unreadNotificationCountProvider);
+          ref.invalidate(notificationsProvider);
         }
       });
     });

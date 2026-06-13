@@ -7,6 +7,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../community/models/community_video.dart';
 import '../../community/providers/community_provider.dart';
+import '../../notifications/providers/notification_provider.dart';
 import '../../skill_tree/models/skill.dart';
 import '../../skill_tree/providers/skill_provider.dart';
 
@@ -38,14 +39,20 @@ class ProfileScreen extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'PROFILE',
-                style: GoogleFonts.poppins(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary,
-                  letterSpacing: 0.5,
-                ),
+              Row(
+                children: [
+                  Text(
+                    'PROFILE',
+                    style: GoogleFonts.poppins(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimary,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                  const Spacer(),
+                  _NotificationBell(),
+                ],
               ),
               const SizedBox(height: 24),
 
@@ -515,6 +522,53 @@ class _RoleBadge extends StatelessWidget {
           fontWeight: FontWeight.w700,
           color: fg,
           letterSpacing: 0.8,
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Notification bell ────────────────────────────────────────────────────────
+
+class _NotificationBell extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final countAsync = ref.watch(unreadNotificationCountProvider);
+    final count = countAsync.valueOrNull ?? 0;
+
+    return GestureDetector(
+      onTap: () => context.push('/notifications'),
+      child: SizedBox(
+        width: 40,
+        height: 40,
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            const Icon(Icons.notifications_none_rounded,
+                color: AppColors.textSecondary, size: 24),
+            if (count > 0)
+              Positioned(
+                right: 6,
+                top: 6,
+                child: Container(
+                  width: 16,
+                  height: 16,
+                  decoration: const BoxDecoration(
+                    color: AppColors.accent,
+                    shape: BoxShape.circle,
+                  ),
+                  alignment: Alignment.center,
+                  child: Text(
+                    count > 9 ? '9+' : '$count',
+                    style: GoogleFonts.inter(
+                      fontSize: 9,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+          ],
         ),
       ),
     );

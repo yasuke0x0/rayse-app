@@ -1,4 +1,38 @@
 
+## 2026-06-13 — Comments on community videos + in-app notifications
+
+### What changed
+- Premium/creator users can comment on community videos (500 char max)
+- Free users see comments but get "Upgrade to Premium" prompt
+- Admins can delete any comment; users can delete their own
+- Posting a comment sends an in-app notification to the video owner
+- Notification bell on profile screen with unread count badge
+- Notifications screen at /notifications with mark-as-read and mark-all-read
+- Auth logout/login invalidates notification providers
+
+### Files created
+- lib/features/community/models/video_comment.dart
+- lib/features/community/repository/comment_repository.dart
+- lib/features/community/providers/comment_provider.dart
+- lib/features/community/widgets/comments_section_widget.dart
+- lib/features/notifications/models/app_notification.dart
+- lib/features/notifications/repository/notification_repository.dart
+- lib/features/notifications/providers/notification_provider.dart
+- lib/features/notifications/screens/notifications_screen.dart
+
+### Files modified
+- lib/features/community/screens/community_video_detail_screen.dart (embedded comments)
+- lib/features/profile/screens/profile_screen.dart (notification bell)
+- lib/features/content/screens/home_screen.dart (provider invalidation)
+- lib/core/router/app_router.dart (/notifications route)
+
+### Gotchas
+- User must create `video_comments` and `notifications` tables in Supabase (see SQL below)
+- RLS policies needed for both tables
+- The FK `video_comments_user_id_fkey` must exist for the PostgREST join
+
+---
+
 ## 2026-06-13 — Admin panel redesign: All Videos tab with filters, audit trail, reviewer info
 
 ### What changed
