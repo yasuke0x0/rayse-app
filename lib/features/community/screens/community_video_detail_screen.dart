@@ -111,38 +111,6 @@ class _CommunityVideoDetailScreenState
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Samy Approved badge
-                    if (video.samyApproved) ...[
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 5),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF7C2D12),
-                          borderRadius: BorderRadius.circular(999),
-                          border: Border.all(
-                              color: AppColors.accent
-                                  .withValues(alpha: 0.6)),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Text('🔥',
-                                style: TextStyle(fontSize: 13)),
-                            const SizedBox(width: 6),
-                            Text(
-                              'SAMY APPROVED',
-                              style: GoogleFonts.inter(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w700,
-                                color: AppColors.accent,
-                                letterSpacing: 0.8,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                    ],
 
                     // Username + skill
                     Row(

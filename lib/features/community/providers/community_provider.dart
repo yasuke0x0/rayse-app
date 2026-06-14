@@ -8,6 +8,12 @@ final communityVideoRepositoryProvider = Provider<CommunityVideoRepository>(
   (_) => CommunityVideoRepository(),
 );
 
+// Skill filter set externally (e.g. from skill detail "See all" link)
+final communitySkillFilterProvider = StateProvider<String?>((_) => null);
+
+// Request to switch to a specific home tab (set externally, consumed by HomeScreen)
+final homeTabIndexProvider = StateProvider<int?>((_) => null);
+
 // ─── Profile of the current user (realtime) ─────────────────────────────────
 
 final profileProvider = StreamProvider<Map<String, dynamic>?>((ref) async* {
@@ -38,7 +44,7 @@ final profileProvider = StreamProvider<Map<String, dynamic>?>((ref) async* {
   }
 });
 
-// Is the current user a creator (Samy)?
+// Is the current user a creator?
 final isCreatorProvider = FutureProvider<bool>((ref) async {
   final profile = await ref.watch(profileProvider.future);
   return profile?['is_creator'] == true;
@@ -68,7 +74,7 @@ class PendingVideosNotifier extends AsyncNotifier<List<CommunityVideo>> {
     }
   }
 
-  Future<void> approve(String id, {bool samyApproved = false}) async {
+  Future<void> approve(String id) async {
     final userId = Supabase.instance.client.auth.currentUser?.id;
     // Optimistically remove from pending list immediately
     state.whenData((videos) {
@@ -76,7 +82,7 @@ class PendingVideosNotifier extends AsyncNotifier<List<CommunityVideo>> {
     });
     await ref
         .read(communityVideoRepositoryProvider)
-        .approveVideo(id, samyApproved: samyApproved, reviewedBy: userId);
+        .approveVideo(id, reviewedBy: userId);
     _invalidateCommunityData();
   }
 
@@ -205,6 +211,19 @@ final topSkillVideosProvider =
         skillId: skillId,
         weekNumber: CommunityVideoRepository.isoWeek(now),
         weekYear: now.year,
+      );
+});
+
+// ─── Full ranking for a skill this week (all approved, sorted by score) ───────
+
+final skillWeekRankingProvider =
+    FutureProvider.family<List<CommunityVideo>, String>((ref, skillId) async {
+  final now = DateTime.now().toUtc();
+  return ref.read(communityVideoRepositoryProvider).fetchTopVideosForSkill(
+        skillId: skillId,
+        weekNumber: CommunityVideoRepository.isoWeek(now),
+        weekYear: now.year,
+        limit: 100,
       );
 });
 

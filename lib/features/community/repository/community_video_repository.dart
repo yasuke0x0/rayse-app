@@ -64,11 +64,9 @@ class CommunityVideoRepository {
   }
 
   // Approve a video
-  Future<void> approveVideo(String id,
-      {bool samyApproved = false, String? reviewedBy}) async {
+  Future<void> approveVideo(String id, {String? reviewedBy}) async {
     await _client.from('community_videos').update({
       'status': 'approved',
-      'samy_approved': samyApproved,
       'reviewed_at': DateTime.now().toIso8601String(),
       if (reviewedBy != null) 'reviewed_by': reviewedBy,
     }).eq('id', id);
@@ -78,7 +76,6 @@ class CommunityVideoRepository {
   Future<void> revertToPending(String id) async {
     await _client.from('community_videos').update({
       'status': 'pending',
-      'samy_approved': false,
       'reviewed_at': null,
       'reviewed_by': null,
     }).eq('id', id);

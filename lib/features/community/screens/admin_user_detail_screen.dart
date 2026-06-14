@@ -101,10 +101,10 @@ class _AdminUserDetailScreenState
     setState(() => _saving = false);
   }
 
-  Future<void> _approveVideo(String videoId, {bool samy = false}) async {
+  Future<void> _approveVideo(String videoId) async {
     await ref
         .read(pendingVideosProvider.notifier)
-        .approve(videoId, samyApproved: samy);
+        .approve(videoId);
     ref.invalidate(adminUserVideosProvider(_userId));
   }
 
@@ -635,7 +635,7 @@ class _AdminUserDetailScreenState
                 overflow: TextOverflow.ellipsis,
               ),
             ],
-            // Show approve/reject/samy buttons for pending videos
+            // Show approve/reject buttons for pending videos
             if (video.status == VideoStatus.pending) ...[
               const SizedBox(height: 10),
               Row(
@@ -683,28 +683,6 @@ class _AdminUserDetailScreenState
                       ),
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () => _approveVideo(video.id, samy: true),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 8),
-                        decoration: BoxDecoration(
-                          color: AppColors.accent,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Center(
-                          child: Text('🔥 SAMY',
-                              style: GoogleFonts.inter(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w700,
-                                color: Colors.white,
-                                letterSpacing: 0.5,
-                              )),
-                        ),
-                      ),
-                    ),
-                  ),
                 ],
               ),
             ],
@@ -725,19 +703,6 @@ class _AdminUserDetailScreenState
                         fontWeight: FontWeight.w600,
                       ),
                     ),
-                    if (video.samyApproved) ...[
-                      const SizedBox(width: 8),
-                      const Text('🔥', style: TextStyle(fontSize: 10)),
-                      const SizedBox(width: 2),
-                      Text(
-                        'SAMY',
-                        style: GoogleFonts.inter(
-                          fontSize: 9,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.accent,
-                        ),
-                      ),
-                    ],
                   ],
                   const Spacer(),
                   GestureDetector(

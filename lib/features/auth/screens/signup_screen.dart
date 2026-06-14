@@ -49,6 +49,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
         ref.invalidate(skillsProvider);
         ref.invalidate(xpProvider);
         ref.invalidate(myTotalSubmissionsProvider);
+        ref.invalidate(mySkillVideosProvider);
         ref.invalidate(myAllVideosProvider);
         ref.invalidate(myReactionsProvider);
         ref.invalidate(pendingVideosProvider);

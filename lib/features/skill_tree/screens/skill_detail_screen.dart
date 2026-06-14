@@ -433,14 +433,19 @@ class _SkillDetailScreenState extends ConsumerState<SkillDetailScreen>
   Widget _buildCommunitySection(Skill skill, String userTier) {
     final topAsync = ref.watch(topSkillVideosProvider(skill.id));
     final myAsync = ref.watch(mySkillVideosProvider(skill.id));
+    final rankingAsync = ref.watch(skillWeekRankingProvider(skill.id));
     final now = DateTime.now().toUtc();
     final currentWeek = CommunityVideoRepository.isoWeek(now);
     final currentYear = now.year;
 
     final topVideos = topAsync.valueOrNull ?? [];
-    final myVideos = myAsync.valueOrNull ?? [];
-    final hasThisWeek = myVideos.any(
-        (v) => v.weekNumber == currentWeek && v.weekYear == currentYear);
+    final allMyVideos = myAsync.valueOrNull ?? [];
+    final rankedVideos = rankingAsync.valueOrNull ?? [];
+    final myVideos = allMyVideos
+        .where(
+            (v) => v.weekNumber == currentWeek && v.weekYear == currentYear)
+        .toList();
+    final hasThisWeek = myVideos.isNotEmpty;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 24, 16, 0),
@@ -486,14 +491,36 @@ class _SkillDetailScreenState extends ConsumerState<SkillDetailScreen>
             // ── This week's top ──
             if (topVideos.isNotEmpty) ...[
               const SizedBox(height: 16),
-              Text(
-                "THIS WEEK'S TOP",
-                style: GoogleFonts.inter(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textMuted,
-                  letterSpacing: 1,
-                ),
+              Row(
+                children: [
+                  Text(
+                    "THIS WEEK'S TOP",
+                    style: GoogleFonts.inter(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textMuted,
+                      letterSpacing: 1,
+                    ),
+                  ),
+                  const Spacer(),
+                  GestureDetector(
+                    onTap: () {
+                      ref.read(communitySkillFilterProvider.notifier).state =
+                          skill.id;
+                      ref.read(homeTabIndexProvider.notifier).state = 3;
+                      context.pop();
+                    },
+                    child: Text(
+                      'SEE ALL',
+                      style: GoogleFonts.inter(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.accent,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 8),
               ...List.generate(topVideos.length, (i) {
@@ -570,7 +597,7 @@ class _SkillDetailScreenState extends ConsumerState<SkillDetailScreen>
             if (myVideos.isNotEmpty) ...[
               const SizedBox(height: 16),
               Text(
-                'MY SUBMISSIONS',
+                'MY WEEK SUBMISSIONS',
                 style: GoogleFonts.inter(
                   fontSize: 10,
                   fontWeight: FontWeight.w700,
@@ -579,58 +606,93 @@ class _SkillDetailScreenState extends ConsumerState<SkillDetailScreen>
                 ),
               ),
               const SizedBox(height: 8),
-              ...myVideos.map((v) => GestureDetector(
-                    onTap: () =>
-                        context.push('/community-video', extra: v),
-                    child: Container(
-                      margin: const EdgeInsets.only(bottom: 6),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: AppColors.background,
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: AppColors.border),
+              ...myVideos.map((v) {
+                // Find rank: position in the full approved ranking list
+                final rankIndex = rankedVideos.indexWhere((r) => r.id == v.id);
+                final rank = rankIndex >= 0 ? rankIndex + 1 : null;
+
+                return GestureDetector(
+                  onTap: () =>
+                      context.push('/community-video', extra: v),
+                  child: Container(
+                    margin: const EdgeInsets.only(bottom: 6),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: AppColors.background,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: rank == 1
+                            ? AppColors.accent.withValues(alpha: 0.4)
+                            : AppColors.border,
                       ),
-                      child: Row(
-                        children: [
+                    ),
+                    child: Row(
+                      children: [
+                        // Rank badge or status icon
+                        if (rank != null)
+                          Container(
+                            width: 26,
+                            height: 26,
+                            decoration: BoxDecoration(
+                              color: rank == 1
+                                  ? AppColors.accent
+                                  : const Color(0xFF3F3F46),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Center(
+                              child: Text(
+                                '#$rank',
+                                style: GoogleFonts.inter(
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w800,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                          )
+                        else
                           Icon(Icons.play_circle_outline_rounded,
                               color:
                                   AppColors.accent.withValues(alpha: 0.6),
-                              size: 18),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  v.caption.isNotEmpty
-                                      ? v.caption
-                                      : 'No caption',
-                                  style: GoogleFonts.inter(
-                                    fontSize: 12,
-                                    color: v.caption.isNotEmpty
-                                        ? AppColors.textPrimary
-                                        : AppColors.textMuted,
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
+                              size: 22),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                v.caption.isNotEmpty
+                                    ? v.caption
+                                    : 'No caption',
+                                style: GoogleFonts.inter(
+                                  fontSize: 12,
+                                  color: v.caption.isNotEmpty
+                                      ? AppColors.textPrimary
+                                      : AppColors.textMuted,
                                 ),
-                                Text(
-                                  _timeAgo(v.submittedAt),
-                                  style: GoogleFonts.inter(
-                                    fontSize: 10,
-                                    color: AppColors.textMuted,
-                                  ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              Text(
+                                rank != null
+                                    ? '${_timeAgo(v.submittedAt)} · 🔥 ${v.score}'
+                                    : _timeAgo(v.submittedAt),
+                                style: GoogleFonts.inter(
+                                  fontSize: 10,
+                                  color: AppColors.textMuted,
                                 ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
-                          const SizedBox(width: 6),
-                          _statusPill(v.status),
-                        ],
-                      ),
+                        ),
+                        const SizedBox(width: 6),
+                        _statusPill(v.status),
+                      ],
                     ),
-                  )),
+                  ),
+                );
+              }),
             ],
 
             // ── Submit CTA ──

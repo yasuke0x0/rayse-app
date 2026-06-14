@@ -271,12 +271,12 @@ class _PendingCardState extends ConsumerState<_PendingCard> {
     return 'just now';
   }
 
-  Future<void> _handleApprove({bool samy = false}) async {
+  Future<void> _handleApprove() async {
     setState(() => _processing = true);
     try {
       await ref
           .read(pendingVideosProvider.notifier)
-          .approve(widget.video.id, samyApproved: samy);
+          .approve(widget.video.id);
     } catch (e) {
       if (mounted) {
         setState(() => _processing = false);
@@ -402,16 +402,6 @@ class _PendingCardState extends ConsumerState<_PendingCard> {
                         label: '❌ REJECT',
                         color: const Color(0xFF7F1D1D),
                         onTap: _processing ? null : _handleReject,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: _ActionButton(
-                        label: '🔥 SAMY',
-                        color: AppColors.accent,
-                        onTap: _processing
-                            ? null
-                            : () => _handleApprove(samy: true),
                       ),
                     ),
                   ],
@@ -800,25 +790,6 @@ class _AllVideoRow extends ConsumerWidget {
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
                       color: AppColors.accent,
-                    ),
-                  ),
-                ],
-                if (video.samyApproved) ...[
-                  const SizedBox(width: 6),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 6, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF7C2D12),
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                    child: Text(
-                      'SAMY',
-                      style: GoogleFonts.inter(
-                        fontSize: 8,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.accent,
-                      ),
                     ),
                   ),
                 ],

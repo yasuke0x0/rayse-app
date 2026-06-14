@@ -28,6 +28,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Listen for external tab switch requests
+    ref.listen(homeTabIndexProvider, (prev, next) {
+      if (next != null) {
+        setState(() => _currentIndex = next);
+        ref.read(homeTabIndexProvider.notifier).state = null;
+      }
+    });
+
     ref.listen(authStateProvider, (prev, state) {
       state.whenData((authState) {
         if (authState.session == null) {
@@ -37,6 +45,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ref.invalidate(skillsProvider);
           ref.invalidate(xpProvider);
           ref.invalidate(myTotalSubmissionsProvider);
+          ref.invalidate(mySkillVideosProvider);
+          ref.invalidate(myAllVideosProvider);
           ref.invalidate(myReactionsProvider);
           ref.invalidate(pendingVideosProvider);
           ref.invalidate(isCreatorProvider);
@@ -51,6 +61,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ref.invalidate(skillsProvider);
           ref.invalidate(xpProvider);
           ref.invalidate(myTotalSubmissionsProvider);
+          ref.invalidate(mySkillVideosProvider);
+          ref.invalidate(myAllVideosProvider);
           ref.invalidate(myReactionsProvider);
           ref.invalidate(pendingVideosProvider);
           ref.invalidate(isCreatorProvider);

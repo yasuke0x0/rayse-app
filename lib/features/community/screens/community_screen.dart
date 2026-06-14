@@ -7,6 +7,26 @@ import '../models/community_video.dart';
 import '../providers/community_provider.dart';
 import '../repository/community_video_repository.dart';
 
+// ─── Skill label mapping ────────────────────────────────────────────────────────
+
+const _skillLabels = <String, String>{
+  'basic_bounce': 'Basic Bounce',
+  'forward_jump': 'Forward Jump',
+  'backward_jump': 'Backward Jump',
+  'alt_steps': 'Alternating Steps',
+  'double_unders': 'Double Unders',
+  'cross_overs': 'Cross Overs',
+  'side_swing': 'Side Swing',
+  'triple_unders': 'Triple Unders',
+  'cross_double': 'Cross Double',
+  'releases': 'Releases',
+  'freestyle': 'Freestyle',
+};
+
+String _skillLabel(String id) => _skillLabels[id] ?? id;
+
+// ─── Community screen ───────────────────────────────────────────────────────────
+
 class CommunityScreen extends ConsumerStatefulWidget {
   const CommunityScreen({super.key});
 
@@ -16,12 +36,30 @@ class CommunityScreen extends ConsumerStatefulWidget {
 
 class _CommunityScreenState extends ConsumerState<CommunityScreen> {
   int _selectedWeekIndex = 0;
+  String? _selectedSkill;
   late final List<({int week, int year})> _weeks;
 
   @override
   void initState() {
     super.initState();
     _weeks = _buildWeekList();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Pick up external skill filter (e.g. from skill detail "See all")
+    ref.listen(communitySkillFilterProvider, (prev, next) {
+      if (next != null) {
+        setState(() {
+          _selectedSkill = next;
+          _selectedWeekIndex = 0;
+        });
+        // Reset the provider so it doesn't re-trigger
+        ref.read(communitySkillFilterProvider.notifier).state = null;
+      }
+    });
+
+    return _buildScaffold(context);
   }
 
   List<({int week, int year})> _buildWeekList() {
@@ -38,8 +76,7 @@ class _CommunityScreenState extends ConsumerState<CommunityScreen> {
     });
   }
 
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildScaffold(BuildContext context) {
     final userTier = ref.watch(userTierProvider).valueOrNull ?? 'free';
     final selectedWeek = _weeks[_selectedWeekIndex];
     final weekKey = (selectedWeek.week, selectedWeek.year);
@@ -55,6 +92,13 @@ class _CommunityScreenState extends ConsumerState<CommunityScreen> {
             _buildHeader(),
             const SizedBox(height: 16),
             _buildWeekTabs(userTier),
+            const SizedBox(height: 8),
+            // Skill filters — only show when not archive-locked
+            if (!(_selectedWeekIndex > 0 && userTier == 'free'))
+              videosAsync.whenOrNull(
+                    data: (videos) => _buildSkillFilters(videos),
+                  ) ??
+                  const SizedBox.shrink(),
             const SizedBox(height: 4),
             Expanded(
               child: _buildContent(
@@ -104,7 +148,10 @@ class _CommunityScreenState extends ConsumerState<CommunityScreen> {
           final isArchive = i > 0;
           final showLock = isArchive && userTier == 'free' && !isSelected;
           return GestureDetector(
-            onTap: () => setState(() => _selectedWeekIndex = i),
+            onTap: () => setState(() {
+              _selectedWeekIndex = i;
+              _selectedSkill = null;
+            }),
             child: Container(
               margin: const EdgeInsets.only(right: 8),
               padding:
@@ -144,6 +191,57 @@ class _CommunityScreenState extends ConsumerState<CommunityScreen> {
     );
   }
 
+  Widget _buildSkillFilters(List<CommunityVideo> videos) {
+    // Only show skills that have videos this week
+    final availableSkills =
+        videos.map((v) => v.skillId).toSet().toList()..sort();
+    if (availableSkills.length <= 1) return const SizedBox.shrink();
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Row(
+        children: [
+          _buildFilterChip('ALL', _selectedSkill == null, () {
+            setState(() => _selectedSkill = null);
+          }),
+          for (final skillId in availableSkills)
+            _buildFilterChip(
+              _skillLabel(skillId).toUpperCase(),
+              _selectedSkill == skillId,
+              () => setState(() => _selectedSkill = skillId),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFilterChip(String label, bool active, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.only(right: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+        decoration: BoxDecoration(
+          color: active ? AppColors.accent : AppColors.surface,
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(
+            color: active ? AppColors.accent : AppColors.border,
+          ),
+        ),
+        child: Text(
+          label,
+          style: GoogleFonts.inter(
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+            color: active ? Colors.white : AppColors.textSecondary,
+            letterSpacing: 0.3,
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildContent(
     AsyncValue<List<CommunityVideo>> videosAsync,
     Set<String> myReactions,
@@ -172,17 +270,37 @@ class _CommunityScreenState extends ConsumerState<CommunityScreen> {
       ),
       data: (videos) {
         if (videos.isEmpty) return _buildEmptyState();
-        return ListView.builder(
+
+        // Client-side skill filter
+        final filtered = _selectedSkill == null
+            ? videos
+            : videos.where((v) => v.skillId == _selectedSkill).toList();
+
+        if (filtered.isEmpty) {
+          return _buildEmptyFilterState();
+        }
+
+        return GridView.builder(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-          itemCount: videos.length,
-          itemBuilder: (_, i) => _VideoCard(
-            video: videos[i],
-            rank: i + 1,
-            hasReacted: myReactions.contains(videos[i].id),
-            weekKey: weekKey,
-            onTap: () =>
-                context.push('/community-video', extra: videos[i]),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            crossAxisSpacing: 10,
+            mainAxisSpacing: 10,
+            childAspectRatio: 0.75,
           ),
+          itemCount: filtered.length,
+          itemBuilder: (_, i) {
+            final video = filtered[i];
+            // Rank from the original unfiltered list
+            final rank = videos.indexOf(video) + 1;
+            return _CompactVideoCard(
+              video: video,
+              rank: rank,
+              hasReacted: myReactions.contains(video.id),
+              onTap: () =>
+                  context.push('/community-video', extra: video),
+            );
+          },
         );
       },
     );
@@ -286,31 +404,62 @@ class _CommunityScreenState extends ConsumerState<CommunityScreen> {
       ),
     );
   }
+
+  Widget _buildEmptyFilterState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.filter_list_off_rounded,
+                color: AppColors.textMuted, size: 40),
+            const SizedBox(height: 12),
+            Text(
+              'NO VIDEOS FOR THIS SKILL',
+              style: GoogleFonts.poppins(
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textPrimary,
+                letterSpacing: 0.5,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Try selecting a different skill or check back later.',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.inter(
+                fontSize: 13,
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
-// ─── Video card ────────────────────────────────────────────────────────────────
+// ─── Compact video card (grid) ──────────────────────────────────────────────────
 
-class _VideoCard extends ConsumerWidget {
+class _CompactVideoCard extends StatelessWidget {
   final CommunityVideo video;
   final int rank;
   final bool hasReacted;
-  final (int, int) weekKey;
   final VoidCallback onTap;
 
-  const _VideoCard({
+  const _CompactVideoCard({
     required this.video,
     required this.rank,
     required this.hasReacted,
-    required this.weekKey,
     required this.onTap,
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
         decoration: BoxDecoration(
           color: AppColors.surface,
           borderRadius: BorderRadius.circular(16),
@@ -323,147 +472,87 @@ class _VideoCard extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Thumbnail area
-            Stack(
-              children: [
-                AspectRatio(
-                  aspectRatio: 16 / 9,
-                  child: ClipRRect(
-                    borderRadius: const BorderRadius.vertical(
-                        top: Radius.circular(16)),
-                    child: Container(
-                      color: const Color(0xFF27272A),
-                      child: Center(
-                        child: Icon(
-                          Icons.play_circle_outline_rounded,
-                          color:
-                              AppColors.accent.withValues(alpha: 0.7),
-                          size: 52,
+            // Thumbnail
+            Expanded(
+              child: Stack(
+                children: [
+                  Positioned.fill(
+                    child: ClipRRect(
+                      borderRadius: const BorderRadius.vertical(
+                          top: Radius.circular(15)),
+                      child: Container(
+                        color: const Color(0xFF27272A),
+                        child: Center(
+                          child: Icon(
+                            Icons.play_circle_outline_rounded,
+                            color:
+                                AppColors.accent.withValues(alpha: 0.6),
+                            size: 36,
+                          ),
                         ),
                       ),
                     ),
                   ),
-                ),
-                // Rank badge
-                Positioned(
-                  top: 10,
-                  left: 10,
-                  child: _RankBadge(rank: rank),
-                ),
-                // Samy Approved badge
-                if (video.samyApproved)
+                  // Rank badge
                   Positioned(
-                    top: 10,
-                    right: 10,
-                    child: _SamyBadge(),
+                    top: 8,
+                    left: 8,
+                    child: _RankBadge(rank: rank),
                   ),
-              ],
+                  // Skill pill
+                  Positioned(
+                    bottom: 8,
+                    left: 8,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.65),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Text(
+                        _skillLabel(video.skillId),
+                        style: GoogleFonts.inter(
+                          fontSize: 9,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.accent,
+                          letterSpacing: 0.2,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
             // Info
             Padding(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      Text(
-                        '@${video.username}',
-                        style: GoogleFonts.inter(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Text('·',
-                          style: GoogleFonts.inter(
-                              color: AppColors.textMuted)),
-                      const SizedBox(width: 6),
-                      Text(
-                        _skillLabel(video.skillId),
-                        style: GoogleFonts.inter(
-                          fontSize: 13,
-                          color: AppColors.accent,
-                        ),
-                      ),
-                    ],
-                  ),
-                  if (video.caption.isNotEmpty) ...[
-                    const SizedBox(height: 4),
-                    Text(
-                      video.caption,
-                      style: GoogleFonts.inter(
-                        fontSize: 13,
-                        color: AppColors.textSecondary,
-                        height: 1.4,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
+                  Text(
+                    '@${video.username}',
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
                     ),
-                  ],
-                  const SizedBox(height: 10),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
                   Row(
                     children: [
+                      const Text('🔥', style: TextStyle(fontSize: 11)),
+                      const SizedBox(width: 3),
                       Text(
                         '${video.score}',
                         style: GoogleFonts.inter(
-                          fontSize: 14,
+                          fontSize: 12,
                           fontWeight: FontWeight.w700,
                           color: hasReacted
                               ? AppColors.accent
                               : AppColors.textSecondary,
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        'fires',
-                        style: GoogleFonts.inter(
-                          fontSize: 12,
-                          color: AppColors.textMuted,
-                        ),
-                      ),
-                      const Spacer(),
-                      GestureDetector(
-                        onTap: () {
-                          ref
-                              .read(myReactionsProvider.notifier)
-                              .toggle(video.id, weekKey);
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: hasReacted
-                                ? AppColors.accent
-                                    .withValues(alpha: 0.15)
-                                : AppColors.background,
-                            borderRadius: BorderRadius.circular(999),
-                            border: Border.all(
-                              color: hasReacted
-                                  ? AppColors.accent
-                                  : AppColors.border,
-                            ),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Text('🔥',
-                                  style: TextStyle(fontSize: 13)),
-                              const SizedBox(width: 4),
-                              Text(
-                                hasReacted ? 'FIRED' : 'FIRE IT',
-                                style: GoogleFonts.inter(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w700,
-                                  color: hasReacted
-                                      ? AppColors.accent
-                                      : AppColors.textSecondary,
-                                  letterSpacing: 0.5,
-                                ),
-                              ),
-                            ],
-                          ),
                         ),
                       ),
                     ],
@@ -476,22 +565,6 @@ class _VideoCard extends ConsumerWidget {
       ),
     );
   }
-
-  static const _skillLabels = {
-    'basic_bounce': 'Basic Bounce',
-    'forward_jump': 'Forward Jump',
-    'backward_jump': 'Backward Jump',
-    'alt_steps': 'Alternating Steps',
-    'double_unders': 'Double Unders',
-    'cross_overs': 'Cross Overs',
-    'side_swing': 'Side Swing',
-    'triple_unders': 'Triple Unders',
-    'cross_double': 'Cross Double',
-    'releases': 'Releases',
-    'freestyle': 'Freestyle',
-  };
-
-  String _skillLabel(String id) => _skillLabels[id] ?? id;
 }
 
 // ─── Rank badge ────────────────────────────────────────────────────────────────
@@ -504,7 +577,7 @@ class _RankBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding:
-          const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
       decoration: BoxDecoration(
         color: rank == 1
             ? AppColors.accent
@@ -514,43 +587,10 @@ class _RankBadge extends StatelessWidget {
       child: Text(
         '#$rank',
         style: GoogleFonts.inter(
-          fontSize: 11,
+          fontSize: 10,
           fontWeight: FontWeight.w800,
           color: Colors.white,
         ),
-      ),
-    );
-  }
-}
-
-// ─── Samy Approved badge ───────────────────────────────────────────────────────
-
-class _SamyBadge extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: const Color(0xFF7C2D12),
-        borderRadius: BorderRadius.circular(999),
-        border:
-            Border.all(color: AppColors.accent.withValues(alpha: 0.6)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Text('🔥', style: TextStyle(fontSize: 10)),
-          const SizedBox(width: 4),
-          Text(
-            'SAMY APPROVED',
-            style: GoogleFonts.inter(
-              fontSize: 9,
-              fontWeight: FontWeight.w700,
-              color: AppColors.accent,
-              letterSpacing: 0.5,
-            ),
-          ),
-        ],
       ),
     );
   }

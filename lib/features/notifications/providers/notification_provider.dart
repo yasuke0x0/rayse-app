@@ -7,10 +7,26 @@ final notificationRepositoryProvider = Provider<NotificationRepository>(
   (_) => NotificationRepository(),
 );
 
-final unreadNotificationCountProvider = FutureProvider<int>((ref) async {
+final unreadNotificationCountProvider = StreamProvider<int>((ref) async* {
   final userId = Supabase.instance.client.auth.currentUser?.id;
-  if (userId == null) return 0;
-  return ref.read(notificationRepositoryProvider).unreadCount(userId);
+  if (userId == null) {
+    yield 0;
+    return;
+  }
+
+  // Fetch initial count
+  yield await ref.read(notificationRepositoryProvider).unreadCount(userId);
+
+  // Listen for realtime changes on this user's notifications
+  final stream = Supabase.instance.client
+      .from('notifications')
+      .stream(primaryKey: ['id'])
+      .eq('user_id', userId);
+
+  await for (final rows in stream) {
+    final unread = rows.where((r) => r['is_read'] == false).length;
+    yield unread;
+  }
 });
 
 class NotificationsNotifier extends AsyncNotifier<List<AppNotification>> {

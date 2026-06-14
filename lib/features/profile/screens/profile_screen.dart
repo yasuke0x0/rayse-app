@@ -11,6 +11,20 @@ import '../../notifications/providers/notification_provider.dart';
 import '../../skill_tree/models/skill.dart';
 import '../../skill_tree/providers/skill_provider.dart';
 
+const _skillLabels = <String, String>{
+  'basic_bounce': 'Basic Bounce',
+  'forward_jump': 'Forward Jump',
+  'backward_jump': 'Backward Jump',
+  'alt_steps': 'Alternating Steps',
+  'double_unders': 'Double Unders',
+  'cross_overs': 'Cross Overs',
+  'side_swing': 'Side Swing',
+  'triple_unders': 'Triple Unders',
+  'cross_double': 'Cross Double',
+  'releases': 'Releases',
+  'freestyle': 'Freestyle',
+};
+
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
 
@@ -34,306 +48,332 @@ class ProfileScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Text(
-                    'PROFILE',
-                    style: GoogleFonts.poppins(
-                      fontSize: 24,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textPrimary,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                  const Spacer(),
-                  _NotificationBell(),
-                ],
-              ),
-              const SizedBox(height: 24),
-
-              // ── Avatar + identity ──────────────────────────────────────────
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: AppColors.surface,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: AppColors.border),
-                ),
-                child: Row(
+        child: Column(
+          children: [
+            // ── Scrollable content ─────────────────────────────────────
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Avatar circle
-                    Container(
-                      width: 56,
-                      height: 56,
-                      decoration: BoxDecoration(
-                        color: AppColors.accent.withValues(alpha: 0.15),
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                            color: AppColors.accent.withValues(alpha: 0.4),
-                            width: 2),
-                      ),
-                      child: Center(
-                        child: Text(
-                          username.isNotEmpty
-                              ? username[0].toUpperCase()
-                              : '?',
+                    // Header
+                    Row(
+                      children: [
+                        Text(
+                          'PROFILE',
                           style: GoogleFonts.poppins(
-                            fontSize: 22,
+                            fontSize: 24,
                             fontWeight: FontWeight.w700,
-                            color: AppColors.accent,
+                            color: AppColors.textPrimary,
+                            letterSpacing: 0.5,
                           ),
                         ),
-                      ),
+                        const Spacer(),
+                        _NotificationBell(),
+                      ],
                     ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                    const SizedBox(height: 24),
+
+                    // ── Avatar + identity ───────────────────────────────
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: AppColors.surface,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: AppColors.border),
+                      ),
+                      child: Row(
                         children: [
-                          Text(
-                            '@$username',
-                            style: GoogleFonts.poppins(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.textPrimary,
+                          Container(
+                            width: 56,
+                            height: 56,
+                            decoration: BoxDecoration(
+                              color:
+                                  AppColors.accent.withValues(alpha: 0.15),
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                  color: AppColors.accent
+                                      .withValues(alpha: 0.4),
+                                  width: 2),
+                            ),
+                            child: Center(
+                              child: Text(
+                                username.isNotEmpty
+                                    ? username[0].toUpperCase()
+                                    : '?',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.accent,
+                                ),
+                              ),
                             ),
                           ),
-                          const SizedBox(height: 2),
-                          Text(
-                            email,
-                            style: GoogleFonts.inter(
-                              fontSize: 12,
-                              color: AppColors.textSecondary,
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  '@$username',
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.textPrimary,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  email,
+                                  style: GoogleFonts.inter(
+                                    fontSize: 12,
+                                    color: AppColors.textSecondary,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                _RoleBadge(
+                                    isCreator: isCreator,
+                                    userTier: userTier),
+                              ],
                             ),
                           ),
-                          const SizedBox(height: 8),
-                          _RoleBadge(
-                              isCreator: isCreator, userTier: userTier),
                         ],
                       ),
                     ),
+                    const SizedBox(height: 16),
+
+                    // ── Stats row ───────────────────────────────────────
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _StatCard(
+                            icon: Icons.bolt,
+                            value: '$totalXP',
+                            label: 'XP EARNED',
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: _StatCard(
+                            icon: Icons.star_rounded,
+                            value: '$masteredCount',
+                            label: 'MASTERED',
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: submissionsAsync.when(
+                            loading: () => const _StatCard(
+                                icon: Icons.videocam,
+                                value: '—',
+                                label: 'VIDEOS'),
+                            error: (e, st) => const _StatCard(
+                                icon: Icons.videocam,
+                                value: '—',
+                                label: 'VIDEOS'),
+                            data: (count) => _StatCard(
+                              icon: Icons.videocam,
+                              value: '$count',
+                              label: 'VIDEOS',
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+
+                    // ── My videos ───────────────────────────────────────
+                    _buildMyVideosSection(ref, context),
+
+                    // ── Admin panel button (creators only) ──────────────
+                    if (isCreator) ...[
+                      const SizedBox(height: 16),
+                      GestureDetector(
+                        onTap: () => context.push('/admin'),
+                        child: Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: AppColors.surface,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                                color:
+                                    AppColors.accent.withValues(alpha: 0.5)),
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 40,
+                                height: 40,
+                                decoration: BoxDecoration(
+                                  color: AppColors.accent
+                                      .withValues(alpha: 0.15),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: const Icon(
+                                    Icons.admin_panel_settings,
+                                    color: AppColors.accent,
+                                    size: 20),
+                              ),
+                              const SizedBox(width: 14),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'ADMIN PANEL',
+                                      style: GoogleFonts.inter(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w700,
+                                        color: AppColors.textPrimary,
+                                        letterSpacing: 0.5,
+                                      ),
+                                    ),
+                                    pendingAsync.when(
+                                      loading: () => Text(
+                                        'Review community videos',
+                                        style: GoogleFonts.inter(
+                                            fontSize: 12,
+                                            color:
+                                                AppColors.textSecondary),
+                                      ),
+                                      error: (e, st) =>
+                                          const SizedBox.shrink(),
+                                      data: (videos) => Text(
+                                        videos.isEmpty
+                                            ? 'No pending videos'
+                                            : '${videos.length} video${videos.length == 1 ? '' : 's'} to review',
+                                        style: GoogleFonts.inter(
+                                          fontSize: 12,
+                                          color: videos.isEmpty
+                                              ? AppColors.textSecondary
+                                              : AppColors.accent,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              if (pendingAsync.valueOrNull?.isNotEmpty ==
+                                  true)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 8, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.accent,
+                                    borderRadius:
+                                        BorderRadius.circular(999),
+                                  ),
+                                  child: Text(
+                                    '${pendingAsync.valueOrNull!.length}',
+                                    style: GoogleFonts.inter(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w800,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                              const SizedBox(width: 4),
+                              const Icon(Icons.arrow_forward_ios,
+                                  color: AppColors.textMuted, size: 14),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+
+                    // ── Upgrade banner (free users only) ────────────────
+                    if (userTier == 'free' && !isCreator) ...[
+                      const SizedBox(height: 16),
+                      GestureDetector(
+                        onTap: () => context.push('/paywall'),
+                        child: Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF7C2D12),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                                color: AppColors.accent
+                                    .withValues(alpha: 0.4)),
+                          ),
+                          child: Row(
+                            children: [
+                              const Text('⚡',
+                                  style: TextStyle(fontSize: 24)),
+                              const SizedBox(width: 14),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'UPGRADE TO PREMIUM',
+                                      style: GoogleFonts.inter(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w700,
+                                        color: AppColors.accent,
+                                        letterSpacing: 0.5,
+                                      ),
+                                    ),
+                                    Text(
+                                      'Submit videos, access archives & more',
+                                      style: GoogleFonts.inter(
+                                        fontSize: 12,
+                                        color: AppColors.textSecondary,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const Icon(Icons.arrow_forward_ios,
+                                  color: AppColors.accent, size: 14),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
-              const SizedBox(height: 16),
+            ),
 
-              // ── Stats row ──────────────────────────────────────────────────
-              Row(
-                children: [
-                  Expanded(
-                    child: _StatCard(
-                      icon: Icons.bolt,
-                      value: '$totalXP',
-                      label: 'XP EARNED',
-                    ),
+            // ── Pinned log out button ──────────────────────────────────
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
+              child: GestureDetector(
+                onTap: () async {
+                  await ref.read(authRepositoryProvider).signOut();
+                },
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppColors.border),
                   ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: _StatCard(
-                      icon: Icons.star_rounded,
-                      value: '$masteredCount',
-                      label: 'MASTERED',
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: submissionsAsync.when(
-                      loading: () => const _StatCard(
-                          icon: Icons.videocam, value: '—', label: 'VIDEOS'),
-                      error: (e, st) => const _StatCard(
-                          icon: Icons.videocam, value: '—', label: 'VIDEOS'),
-                      data: (count) => _StatCard(
-                        icon: Icons.videocam,
-                        value: '$count',
-                        label: 'VIDEOS',
+                  child: Center(
+                    child: Text(
+                      'LOG OUT',
+                      style: GoogleFonts.inter(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textSecondary,
+                        letterSpacing: 0.8,
                       ),
                     ),
                   ),
-                ],
-              ),
-              const SizedBox(height: 24),
-
-              // ── My videos ──────────────────────────────────────────────────
-              _buildMyVideosSection(ref),
-              const SizedBox(height: 16),
-
-              // ── Admin panel button (creators only) ─────────────────────────
-              if (isCreator) ...[
-                GestureDetector(
-                  onTap: () => context.push('/admin'),
-                  child: Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: AppColors.surface,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                          color: AppColors.accent.withValues(alpha: 0.5)),
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 40,
-                          height: 40,
-                          decoration: BoxDecoration(
-                            color: AppColors.accent.withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: const Icon(Icons.admin_panel_settings,
-                              color: AppColors.accent, size: 20),
-                        ),
-                        const SizedBox(width: 14),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'ADMIN PANEL',
-                                style: GoogleFonts.inter(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w700,
-                                  color: AppColors.textPrimary,
-                                  letterSpacing: 0.5,
-                                ),
-                              ),
-                              pendingAsync.when(
-                                loading: () => Text(
-                                  'Review community videos',
-                                  style: GoogleFonts.inter(
-                                      fontSize: 12,
-                                      color: AppColors.textSecondary),
-                                ),
-                                error: (e, st) => const SizedBox.shrink(),
-                                data: (videos) => Text(
-                                  videos.isEmpty
-                                      ? 'No pending videos'
-                                      : '${videos.length} video${videos.length == 1 ? '' : 's'} to review',
-                                  style: GoogleFonts.inter(
-                                    fontSize: 12,
-                                    color: videos.isEmpty
-                                        ? AppColors.textSecondary
-                                        : AppColors.accent,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        if (pendingAsync.valueOrNull?.isNotEmpty == true)
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: AppColors.accent,
-                              borderRadius: BorderRadius.circular(999),
-                            ),
-                            child: Text(
-                              '${pendingAsync.valueOrNull!.length}',
-                              style: GoogleFonts.inter(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w800,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                        const SizedBox(width: 4),
-                        const Icon(Icons.arrow_forward_ios,
-                            color: AppColors.textMuted, size: 14),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-              ],
-
-              // ── Upgrade banner (free users only) ───────────────────────────
-              if (userTier == 'free' && !isCreator) ...[
-                GestureDetector(
-                  onTap: () => context.push('/paywall'),
-                  child: Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF7C2D12),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                          color: AppColors.accent.withValues(alpha: 0.4)),
-                    ),
-                    child: Row(
-                      children: [
-                        const Text('⚡',
-                            style: TextStyle(fontSize: 24)),
-                        const SizedBox(width: 14),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'UPGRADE TO PREMIUM',
-                                style: GoogleFonts.inter(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w700,
-                                  color: AppColors.accent,
-                                  letterSpacing: 0.5,
-                                ),
-                              ),
-                              Text(
-                                'Submit videos, access archives & more',
-                                style: GoogleFonts.inter(
-                                  fontSize: 12,
-                                  color: AppColors.textSecondary,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const Icon(Icons.arrow_forward_ios,
-                            color: AppColors.accent, size: 14),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-              ],
-
-              // ── Log out ────────────────────────────────────────────────────
-              SizedBox(
-                width: double.infinity,
-                child: TextButton(
-                  onPressed: () async {
-                    await ref.read(authRepositoryProvider).signOut();
-                  },
-                  style: TextButton.styleFrom(
-                    backgroundColor: AppColors.surface,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      side: const BorderSide(color: AppColors.border),
-                    ),
-                  ),
-                  child: Text(
-                    'LOG OUT',
-                    style: GoogleFonts.inter(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textSecondary,
-                      letterSpacing: 0.8,
-                    ),
-                  ),
                 ),
               ),
-              const SizedBox(height: 16),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildMyVideosSection(WidgetRef ref) {
+  Widget _buildMyVideosSection(WidgetRef ref, BuildContext context) {
     final videosAsync = ref.watch(myAllVideosProvider);
 
     return videosAsync.when(
@@ -341,20 +381,56 @@ class ProfileScreen extends ConsumerWidget {
       error: (e, st) => const SizedBox.shrink(),
       data: (videos) {
         if (videos.isEmpty) return const SizedBox.shrink();
+
+        // Group by status for counts
+        final liveCount =
+            videos.where((v) => v.status == VideoStatus.approved).length;
+        final pendingCount =
+            videos.where((v) => v.status == VideoStatus.pending).length;
+
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'MY VIDEOS',
-              style: GoogleFonts.inter(
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-                color: AppColors.accent,
-                letterSpacing: 1.5,
+            // Section header
+            Row(
+              children: [
+                Text(
+                  'MY VIDEOS',
+                  style: GoogleFonts.inter(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.accent,
+                    letterSpacing: 1.5,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                if (liveCount > 0)
+                  _MiniPill(
+                      label: '$liveCount LIVE',
+                      bg: const Color(0xFF14532D),
+                      fg: const Color(0xFF4ADE80)),
+                if (pendingCount > 0) ...[
+                  const SizedBox(width: 6),
+                  _MiniPill(
+                      label: '$pendingCount PENDING',
+                      bg: const Color(0xFF3F3F46),
+                      fg: AppColors.textSecondary),
+                ],
+              ],
+            ),
+            const SizedBox(height: 12),
+
+            // Horizontal scroll of video cards
+            SizedBox(
+              height: 160,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: videos.length,
+                separatorBuilder: (_, _) => const SizedBox(width: 10),
+                itemBuilder: (_, i) =>
+                    _VideoCard(video: videos[i], context: context),
               ),
             ),
-            const SizedBox(height: 10),
-            ...videos.map((v) => _VideoRow(video: v)),
           ],
         );
       },
@@ -362,36 +438,45 @@ class ProfileScreen extends ConsumerWidget {
   }
 }
 
-// ─── Video row for profile ────────────────────────────────────────────────────
+// ─── Mini status pill (for section header) ──────────────────────────────────────
 
-class _VideoRow extends StatelessWidget {
-  final CommunityVideo video;
-  const _VideoRow({required this.video});
-
-  static const _skillLabels = {
-    'basic_bounce': 'Basic Bounce',
-    'forward_jump': 'Forward Jump',
-    'backward_jump': 'Backward Jump',
-    'alt_steps': 'Alternating Steps',
-    'double_unders': 'Double Unders',
-    'cross_overs': 'Cross Overs',
-    'side_swing': 'Side Swing',
-    'triple_unders': 'Triple Unders',
-    'cross_double': 'Cross Double',
-    'releases': 'Releases',
-    'freestyle': 'Freestyle',
-  };
-
-  String _timeAgo(DateTime dt) {
-    final diff = DateTime.now().difference(dt);
-    if (diff.inDays > 0) return '${diff.inDays}d ago';
-    if (diff.inHours > 0) return '${diff.inHours}h ago';
-    if (diff.inMinutes > 0) return '${diff.inMinutes}m ago';
-    return 'just now';
-  }
+class _MiniPill extends StatelessWidget {
+  final String label;
+  final Color bg;
+  final Color fg;
+  const _MiniPill({required this.label, required this.bg, required this.fg});
 
   @override
   Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        label,
+        style: GoogleFonts.inter(
+          fontSize: 9,
+          fontWeight: FontWeight.w700,
+          color: fg,
+          letterSpacing: 0.3,
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Video card (horizontal scroll) ─────────────────────────────────────────────
+
+class _VideoCard extends StatelessWidget {
+  final CommunityVideo video;
+  final BuildContext context;
+
+  const _VideoCard({required this.video, required this.context});
+
+  @override
+  Widget build(BuildContext _) {
     final (statusLabel, statusBg, statusFg) = switch (video.status) {
       VideoStatus.pending => (
           'PENDING',
@@ -412,84 +497,134 @@ class _VideoRow extends StatelessWidget {
 
     return GestureDetector(
       onTap: () => context.push('/community-video', extra: video),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 8),
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.border),
-        ),
-        child: Row(
-          children: [
-            Icon(Icons.play_circle_outline_rounded,
-                color: AppColors.accent.withValues(alpha: 0.7), size: 22),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    _skillLabels[video.skillId] ?? video.skillId,
-                    style: GoogleFonts.inter(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Row(
-                    children: [
-                      Text(
-                        _timeAgo(video.submittedAt),
-                        style: GoogleFonts.inter(
-                          fontSize: 11,
-                          color: AppColors.textMuted,
-                        ),
-                      ),
-                      if (video.caption.isNotEmpty) ...[
-                        Text(' · ',
-                            style: GoogleFonts.inter(
-                                fontSize: 11, color: AppColors.textMuted)),
-                        Expanded(
-                          child: Text(
-                            video.caption,
-                            style: GoogleFonts.inter(
-                              fontSize: 11,
-                              color: AppColors.textSecondary,
+      child: SizedBox(
+        width: 130,
+        child: Container(
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: AppColors.border),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Thumbnail
+              Expanded(
+                child: Stack(
+                  children: [
+                    Positioned.fill(
+                      child: ClipRRect(
+                        borderRadius: const BorderRadius.vertical(
+                            top: Radius.circular(13)),
+                        child: Container(
+                          color: const Color(0xFF27272A),
+                          child: Center(
+                            child: Icon(
+                              Icons.play_circle_outline_rounded,
+                              color:
+                                  AppColors.accent.withValues(alpha: 0.5),
+                              size: 28,
                             ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                      ],
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 8),
-            Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: statusBg,
-                borderRadius: BorderRadius.circular(999),
-              ),
-              child: Text(
-                statusLabel,
-                style: GoogleFonts.inter(
-                  fontSize: 9,
-                  fontWeight: FontWeight.w700,
-                  color: statusFg,
-                  letterSpacing: 0.5,
+                      ),
+                    ),
+                    // Status pill
+                    Positioned(
+                      top: 6,
+                      left: 6,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: statusBg,
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: Text(
+                          statusLabel,
+                          style: GoogleFonts.inter(
+                            fontSize: 8,
+                            fontWeight: FontWeight.w700,
+                            color: statusFg,
+                            letterSpacing: 0.3,
+                          ),
+                        ),
+                      ),
+                    ),
+                    // Fire score (approved only)
+                    if (video.status == VideoStatus.approved &&
+                        video.score > 0)
+                      Positioned(
+                        top: 6,
+                        right: 6,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 5, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withValues(alpha: 0.6),
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Text('🔥',
+                                  style: TextStyle(fontSize: 8)),
+                              const SizedBox(width: 2),
+                              Text(
+                                '${video.score}',
+                                style: GoogleFonts.inter(
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.accent,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
               ),
-            ),
-          ],
+              // Info
+              Padding(
+                padding: const EdgeInsets.fromLTRB(8, 6, 8, 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _skillLabels[video.skillId] ?? video.skillId,
+                      style: GoogleFonts.inter(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimary,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      _timeAgo(video.submittedAt),
+                      style: GoogleFonts.inter(
+                        fontSize: 10,
+                        color: AppColors.textMuted,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
+  }
+
+  static String _timeAgo(DateTime dt) {
+    final diff = DateTime.now().difference(dt);
+    if (diff.inDays > 0) return '${diff.inDays}d ago';
+    if (diff.inHours > 0) return '${diff.inHours}h ago';
+    if (diff.inMinutes > 0) return '${diff.inMinutes}m ago';
+    return 'just now';
   }
 }
 
@@ -544,8 +679,14 @@ class _NotificationBell extends ConsumerWidget {
         child: Stack(
           alignment: Alignment.center,
           children: [
-            const Icon(Icons.notifications_none_rounded,
-                color: AppColors.textSecondary, size: 24),
+            Icon(
+                count > 0
+                    ? Icons.notifications_rounded
+                    : Icons.notifications_none_rounded,
+                color: count > 0
+                    ? AppColors.textPrimary
+                    : AppColors.textSecondary,
+                size: 24),
             if (count > 0)
               Positioned(
                 right: 6,
