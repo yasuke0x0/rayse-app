@@ -1,0 +1,200 @@
+# Challenges
+
+Weekly skill challenges that leverage the community video system. Each week features a specific skill — participating means submitting a video, and the leaderboard is ranked by fire score.
+
+---
+
+## How It Works
+
+Challenges are a **curated lens on top of community videos**, not a separate system.
+
+```
+Admin creates challenge row (skill + week)
+        ↓
+User sees challenge in Challenges tab
+        ↓
+User submits video via existing upload flow
+        ↓
+Video goes through admin approval
+        ↓
+Approved video appears on challenge leaderboard
+        ↓
+Community votes with 🔥 fire reactions
+        ↓
+Leaderboard ranks by fire score
+```
+
+No separate "join" or "entry" mechanism — your submission IS your participation.
+
+---
+
+## Database
+
+### `challenges` table
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | uuid (PK) | Auto-generated |
+| skill_id | text | Links to skill system (e.g. `double_unders`) |
+| title | text | Display title (e.g. "Double Under Showdown") |
+| description | text | Challenge description shown in hero card |
+| week_number | integer | ISO week number |
+| week_year | integer | Year |
+| xp_reward | integer | XP bonus (default 50, reserved for future use) |
+| created_at | timestamptz | Auto-generated |
+
+**Unique constraint:** `(skill_id, week_number, week_year)` — one challenge per skill per week.
+
+No `challenge_participants` or `challenge_entries` tables needed. Participation data comes from `community_videos` (filtered by `skill_id` + `week_number` + `week_year`).
+
+---
+
+## Challenge Lifecycle
+
+### Creating a Challenge
+
+Challenges are created manually by inserting a row into the `challenges` table with the target `skill_id`, `week_number`, and `week_year`. There is no admin UI for this yet — use the Supabase SQL editor.
+
+```sql
+INSERT INTO public.challenges (skill_id, title, description, week_number, week_year, xp_reward)
+VALUES ('cross_overs', 'Cross Over Kings', 'Show us your smoothest Cross Overs.', 25, 2026, 100);
+```
+
+### Active vs Past
+
+- **Active:** `week_number` and `week_year` match the current ISO week
+- **Past:** any challenge where the week has already passed
+- Only one challenge should be active per week (enforced by convention, not constraint)
+
+### Days Left
+
+Computed from the current day's position in the ISO week. Sunday = 0 days left.
+
+---
+
+## Challenges Screen Layout
+
+### 1. Header
+"CHALLENGES" title + subtitle "Compete with the community every week"
+
+### 2. Active Challenge Hero Card
+- "THIS WEEK'S CHALLENGE" badge + days left countdown
+- Challenge title and description
+- Skill pill badge (e.g. "DOUBLE UNDERS")
+- Participant count (total video submissions for that skill+week)
+- CTA button:
+
+| User State | Button | Action |
+|------------|--------|--------|
+| Hasn't submitted | "SUBMIT YOUR VIDEO" (orange) | → `/submit-video/{skillId}` |
+| Already submitted | "SUBMITTED ✓" (gray, disabled) | — |
+| Free user, premium skill | "🔒 PREMIUM — SUBMIT VIDEO" | → `/paywall` |
+
+### 3. Leaderboard
+- Top 10 approved community videos for the challenge's skill+week
+- Ranked by fire score (descending)
+- Each row shows: rank, avatar initial, @username, 🔥 score
+- Rank colors: gold (#FBBF24) for 1st, silver (#94A3B8) for 2nd, bronze (#D97706) for 3rd
+- Current user's row highlighted with accent background
+- Tapping a row navigates to `/community-video` detail screen
+- Empty state: "No approved videos yet — be the first!"
+
+### 4. Past Challenges
+- List of previous week challenges
+- Each card shows: title, week number, skill name
+- **Free users:** locked with "🔒 PREMIUM" badge, tapping → `/paywall`
+- **Premium users:** can browse past challenges
+
+### Empty States
+- No challenges in DB: "NO CHALLENGES YET — Challenges are coming soon!"
+- No active challenge this week: "NO CHALLENGE THIS WEEK — Check back soon"
+
+---
+
+## Home Screen Integration
+
+The home tab shows a **featured challenge card** that dynamically pulls from `activeChallengeProvider`:
+- Shows challenge title + days left
+- Tapping switches to the Challenges tab (index 2)
+- Hidden entirely if no active challenge exists this week
+
+---
+
+## Data Flow
+
+### What's Reused from Community Videos
+
+| Data | Source | How It's Used |
+|------|--------|---------------|
+| Leaderboard | `fetchTopVideosForSkill(skillId, week, year, limit: 10)` | Top 10 approved videos ranked by score |
+| Participant count | Count of `community_videos` rows for skill+week | Shown in hero card |
+| Submission check | `fetchMyVideos(userId, skillId)` filtered by week | Determines CTA button state |
+| Video upload | `/submit-video/{skillId}` screen | Same 3-step flow (pick → caption → submit) |
+| Video detail | `/community-video` screen | Tap leaderboard row to watch + react |
+| Fire reactions | `toggle_reaction` RPC + `myReactionsProvider` | Voting mechanism = leaderboard ranking |
+| Admin approval | Admin panel pending videos flow | Videos must be approved to appear on leaderboard |
+
+### Providers
+
+| Provider | Type | Purpose |
+|----------|------|---------|
+| `challengesProvider` | FutureProvider | Fetches all challenges from Supabase |
+| `activeChallengeProvider` | Provider | Derives current week's challenge from the list |
+| `challengeLeaderboardProvider(id)` | FutureProvider.family | Top 10 approved videos for the challenge |
+| `hasSubmittedChallengeProvider(id)` | FutureProvider.family | Whether current user submitted this week |
+| `challengeParticipantCountProvider(id)` | FutureProvider.family | Total submissions for the challenge |
+
+---
+
+## Premium Gating
+
+| Content | Free | Premium |
+|---------|------|---------|
+| View active challenge | Yes | Yes |
+| View leaderboard | Yes | Yes |
+| Submit video (free skill) | Yes | Yes |
+| Submit video (premium skill) | No → paywall | Yes |
+| View past challenges | No → paywall | Yes |
+
+Premium check uses `userTierProvider` (returns `'premium'` if `is_premium` or `is_creator`). Skill premium check uses `skill.isFreeNode` from the skill tree data.
+
+---
+
+## Week System
+
+Uses the same ISO week calculation as community videos: `CommunityVideoRepository.isoWeek(DateTime)`.
+
+- Challenge week matches community video `week_number` + `week_year`
+- This means a challenge's leaderboard is exactly the community video rankings for that skill+week
+- No duplication of data — single source of truth
+
+---
+
+## File Structure
+
+```
+lib/features/challenges/
+  models/
+    challenge.dart              -- Challenge entity (maps to DB table)
+  providers/
+    challenge_provider.dart     -- All providers (active, leaderboard, submission, participants)
+  repository/
+    challenge_repository.dart   -- Supabase queries (challenges table + participant count)
+  screens/
+    challenges_screen.dart      -- Full screen: hero card, leaderboard, past challenges
+```
+
+Integration points:
+- `lib/features/content/screens/home_screen.dart` — dynamic featured challenge card
+- `lib/features/community/` — video upload, approval, reactions, rankings (all reused)
+
+---
+
+## Future Enhancements (Not Yet Built)
+
+- **XP rewards:** `xp_reward` column exists but isn't wired. Tiers: submit = 25 XP, approved = 75 XP, top 3 = 150 XP
+- **Admin UI for creating challenges:** currently manual SQL inserts
+- **Auto-rotation:** automatically create next week's challenge from a pool
+- **Challenge history on profile:** show past challenge placements
+- **Notifications:** alert users when a new challenge drops
+- **Multiple challenges per week:** current design supports it but UI shows one hero
