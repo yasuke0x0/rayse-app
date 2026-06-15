@@ -53,12 +53,16 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
         context.pushReplacement('/skill-mastered/${widget.skillId}');
       } else {
         final sessions = updatedSkill.sessionsCompleted;
+        final sessionsLeft = 3 - sessions;
+        final message = sessionsLeft == 1
+            ? 'Session $sessions/3 — one more to unlock video recording! 🎥'
+            : 'Session $sessions/3 complete — $sessionsLeft sessions to unlock video recording 🔥';
         final messenger = ScaffoldMessenger.of(context);
         context.pop();
         messenger.showSnackBar(
           SnackBar(
             content: Text(
-              'Session $sessions/3 complete! Keep going 🔥',
+              message,
               style: GoogleFonts.inter(color: Colors.white),
             ),
             backgroundColor: AppColors.surface,

@@ -34,7 +34,7 @@ class CommunityVideoRepository {
     return _client.storage.from('community-videos').getPublicUrl(path);
   }
 
-  // Submit a video (inserts into community_videos with status=pending)
+  // Submit a challenge video (pending admin approval)
   Future<void> submitVideo({
     required String userId,
     required String skillId,
@@ -48,6 +48,27 @@ class CommunityVideoRepository {
       'video_url': videoUrl,
       'caption': caption,
       'status': 'pending',
+      'is_challenge': true,
+      'week_number': isoWeek(now),
+      'week_year': now.year,
+    });
+  }
+
+  // Submit a personal skill video (auto-approved, private)
+  Future<void> submitPersonalVideo({
+    required String userId,
+    required String skillId,
+    required String videoUrl,
+    required String caption,
+  }) async {
+    final now = DateTime.now().toUtc();
+    await _client.from('community_videos').insert({
+      'user_id': userId,
+      'skill_id': skillId,
+      'video_url': videoUrl,
+      'caption': caption,
+      'status': 'approved',
+      'is_challenge': false,
       'week_number': isoWeek(now),
       'week_year': now.year,
     });

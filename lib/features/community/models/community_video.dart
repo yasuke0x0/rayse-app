@@ -13,6 +13,7 @@ class CommunityVideo {
   final int weekNumber;
   final int weekYear;
   final int score;
+  final bool isChallenge;
   final DateTime submittedAt;
   final String username;
   final String? reviewedBy; // reviewer username
@@ -28,6 +29,7 @@ class CommunityVideo {
     required this.weekNumber,
     required this.weekYear,
     required this.score,
+    required this.isChallenge,
     required this.submittedAt,
     required this.username,
     this.reviewedBy,
@@ -45,6 +47,7 @@ class CommunityVideo {
       weekNumber: weekNumber,
       weekYear: weekYear,
       score: score ?? this.score,
+      isChallenge: isChallenge,
       submittedAt: submittedAt,
       username: username,
       reviewedBy: reviewedBy,
@@ -72,6 +75,7 @@ class CommunityVideo {
       weekNumber: map['week_number'] as int,
       weekYear: map['week_year'] as int,
       score: map['score'] as int? ?? 0,
+      isChallenge: map['is_challenge'] as bool? ?? false,
       submittedAt: DateTime.parse(map['submitted_at'] as String),
       username: username,
       reviewedBy: reviewerName,

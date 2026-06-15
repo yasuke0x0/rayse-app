@@ -10,7 +10,12 @@ import '../providers/community_provider.dart';
 
 class SubmitVideoScreen extends ConsumerStatefulWidget {
   final String skillId;
-  const SubmitVideoScreen({super.key, required this.skillId});
+  final bool isChallenge;
+  const SubmitVideoScreen({
+    super.key,
+    required this.skillId,
+    this.isChallenge = false,
+  });
 
   @override
   ConsumerState<SubmitVideoScreen> createState() => _SubmitVideoScreenState();
@@ -75,12 +80,21 @@ class _SubmitVideoScreenState extends ConsumerState<SubmitVideoScreen> {
         extension: _videoExtension,
         mimeType: _mimeType,
       );
-      await repo.submitVideo(
-        userId: userId,
-        skillId: widget.skillId,
-        videoUrl: videoUrl,
-        caption: _caption,
-      );
+      if (widget.isChallenge) {
+        await repo.submitVideo(
+          userId: userId,
+          skillId: widget.skillId,
+          videoUrl: videoUrl,
+          caption: _caption,
+        );
+      } else {
+        await repo.submitPersonalVideo(
+          userId: userId,
+          skillId: widget.skillId,
+          videoUrl: videoUrl,
+          caption: _caption,
+        );
+      }
       // Refresh video lists so skill node + profile show the new submission
       ref.invalidate(mySkillVideosProvider);
       ref.invalidate(myAllVideosProvider);

@@ -70,7 +70,7 @@ class ChallengesScreen extends ConsumerWidget {
                 SliverToBoxAdapter(
                   child: challengesAsync.when(
                     loading: () => const _LoadingState(),
-                    error: (_, _) => const _ErrorState(),
+                    error: (e, _) => _ErrorState(error: e.toString()),
                     data: (challenges) =>
                         _ChallengesBody(challenges: challenges),
                   ),
@@ -265,7 +265,7 @@ class _ActiveChallengeCard extends ConsumerWidget {
                 if (isPremiumLocked) {
                   context.push('/paywall');
                 } else if (!hasSubmitted) {
-                  context.push('/submit-video/${challenge.skillId}');
+                  context.push('/submit-video/${challenge.skillId}?challenge=true');
                 }
               },
               child: Container(
@@ -339,9 +339,7 @@ class _Podium extends ConsumerWidget {
             const Spacer(),
             GestureDetector(
               onTap: () {
-                ref.read(communitySkillFilterProvider.notifier).state =
-                    challenge.skillId;
-                ref.read(homeTabIndexProvider.notifier).state = 3;
+                context.push('/challenge-leaderboard', extra: challenge);
               },
               child: Text(
                 'SEE ALL',
@@ -672,14 +670,15 @@ class _LoadingState extends StatelessWidget {
 }
 
 class _ErrorState extends StatelessWidget {
-  const _ErrorState();
+  final String error;
+  const _ErrorState({this.error = ''});
 
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.all(24),
       child: Text(
-        'Failed to load challenges.',
+        'Failed to load challenges.\n$error',
         style: GoogleFonts.inter(fontSize: 13, color: AppColors.textMuted),
       ),
     );

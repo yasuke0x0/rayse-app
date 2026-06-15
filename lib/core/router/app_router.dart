@@ -17,7 +17,8 @@ import 'package:rayse/features/community/screens/submit_video_screen.dart';
 import 'package:rayse/features/community/screens/admin_panel_screen.dart';
 import 'package:rayse/features/community/screens/admin_users_screen.dart';
 import 'package:rayse/features/community/screens/admin_user_detail_screen.dart';
-import 'package:rayse/features/community/screens/community_screen.dart';
+import 'package:rayse/features/challenges/screens/challenge_leaderboard_screen.dart';
+import 'package:rayse/features/challenges/models/challenge.dart' as challenge_model;
 import 'package:rayse/features/community/screens/community_video_detail_screen.dart';
 import 'package:rayse/features/community/models/community_video.dart';
 import 'package:rayse/features/notifications/screens/notifications_screen.dart';
@@ -99,6 +100,7 @@ final appRouter = GoRouter(
       path: '/submit-video/:skillId',
       builder: (context, state) => SubmitVideoScreen(
         skillId: state.pathParameters['skillId']!,
+        isChallenge: state.uri.queryParameters['challenge'] == 'true',
       ),
     ),
     GoRoute(
@@ -118,8 +120,10 @@ final appRouter = GoRouter(
       ],
     ),
     GoRoute(
-      path: '/community',
-      builder: (context, state) => const CommunityScreen(),
+      path: '/challenge-leaderboard',
+      builder: (context, state) => ChallengeLeaderboardScreen(
+        challenge: state.extra as challenge_model.Challenge,
+      ),
     ),
     GoRoute(
       path: '/community-video',
