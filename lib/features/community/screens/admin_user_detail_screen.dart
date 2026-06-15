@@ -635,99 +635,123 @@ class _AdminUserDetailScreenState
                 overflow: TextOverflow.ellipsis,
               ),
             ],
-            // Show approve/reject buttons for pending videos
-            if (video.status == VideoStatus.pending) ...[
-              const SizedBox(height: 10),
-              Row(
-                children: [
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () => _approveVideo(video.id),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 8),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF14532D),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Center(
-                          child: Text('✅ APPROVE',
-                              style: GoogleFonts.inter(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w700,
-                                color: const Color(0xFF4ADE80),
-                                letterSpacing: 0.5,
-                              )),
-                        ),
-                      ),
-                    ),
+            // Personal vs challenge label
+            if (!video.isChallenge) ...[
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF27272A),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  'PERSONAL',
+                  style: GoogleFonts.inter(
+                    fontSize: 9,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textMuted,
+                    letterSpacing: 0.5,
                   ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () => _rejectVideo(video.id),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 8),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF450A0A),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Center(
-                          child: Text('❌ REJECT',
-                              style: GoogleFonts.inter(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w700,
-                                color: const Color(0xFFF87171),
-                                letterSpacing: 0.5,
-                              )),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
+                ),
               ),
             ],
-            // Revert button for approved/rejected videos
-            if (video.status == VideoStatus.approved ||
-                video.status == VideoStatus.rejected) ...[
-              const SizedBox(height: 10),
-              Row(
-                children: [
-                  if (video.status == VideoStatus.approved) ...[
-                    const Text('🔥', style: TextStyle(fontSize: 12)),
-                    const SizedBox(width: 4),
-                    Text(
-                      '${video.score} fires',
-                      style: GoogleFonts.inter(
-                        fontSize: 12,
-                        color: AppColors.accent,
-                        fontWeight: FontWeight.w600,
+            // Challenge video actions
+            if (video.isChallenge) ...[
+              // Approve/reject buttons for pending challenge videos
+              if (video.status == VideoStatus.pending) ...[
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () => _approveVideo(video.id),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF14532D),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Center(
+                            child: Text('✅ APPROVE',
+                                style: GoogleFonts.inter(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                  color: const Color(0xFF4ADE80),
+                                  letterSpacing: 0.5,
+                                )),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () => _rejectVideo(video.id),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF450A0A),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Center(
+                            child: Text('❌ REJECT',
+                                style: GoogleFonts.inter(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                  color: const Color(0xFFF87171),
+                                  letterSpacing: 0.5,
+                                )),
+                          ),
+                        ),
                       ),
                     ),
                   ],
-                  const Spacer(),
-                  GestureDetector(
-                    onTap: () => _revertToPending(video.id),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF27272A),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: AppColors.border),
-                      ),
-                      child: Text(
-                        'REVERT TO PENDING',
+                ),
+              ],
+              // Fires + revert for approved/rejected challenge videos
+              if (video.status == VideoStatus.approved ||
+                  video.status == VideoStatus.rejected) ...[
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    if (video.status == VideoStatus.approved) ...[
+                      const Text('🔥', style: TextStyle(fontSize: 12)),
+                      const SizedBox(width: 4),
+                      Text(
+                        '${video.score} fires',
                         style: GoogleFonts.inter(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.textSecondary,
-                          letterSpacing: 0.3,
+                          fontSize: 12,
+                          color: AppColors.accent,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                    const Spacer(),
+                    GestureDetector(
+                      onTap: () => _revertToPending(video.id),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF27272A),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: AppColors.border),
+                        ),
+                        child: Text(
+                          'REVERT TO PENDING',
+                          style: GoogleFonts.inter(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textSecondary,
+                            letterSpacing: 0.3,
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                ],
-              ),
+                  ],
+                ),
+              ],
             ],
           ],
         ),
