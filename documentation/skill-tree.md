@@ -101,11 +101,11 @@ XP values range from 50 (Basic Bounce) to 500 (Freestyle). Full mastery of all 1
 
 ## Community Integration
 
-Each mastered skill has a **Community Challenge** section in its detail screen.
+Each mastered skill has a **Community** section in its detail screen focused on personal progress.
 
-### This Week's Top
+### Challenge Banner
 
-Shows the top 3 approved community videos for that skill in the current ISO week, ranked by fire score. Includes a **"SEE ALL"** link that navigates to the Community tab with the skill filter pre-selected.
+If this skill is the **active weekly challenge**, a highlighted banner appears at the top of the section: "THIS WEEK'S CHALLENGE SKILL" with a "VIEW" link that navigates to the Challenges tab.
 
 ### My Week Submissions
 
@@ -113,6 +113,8 @@ Shows the user's own submissions for the current week, with:
 - **Ranking position** (if approved) -- computed from the full approved leaderboard for that skill+week
 - **Status pill** -- PENDING, LIVE, or REJECTED
 - **Fire score** (if approved)
+
+The full leaderboard and top videos live in the **Community tab** and **Challenges tab** -- the skill node only shows the user's own submissions to avoid duplication.
 
 ### Submit Video
 
@@ -210,6 +212,6 @@ Skill Tree Tab
   |                   |                                              |                     |-- "CONTINUE" --> /home
   |                   |                                              |-- "NEEDS MORE PRACTICE" --> back to detail
   |                   |-- "SUBMIT YOUR VIDEO" --> /submit-video/{skillId}
-  |                   |-- "SEE ALL" --> Community tab (skill pre-filtered)
+  |                   |-- challenge banner "VIEW" --> Challenges tab
   |                   |-- premium lock --> /paywall
 ```
