@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:video_player/video_player.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../challenges/providers/challenge_provider.dart';
 import '../../community/models/community_video.dart';
 import '../../community/providers/community_provider.dart';
 import '../../community/repository/community_video_repository.dart';
@@ -431,14 +432,13 @@ class _SkillDetailScreenState extends ConsumerState<SkillDetailScreen>
   }
 
   Widget _buildCommunitySection(Skill skill, String userTier) {
-    final topAsync = ref.watch(topSkillVideosProvider(skill.id));
     final myAsync = ref.watch(mySkillVideosProvider(skill.id));
     final rankingAsync = ref.watch(skillWeekRankingProvider(skill.id));
+    final activeChallenge = ref.watch(activeChallengeProvider);
     final now = DateTime.now().toUtc();
     final currentWeek = CommunityVideoRepository.isoWeek(now);
     final currentYear = now.year;
 
-    final topVideos = topAsync.valueOrNull ?? [];
     final allMyVideos = myAsync.valueOrNull ?? [];
     final rankedVideos = rankingAsync.valueOrNull ?? [];
     final myVideos = allMyVideos
@@ -446,6 +446,7 @@ class _SkillDetailScreenState extends ConsumerState<SkillDetailScreen>
             (v) => v.weekNumber == currentWeek && v.weekYear == currentYear)
         .toList();
     final hasThisWeek = myVideos.isNotEmpty;
+    final isActiveChallenge = activeChallenge?.skillId == skill.id;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 24, 16, 0),
@@ -455,11 +456,66 @@ class _SkillDetailScreenState extends ConsumerState<SkillDetailScreen>
         decoration: BoxDecoration(
           color: AppColors.surface,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.border),
+          border: Border.all(
+            color: isActiveChallenge
+                ? AppColors.accent.withValues(alpha: 0.5)
+                : AppColors.border,
+          ),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // ── Challenge banner ──
+            if (isActiveChallenge) ...[
+              GestureDetector(
+                onTap: () {
+                  ref.read(homeTabIndexProvider.notifier).state = 2;
+                  context.pop();
+                },
+                child: Container(
+                  width: double.infinity,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: AppColors.accent.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                        color: AppColors.accent.withValues(alpha: 0.3)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Text('🏆', style: TextStyle(fontSize: 14)),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          "THIS WEEK'S CHALLENGE SKILL",
+                          style: GoogleFonts.inter(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.accent,
+                            letterSpacing: 0.8,
+                          ),
+                        ),
+                      ),
+                      Text(
+                        'VIEW',
+                        style: GoogleFonts.inter(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.accent,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                      const SizedBox(width: 2),
+                      const Icon(Icons.arrow_forward_ios,
+                          color: AppColors.accent, size: 10),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 14),
+            ],
+
             // ── Header ──
             Row(
               children: [
@@ -467,7 +523,7 @@ class _SkillDetailScreenState extends ConsumerState<SkillDetailScreen>
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'COMMUNITY CHALLENGE',
+                    'COMMUNITY',
                     style: GoogleFonts.inter(
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
@@ -480,118 +536,13 @@ class _SkillDetailScreenState extends ConsumerState<SkillDetailScreen>
             ),
             const SizedBox(height: 6),
             Text(
-              'Show your ${skill.title} — top 10 get featured on @samsjump.',
+              'Submit your ${skill.title} video and compete with the community.',
               style: GoogleFonts.inter(
                 fontSize: 12,
                 color: AppColors.textSecondary,
                 height: 1.4,
               ),
             ),
-
-            // ── This week's top ──
-            if (topVideos.isNotEmpty) ...[
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Text(
-                    "THIS WEEK'S TOP",
-                    style: GoogleFonts.inter(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textMuted,
-                      letterSpacing: 1,
-                    ),
-                  ),
-                  const Spacer(),
-                  GestureDetector(
-                    onTap: () {
-                      ref.read(communitySkillFilterProvider.notifier).state =
-                          skill.id;
-                      ref.read(homeTabIndexProvider.notifier).state = 3;
-                      context.pop();
-                    },
-                    child: Text(
-                      'SEE ALL',
-                      style: GoogleFonts.inter(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.accent,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              ...List.generate(topVideos.length, (i) {
-                final v = topVideos[i];
-                return GestureDetector(
-                  onTap: () => context.push('/community-video', extra: v),
-                  child: Container(
-                    margin: const EdgeInsets.only(bottom: 6),
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: AppColors.background,
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(
-                        color: i == 0
-                            ? AppColors.accent.withValues(alpha: 0.35)
-                            : AppColors.border,
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 24,
-                          height: 24,
-                          decoration: BoxDecoration(
-                            color: i == 0
-                                ? AppColors.accent
-                                : const Color(0xFF3F3F46),
-                            shape: BoxShape.circle,
-                          ),
-                          child: Center(
-                            child: Text(
-                              '#${i + 1}',
-                              style: GoogleFonts.inter(
-                                fontSize: 9,
-                                fontWeight: FontWeight.w800,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            '@${v.username}',
-                            style: GoogleFonts.inter(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.textPrimary,
-                            ),
-                          ),
-                        ),
-                        const Text('🔥', style: TextStyle(fontSize: 11)),
-                        const SizedBox(width: 3),
-                        Text(
-                          '${v.score}',
-                          style: GoogleFonts.inter(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.accent,
-                          ),
-                        ),
-                        const SizedBox(width: 2),
-                        const Icon(Icons.chevron_right_rounded,
-                            color: AppColors.textMuted, size: 16),
-                      ],
-                    ),
-                  ),
-                );
-              }),
-            ],
 
             // ── My submissions ──
             if (myVideos.isNotEmpty) ...[

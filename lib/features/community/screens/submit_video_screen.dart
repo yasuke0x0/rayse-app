@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../challenges/providers/challenge_provider.dart';
 import '../providers/community_provider.dart';
 
 class SubmitVideoScreen extends ConsumerStatefulWidget {
@@ -85,6 +86,8 @@ class _SubmitVideoScreenState extends ConsumerState<SubmitVideoScreen> {
       ref.invalidate(myAllVideosProvider);
       ref.invalidate(myTotalSubmissionsProvider);
       ref.invalidate(pendingVideosProvider);
+      ref.invalidate(hasSubmittedChallengeProvider);
+      ref.invalidate(challengeParticipantCountProvider);
       setState(() {
         _submitted = true;
         _uploading = false;

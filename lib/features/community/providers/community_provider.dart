@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../repository/community_video_repository.dart';
 import '../repository/user_repository.dart';
 import '../models/community_video.dart';
+import '../../challenges/providers/challenge_provider.dart';
 
 final communityVideoRepositoryProvider = Provider<CommunityVideoRepository>(
   (_) => CommunityVideoRepository(),
@@ -105,6 +106,9 @@ class PendingVideosNotifier extends AsyncNotifier<List<CommunityVideo>> {
     ref.invalidate(approvedVideosProvider((week, year)));
     ref.invalidate(topSkillVideosProvider);
     ref.invalidate(adminFilteredVideosProvider);
+    ref.invalidate(challengeLeaderboardProvider);
+    ref.invalidate(challengeParticipantCountProvider);
+    ref.invalidate(hasSubmittedChallengeProvider);
   }
 }
 

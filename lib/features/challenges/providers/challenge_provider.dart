@@ -9,8 +9,24 @@ import '../repository/challenge_repository.dart';
 final challengeRepositoryProvider =
     Provider<ChallengeRepository>((_) => ChallengeRepository());
 
-final challengesProvider = FutureProvider<List<Challenge>>((ref) async {
-  return ref.read(challengeRepositoryProvider).fetchChallenges();
+final challengesProvider = StreamProvider<List<Challenge>>((ref) async* {
+  // Fetch initial data
+  yield await ref.read(challengeRepositoryProvider).fetchChallenges();
+
+  // Listen for realtime changes
+  final stream = Supabase.instance.client
+      .from('challenges')
+      .stream(primaryKey: ['id']);
+
+  await for (final rows in stream) {
+    yield rows
+        .map((m) => Challenge.fromJson(Map<String, dynamic>.from(m)))
+        .toList()
+      ..sort((a, b) {
+        final yearCmp = b.weekYear.compareTo(a.weekYear);
+        return yearCmp != 0 ? yearCmp : b.weekNumber.compareTo(a.weekNumber);
+      });
+  }
 });
 
 // Current week's active challenge

@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../community/models/community_video.dart';
 import '../../community/providers/community_provider.dart';
 import '../../skill_tree/providers/skill_provider.dart';
 import '../models/challenge.dart';
@@ -107,7 +106,7 @@ class _ChallengesBody extends ConsumerWidget {
           if (active != null) ...[
             _ActiveChallengeCard(challenge: active),
             const SizedBox(height: 32),
-            _Leaderboard(challenge: active),
+            _Podium(challenge: active),
           ] else
             const _NoChallengeCard(),
 
@@ -312,18 +311,16 @@ class _ActiveChallengeCard extends ConsumerWidget {
   }
 }
 
-// ─── Leaderboard ──────────────────────────────────────────────────────────────
+// ─── Top 3 podium ─────────────────────────────────────────────────────────────
 
-class _Leaderboard extends ConsumerWidget {
+class _Podium extends ConsumerWidget {
   final Challenge challenge;
-  const _Leaderboard({required this.challenge});
+  const _Podium({required this.challenge});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final leaderboardAsync =
         ref.watch(challengeLeaderboardProvider(challenge.id));
-    final currentUserId =
-        ref.watch(profileProvider).valueOrNull?['id'] as String?;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -331,7 +328,7 @@ class _Leaderboard extends ConsumerWidget {
         Row(
           children: [
             Text(
-              'LEADERBOARD',
+              'TOP 3',
               style: GoogleFonts.poppins(
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
@@ -340,19 +337,37 @@ class _Leaderboard extends ConsumerWidget {
               ),
             ),
             const Spacer(),
-            Text(
-              '🔥 TOP 10',
-              style: GoogleFonts.inter(
-                fontSize: 11,
-                color: AppColors.textMuted,
-                letterSpacing: 0.5,
+            GestureDetector(
+              onTap: () {
+                ref.read(communitySkillFilterProvider.notifier).state =
+                    challenge.skillId;
+                ref.read(homeTabIndexProvider.notifier).state = 3;
+              },
+              child: Text(
+                'SEE ALL',
+                style: GoogleFonts.inter(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.accent,
+                  letterSpacing: 0.5,
+                ),
               ),
             ),
           ],
         ),
         const SizedBox(height: 16),
         leaderboardAsync.when(
-          loading: () => const _LeaderboardSkeleton(),
+          loading: () => Container(
+            height: 120,
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: const Center(
+              child: CircularProgressIndicator(color: AppColors.accent),
+            ),
+          ),
           error: (_, _) => const SizedBox.shrink(),
           data: (videos) {
             if (videos.isEmpty) {
@@ -374,6 +389,7 @@ class _Leaderboard extends ConsumerWidget {
                 ),
               );
             }
+            final top3 = videos.take(3).toList();
             return Container(
               decoration: BoxDecoration(
                 color: AppColors.surface,
@@ -381,16 +397,71 @@ class _Leaderboard extends ConsumerWidget {
                 border: Border.all(color: AppColors.border),
               ),
               child: Column(
-                children: List.generate(videos.length, (i) {
-                  final video = videos[i];
-                  final isLast = i == videos.length - 1;
-                  final isCurrentUser = video.userId == currentUserId;
+                children: List.generate(top3.length, (i) {
+                  final video = top3[i];
+                  final isLast = i == top3.length - 1;
+                  final rankColor = switch (i) {
+                    0 => const Color(0xFFFBBF24),
+                    1 => const Color(0xFF94A3B8),
+                    2 => const Color(0xFFD97706),
+                    _ => AppColors.textMuted,
+                  };
                   return Column(
                     children: [
-                      _LeaderboardRow(
-                        rank: i + 1,
-                        video: video,
-                        isCurrentUser: isCurrentUser,
+                      GestureDetector(
+                        onTap: () => context.push(
+                            '/community-video',
+                            extra: video),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 14),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 28,
+                                height: 28,
+                                decoration: BoxDecoration(
+                                  color: i == 0
+                                      ? AppColors.accent
+                                      : const Color(0xFF3F3F46),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    '#${i + 1}',
+                                    style: GoogleFonts.inter(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w800,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  '@${video.username}',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.textPrimary,
+                                  ),
+                                ),
+                              ),
+                              const Text('🔥',
+                                  style: TextStyle(fontSize: 12)),
+                              const SizedBox(width: 4),
+                              Text(
+                                '${video.score}',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w700,
+                                  color: rankColor,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
                       if (!isLast)
                         Divider(
@@ -406,133 +477,6 @@ class _Leaderboard extends ConsumerWidget {
           },
         ),
       ],
-    );
-  }
-}
-
-class _LeaderboardRow extends StatelessWidget {
-  final int rank;
-  final CommunityVideo video;
-  final bool isCurrentUser;
-
-  const _LeaderboardRow({
-    required this.rank,
-    required this.video,
-    required this.isCurrentUser,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final rankColor = switch (rank) {
-      1 => const Color(0xFFFBBF24),
-      2 => const Color(0xFF94A3B8),
-      3 => const Color(0xFFD97706),
-      _ => AppColors.textMuted,
-    };
-
-    return GestureDetector(
-      onTap: () => context.push('/community-video', extra: video),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        decoration: isCurrentUser
-            ? BoxDecoration(
-                color: AppColors.accent.withValues(alpha: 0.06),
-                borderRadius: BorderRadius.circular(16),
-              )
-            : null,
-        child: Row(
-          children: [
-            // Rank
-            SizedBox(
-              width: 28,
-              child: Text(
-                '$rank',
-                style: GoogleFonts.poppins(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                  color: rank <= 3 ? rankColor : AppColors.textMuted,
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-
-            // Avatar
-            Container(
-              width: 32,
-              height: 32,
-              decoration: BoxDecoration(
-                color: isCurrentUser
-                    ? AppColors.accent.withValues(alpha: 0.2)
-                    : AppColors.background,
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color:
-                      isCurrentUser ? AppColors.accent : AppColors.border,
-                ),
-              ),
-              child: Center(
-                child: Text(
-                  video.username[0].toUpperCase(),
-                  style: GoogleFonts.poppins(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    color: isCurrentUser
-                        ? AppColors.accent
-                        : AppColors.textSecondary,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-
-            // Username
-            Expanded(
-              child: Text(
-                isCurrentUser ? 'You' : '@${video.username}',
-                style: GoogleFonts.inter(
-                  fontSize: 14,
-                  fontWeight:
-                      isCurrentUser ? FontWeight.w600 : FontWeight.w400,
-                  color: isCurrentUser
-                      ? AppColors.textPrimary
-                      : AppColors.textSecondary,
-                ),
-              ),
-            ),
-
-            // Score
-            const Text('🔥', style: TextStyle(fontSize: 12)),
-            const SizedBox(width: 4),
-            Text(
-              '${video.score}',
-              style: GoogleFonts.poppins(
-                fontSize: 14,
-                fontWeight: FontWeight.w700,
-                color: rank <= 3 ? rankColor : AppColors.textPrimary,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _LeaderboardSkeleton extends StatelessWidget {
-  const _LeaderboardSkeleton();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 220,
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: const Center(
-        child: CircularProgressIndicator(color: AppColors.accent),
-      ),
     );
   }
 }
