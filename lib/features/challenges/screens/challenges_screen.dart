@@ -491,7 +491,9 @@ class _PastChallengeCard extends ConsumerWidget {
     final isLocked = userTier == 'free';
 
     return GestureDetector(
-      onTap: isLocked ? () => context.push('/paywall') : null,
+      onTap: isLocked
+          ? () => context.push('/paywall')
+          : () => context.push('/challenge-leaderboard', extra: challenge),
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(

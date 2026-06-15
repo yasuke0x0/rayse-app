@@ -151,87 +151,90 @@ class _CommunityVideoDetailScreenState
                       ),
                     ],
 
-                    const SizedBox(height: 24),
+                    // Reactions + comments (challenge videos only)
+                    if (video.isChallenge) ...[
+                      const SizedBox(height: 24),
 
-                    // Reactions row
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              '$_localScore',
-                              style: GoogleFonts.poppins(
-                                fontSize: 36,
-                                fontWeight: FontWeight.w900,
-                                color: hasReacted
-                                    ? AppColors.accent
-                                    : AppColors.textPrimary,
-                                height: 1,
-                              ),
-                            ),
-                            Text(
-                              'fires',
-                              style: GoogleFonts.inter(
-                                fontSize: 12,
-                                color: AppColors.textSecondary,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const Spacer(),
-                        GestureDetector(
-                          onTap: () {
-                            final adding =
-                                !myReactions.contains(video.id);
-                            setState(() {
-                              _localScore += adding ? 1 : -1;
-                              if (_localScore < 0) _localScore = 0;
-                            });
-                            ref
-                                .read(myReactionsProvider.notifier)
-                                .toggle(video.id, weekKey);
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 24, vertical: 14),
-                            decoration: BoxDecoration(
-                              color: hasReacted
-                                  ? AppColors.accent
-                                  : AppColors.surface,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: hasReacted
-                                    ? AppColors.accent
-                                    : AppColors.border,
-                              ),
-                            ),
-                            child: Row(
-                              children: [
-                                const Text('🔥',
-                                    style: TextStyle(fontSize: 20)),
-                                const SizedBox(width: 10),
-                                Text(
-                                  hasReacted ? 'FIRED!' : 'FIRE IT',
-                                  style: GoogleFonts.inter(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w700,
-                                    color: hasReacted
-                                        ? Colors.white
-                                        : AppColors.textSecondary,
-                                    letterSpacing: 0.8,
-                                  ),
+                      // Reactions row
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '$_localScore',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 36,
+                                  fontWeight: FontWeight.w900,
+                                  color: hasReacted
+                                      ? AppColors.accent
+                                      : AppColors.textPrimary,
+                                  height: 1,
                                 ),
-                              ],
+                              ),
+                              Text(
+                                'fires',
+                                style: GoogleFonts.inter(
+                                  fontSize: 12,
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const Spacer(),
+                          GestureDetector(
+                            onTap: () {
+                              final adding =
+                                  !myReactions.contains(video.id);
+                              setState(() {
+                                _localScore += adding ? 1 : -1;
+                                if (_localScore < 0) _localScore = 0;
+                              });
+                              ref
+                                  .read(myReactionsProvider.notifier)
+                                  .toggle(video.id, weekKey);
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 24, vertical: 14),
+                              decoration: BoxDecoration(
+                                color: hasReacted
+                                    ? AppColors.accent
+                                    : AppColors.surface,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: hasReacted
+                                      ? AppColors.accent
+                                      : AppColors.border,
+                                ),
+                              ),
+                              child: Row(
+                                children: [
+                                  const Text('🔥',
+                                      style: TextStyle(fontSize: 20)),
+                                  const SizedBox(width: 10),
+                                  Text(
+                                    hasReacted ? 'FIRED!' : 'FIRE IT',
+                                    style: GoogleFonts.inter(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w700,
+                                      color: hasReacted
+                                          ? Colors.white
+                                          : AppColors.textSecondary,
+                                      letterSpacing: 0.8,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
-                        ),
-                      ],
-                    ),
+                        ],
+                      ),
 
-                    // Comments section
-                    CommentsSectionWidget(videoId: video.id),
+                      // Comments section
+                      CommentsSectionWidget(videoId: video.id),
+                    ],
                     const SizedBox(height: 16),
                   ],
                 ),

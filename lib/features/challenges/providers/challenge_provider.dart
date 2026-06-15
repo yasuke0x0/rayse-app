@@ -46,7 +46,7 @@ final challengeLeaderboardProvider =
         skillId: challenge.skillId,
         weekNumber: challenge.weekNumber,
         weekYear: challenge.weekYear,
-        limit: 10,
+        limit: 50,
       );
 });
 
