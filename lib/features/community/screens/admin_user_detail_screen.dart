@@ -29,6 +29,11 @@ class _AdminUserDetailScreenState
     _isPremium = widget.user['is_premium'] == true;
     _isCreator = widget.user['is_creator'] == true;
     _isBanned = widget.user['is_banned'] == true;
+    // Force fresh fetch every time the screen opens
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.invalidate(adminUserVideosProvider(_userId));
+      ref.invalidate(adminUserXPProvider(_userId));
+    });
   }
 
   String get _userId => widget.user['id'] as String;
