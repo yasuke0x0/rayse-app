@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:video_player/video_player.dart';
 import '../../../core/theme/app_colors.dart';
 import '../models/community_video.dart';
@@ -58,6 +59,138 @@ class _CommunityVideoDetailScreenState
     super.dispose();
   }
 
+  bool get _isOwner =>
+      Supabase.instance.client.auth.currentUser?.id == widget.video.userId;
+
+  void _showEditDialog(BuildContext context) {
+    final titleCtrl = TextEditingController(text: widget.video.title);
+    final notesCtrl = TextEditingController(text: widget.video.notes);
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(
+          'EDIT VIDEO',
+          style: GoogleFonts.poppins(
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+            color: AppColors.textPrimary,
+            letterSpacing: 0.5,
+          ),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('TITLE',
+                style: GoogleFonts.inter(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textMuted,
+                    letterSpacing: 1)),
+            const SizedBox(height: 6),
+            TextField(
+              controller: titleCtrl,
+              maxLength: 60,
+              style: GoogleFonts.inter(
+                  fontSize: 14, color: AppColors.textPrimary),
+              decoration: InputDecoration(
+                counterText: '',
+                filled: true,
+                fillColor: AppColors.background,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide(color: AppColors.border),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide(color: AppColors.border),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide:
+                      const BorderSide(color: AppColors.accent, width: 1.5),
+                ),
+              ),
+            ),
+            const SizedBox(height: 14),
+            Text('NOTES',
+                style: GoogleFonts.inter(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textMuted,
+                    letterSpacing: 1)),
+            const SizedBox(height: 6),
+            TextField(
+              controller: notesCtrl,
+              maxLength: 500,
+              maxLines: 4,
+              style: GoogleFonts.inter(
+                  fontSize: 14, color: AppColors.textPrimary),
+              decoration: InputDecoration(
+                counterText: '',
+                filled: true,
+                fillColor: AppColors.background,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide(color: AppColors.border),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide(color: AppColors.border),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide:
+                      const BorderSide(color: AppColors.accent, width: 1.5),
+                ),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('CANCEL',
+                style: GoogleFonts.inter(
+                    color: AppColors.textMuted, fontWeight: FontWeight.w600)),
+          ),
+          TextButton(
+            onPressed: () async {
+              await ref
+                  .read(communityVideoRepositoryProvider)
+                  .updateVideoDetails(
+                    widget.video.id,
+                    title: titleCtrl.text,
+                    notes: notesCtrl.text,
+                  );
+              ref.invalidate(mySkillVideosProvider);
+              ref.invalidate(myAllVideosProvider);
+              if (ctx.mounted) Navigator.pop(ctx);
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Video updated',
+                        style: GoogleFonts.inter(color: Colors.white)),
+                    backgroundColor: AppColors.surface,
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+                context.pop();
+              }
+            },
+            child: Text('SAVE',
+                style: GoogleFonts.inter(
+                    color: AppColors.accent, fontWeight: FontWeight.w700)),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final video = widget.video;
@@ -111,44 +244,122 @@ class _CommunityVideoDetailScreenState
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-
-                    // Username + skill
-                    Row(
-                      children: [
-                        Text(
-                          '@${video.username}',
-                          style: GoogleFonts.inter(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.textPrimary,
+                    // Personal video: title + edit button
+                    if (!video.isChallenge) ...[
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              video.title.isNotEmpty
+                                  ? video.title
+                                  : _skillLabel(video.skillId),
+                              style: GoogleFonts.poppins(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
                           ),
+                          if (_isOwner)
+                            GestureDetector(
+                              onTap: () => _showEditDialog(context),
+                              child: Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: AppColors.surface,
+                                  borderRadius: BorderRadius.circular(10),
+                                  border:
+                                      Border.all(color: AppColors.border),
+                                ),
+                                child: const Icon(Icons.edit_outlined,
+                                    color: AppColors.textSecondary,
+                                    size: 16),
+                              ),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        _skillLabel(video.skillId),
+                        style: GoogleFonts.inter(
+                          fontSize: 13,
+                          color: AppColors.accent,
                         ),
-                        const SizedBox(width: 8),
-                        Text('·',
-                            style: GoogleFonts.inter(
-                                color: AppColors.textMuted)),
-                        const SizedBox(width: 8),
-                        Text(
-                          _skillLabel(video.skillId),
-                          style: GoogleFonts.inter(
-                            fontSize: 14,
-                            color: AppColors.accent,
+                      ),
+                      if (video.notes.isNotEmpty) ...[
+                        const SizedBox(height: 14),
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: AppColors.surface,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: AppColors.border),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'NOTES',
+                                style: GoogleFonts.inter(
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.textMuted,
+                                  letterSpacing: 1,
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                video.notes,
+                                style: GoogleFonts.inter(
+                                  fontSize: 13,
+                                  color: AppColors.textSecondary,
+                                  height: 1.5,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ],
-                    ),
+                    ],
 
-                    // Caption
-                    if (video.caption.isNotEmpty) ...[
-                      const SizedBox(height: 10),
-                      Text(
-                        video.caption,
-                        style: GoogleFonts.inter(
-                          fontSize: 14,
-                          color: AppColors.textSecondary,
-                          height: 1.6,
-                        ),
+                    // Challenge video: username + skill + caption
+                    if (video.isChallenge) ...[
+                      Row(
+                        children: [
+                          Text(
+                            '@${video.username}',
+                            style: GoogleFonts.inter(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text('·',
+                              style: GoogleFonts.inter(
+                                  color: AppColors.textMuted)),
+                          const SizedBox(width: 8),
+                          Text(
+                            _skillLabel(video.skillId),
+                            style: GoogleFonts.inter(
+                              fontSize: 14,
+                              color: AppColors.accent,
+                            ),
+                          ),
+                        ],
                       ),
+                      if (video.caption.isNotEmpty) ...[
+                        const SizedBox(height: 10),
+                        Text(
+                          video.caption,
+                          style: GoogleFonts.inter(
+                            fontSize: 14,
+                            color: AppColors.textSecondary,
+                            height: 1.6,
+                          ),
+                        ),
+                      ],
                     ],
 
                     // Reactions + comments (challenge videos only)

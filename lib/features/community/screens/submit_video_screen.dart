@@ -26,15 +26,21 @@ class _SubmitVideoScreenState extends ConsumerState<SubmitVideoScreen> {
   XFile? _pickedFile;
   String _videoExtension = 'mp4';
   String _mimeType = 'video/mp4';
+  String _title = '';
   String _caption = '';
+  String _notes = '';
   bool _uploading = false;
   bool _submitted = false;
 
+  final _titleController = TextEditingController();
   final _captionController = TextEditingController();
+  final _notesController = TextEditingController();
 
   @override
   void dispose() {
+    _titleController.dispose();
     _captionController.dispose();
+    _notesController.dispose();
     super.dispose();
   }
 
@@ -92,7 +98,9 @@ class _SubmitVideoScreenState extends ConsumerState<SubmitVideoScreen> {
           userId: userId,
           skillId: widget.skillId,
           videoUrl: videoUrl,
+          title: _title,
           caption: _caption,
+          notes: _notes,
         );
       }
       // Refresh video lists so skill node + profile show the new submission
@@ -248,12 +256,34 @@ class _SubmitVideoScreenState extends ConsumerState<SubmitVideoScreen> {
     );
   }
 
+  InputDecoration _inputDecoration(String hint) => InputDecoration(
+        hintText: hint,
+        hintStyle: GoogleFonts.inter(fontSize: 14, color: AppColors.textMuted),
+        filled: true,
+        fillColor: AppColors.surface,
+        counterText: '',
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: AppColors.border),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: AppColors.border),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide:
+              const BorderSide(color: AppColors.accent, width: 1.5),
+        ),
+      );
+
   Widget _buildStep2() {
+    final isPersonal = !widget.isChallenge;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'ADD A CAPTION',
+          isPersonal ? 'ADD DETAILS' : 'ADD A CAPTION',
           style: GoogleFonts.poppins(
             fontSize: 28,
             fontWeight: FontWeight.w900,
@@ -262,43 +292,73 @@ class _SubmitVideoScreenState extends ConsumerState<SubmitVideoScreen> {
           ),
         ),
         const SizedBox(height: 24),
-        TextField(
-          controller: _captionController,
-          maxLength: 150,
-          maxLines: 4,
-          onChanged: (v) => setState(() => _caption = v),
-          style: GoogleFonts.inter(fontSize: 14, color: AppColors.textPrimary),
-          decoration: InputDecoration(
-            hintText: 'Describe your technique...',
-            hintStyle:
-                GoogleFonts.inter(fontSize: 14, color: AppColors.textMuted),
-            filled: true,
-            fillColor: AppColors.surface,
-            counterText: '',
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppColors.border),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppColors.border),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide:
-                  const BorderSide(color: AppColors.accent, width: 1.5),
-            ),
-          ),
-        ),
-        const SizedBox(height: 8),
-        Align(
-          alignment: Alignment.centerRight,
-          child: Text(
-            '${_caption.length} / 150',
+
+        // Title (personal videos only)
+        if (isPersonal) ...[
+          Text(
+            'TITLE',
             style: GoogleFonts.inter(
-                fontSize: 12, color: AppColors.textSecondary),
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textMuted,
+              letterSpacing: 1,
+            ),
           ),
-        ),
+          const SizedBox(height: 6),
+          TextField(
+            controller: _titleController,
+            maxLength: 60,
+            onChanged: (v) => setState(() => _title = v),
+            style:
+                GoogleFonts.inter(fontSize: 14, color: AppColors.textPrimary),
+            decoration: _inputDecoration('e.g. "First clean Double Under"'),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'NOTES',
+            style: GoogleFonts.inter(
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textMuted,
+              letterSpacing: 1,
+            ),
+          ),
+          const SizedBox(height: 6),
+          TextField(
+            controller: _notesController,
+            maxLength: 500,
+            maxLines: 4,
+            onChanged: (v) => setState(() => _notes = v),
+            style:
+                GoogleFonts.inter(fontSize: 14, color: AppColors.textPrimary),
+            decoration:
+                _inputDecoration('Progress notes, what you worked on...'),
+          ),
+          const SizedBox(height: 8),
+        ],
+
+        // Caption (always shown)
+        if (!isPersonal) ...[
+          TextField(
+            controller: _captionController,
+            maxLength: 150,
+            maxLines: 4,
+            onChanged: (v) => setState(() => _caption = v),
+            style:
+                GoogleFonts.inter(fontSize: 14, color: AppColors.textPrimary),
+            decoration: _inputDecoration('Describe your technique...'),
+          ),
+          const SizedBox(height: 8),
+          Align(
+            alignment: Alignment.centerRight,
+            child: Text(
+              '${_caption.length} / 150',
+              style: GoogleFonts.inter(
+                  fontSize: 12, color: AppColors.textSecondary),
+            ),
+          ),
+        ],
+
         const SizedBox(height: 24),
         Row(
           children: [

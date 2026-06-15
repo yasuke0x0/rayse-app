@@ -597,12 +597,15 @@ class _SkillDetailScreenState extends ConsumerState<SkillDetailScreen>
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  v.caption.isNotEmpty
-                                      ? v.caption
-                                      : 'No caption',
+                                  v.title.isNotEmpty
+                                      ? v.title
+                                      : v.caption.isNotEmpty
+                                          ? v.caption
+                                          : 'Untitled',
                                   style: GoogleFonts.inter(
                                     fontSize: 12,
-                                    color: v.caption.isNotEmpty
+                                    color: v.title.isNotEmpty ||
+                                            v.caption.isNotEmpty
                                         ? AppColors.textPrimary
                                         : AppColors.textMuted,
                                   ),

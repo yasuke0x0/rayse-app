@@ -59,19 +59,34 @@ class CommunityVideoRepository {
     required String userId,
     required String skillId,
     required String videoUrl,
+    required String title,
     required String caption,
+    String notes = '',
   }) async {
     final now = DateTime.now().toUtc();
     await _client.from('community_videos').insert({
       'user_id': userId,
       'skill_id': skillId,
       'video_url': videoUrl,
+      'title': title,
       'caption': caption,
+      'notes': notes,
       'status': 'approved',
       'is_challenge': false,
       'week_number': isoWeek(now),
       'week_year': now.year,
     });
+  }
+
+  // Update title and notes on a personal video
+  Future<void> updateVideoDetails(String videoId, {
+    required String title,
+    required String notes,
+  }) async {
+    await _client.from('community_videos').update({
+      'title': title,
+      'notes': notes,
+    }).eq('id', videoId);
   }
 
   // Fetch pending videos (admin only)

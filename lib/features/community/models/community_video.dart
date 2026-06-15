@@ -8,7 +8,9 @@ class CommunityVideo {
   final String userId;
   final String skillId;
   final String videoUrl;
+  final String title;
   final String caption;
+  final String notes;
   final VideoStatus status;
   final int weekNumber;
   final int weekYear;
@@ -24,7 +26,9 @@ class CommunityVideo {
     required this.userId,
     required this.skillId,
     required this.videoUrl,
+    required this.title,
     required this.caption,
+    required this.notes,
     required this.status,
     required this.weekNumber,
     required this.weekYear,
@@ -36,13 +40,15 @@ class CommunityVideo {
     this.reviewedAt,
   });
 
-  CommunityVideo copyWith({int? score}) {
+  CommunityVideo copyWith({int? score, String? title, String? notes}) {
     return CommunityVideo(
       id: id,
       userId: userId,
       skillId: skillId,
       videoUrl: videoUrl,
+      title: title ?? this.title,
       caption: caption,
+      notes: notes ?? this.notes,
       status: status,
       weekNumber: weekNumber,
       weekYear: weekYear,
@@ -70,7 +76,9 @@ class CommunityVideo {
       userId: map['user_id'] as String,
       skillId: map['skill_id'] as String,
       videoUrl: map['video_url'] as String,
+      title: map['title'] as String? ?? '',
       caption: map['caption'] as String? ?? '',
+      notes: map['notes'] as String? ?? '',
       status: _statusFromString(map['status'] as String),
       weekNumber: map['week_number'] as int,
       weekYear: map['week_year'] as int,
