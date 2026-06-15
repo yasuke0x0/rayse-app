@@ -382,11 +382,15 @@ class ProfileScreen extends ConsumerWidget {
       data: (videos) {
         if (videos.isEmpty) return const SizedBox.shrink();
 
-        // Group by status for counts
-        final liveCount =
-            videos.where((v) => v.status == VideoStatus.approved).length;
-        final pendingCount =
-            videos.where((v) => v.status == VideoStatus.pending).length;
+        // Group counts (challenge videos only for live/pending)
+        final challengeVideos = videos.where((v) => v.isChallenge);
+        final personalCount = videos.where((v) => !v.isChallenge).length;
+        final liveCount = challengeVideos
+            .where((v) => v.status == VideoStatus.approved)
+            .length;
+        final pendingCount = challengeVideos
+            .where((v) => v.status == VideoStatus.pending)
+            .length;
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -404,11 +408,18 @@ class ProfileScreen extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(width: 10),
-                if (liveCount > 0)
+                if (personalCount > 0)
+                  _MiniPill(
+                      label: '$personalCount PERSONAL',
+                      bg: const Color(0xFF27272A),
+                      fg: AppColors.textMuted),
+                if (liveCount > 0) ...[
+                  const SizedBox(width: 6),
                   _MiniPill(
                       label: '$liveCount LIVE',
                       bg: const Color(0xFF14532D),
                       fg: const Color(0xFF4ADE80)),
+                ],
                 if (pendingCount > 0) ...[
                   const SizedBox(width: 6),
                   _MiniPill(
@@ -477,7 +488,9 @@ class _VideoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext _) {
-    final (statusLabel, statusBg, statusFg) = switch (video.status) {
+    final (statusLabel, statusBg, statusFg) = !video.isChallenge
+        ? ('PERSONAL', const Color(0xFF27272A), AppColors.textMuted)
+        : switch (video.status) {
       VideoStatus.pending => (
           'PENDING',
           const Color(0xFF3F3F46),
@@ -551,8 +564,9 @@ class _VideoCard extends StatelessWidget {
                         ),
                       ),
                     ),
-                    // Fire score (approved only)
-                    if (video.status == VideoStatus.approved &&
+                    // Fire score (challenge + approved only)
+                    if (video.isChallenge &&
+                        video.status == VideoStatus.approved &&
                         video.score > 0)
                       Positioned(
                         top: 6,
@@ -592,7 +606,9 @@ class _VideoCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      _skillLabels[video.skillId] ?? video.skillId,
+                      video.title.isNotEmpty
+                          ? video.title
+                          : _skillLabels[video.skillId] ?? video.skillId,
                       style: GoogleFonts.inter(
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
