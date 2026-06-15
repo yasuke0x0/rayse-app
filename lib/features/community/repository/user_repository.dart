@@ -50,7 +50,7 @@ class UserRepository {
   Future<List<CommunityVideo>> fetchUserVideos(String userId) async {
     final data = await _client
         .from('community_videos')
-        .select('*, profiles(username)')
+        .select('*, profiles!community_videos_user_id_fkey(username)')
         .eq('user_id', userId)
         .order('submitted_at', ascending: false);
     return (data as List)
