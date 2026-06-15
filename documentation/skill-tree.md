@@ -125,7 +125,22 @@ The result screen snackbar also reminds users: "X sessions to unlock video recor
 
 ### Record Video
 
-"RECORD VIDEO" button navigates to the 3-step upload flow (pick video, add caption, submit). The video is saved with `is_challenge = false` and `status = 'approved'` immediately.
+"RECORD VIDEO" button navigates to the 3-step upload flow:
+1. Pick video from gallery (max 60 seconds)
+2. Add **title** (60 chars) + **notes** (500 chars) — for progress tracking
+3. Review and submit
+
+The video is saved with `is_challenge = false` and `status = 'approved'` immediately.
+
+### Viewing & Editing
+
+Tapping a video in the list opens the video detail screen showing:
+- Video player
+- Title (or skill name fallback)
+- Skill label
+- Notes card (if notes exist)
+
+The owner can tap the **edit button** (pencil icon) to update the title and notes via a dialog. No fire reactions or comments on personal videos.
 
 ---
 

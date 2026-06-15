@@ -129,15 +129,32 @@ The app distinguishes between **personal recordings** and **challenge submission
 | Visibility | Private (only the user) | Public (leaderboard + reactions) |
 | Weekly context | No (all-time) | Yes (ISO week) |
 | Fire reactions | No | Yes |
+| Comments | No | Yes |
+| Fields | Title + notes (editable) | Caption |
 
 ### Where videos appear
 
 | Place | Shows |
 |-------|-------|
-| **Skill node "MY VIDEOS"** | All personal recordings for that skill (all-time) |
+| **Skill node "MY VIDEOS"** | All personal recordings for that skill (all-time, title displayed) |
 | **Challenges top 3 podium** | Top 3 approved challenge videos for the week |
-| **Challenge leaderboard screen** | Full ranked list of approved challenge videos |
+| **Challenge leaderboard screen** | Full ranked list of approved challenge videos (up to 50) |
+| **Past challenge cards** | Premium users tap to view that week's full leaderboard |
 | **Profile "MY VIDEOS"** | All user videos (personal + challenge) |
+
+### Video Detail Screen
+
+The video detail screen adapts based on video type:
+- **Personal:** shows title, skill label, notes card, edit button (owner only). No fire button, no comments.
+- **Challenge:** shows @username, skill, caption, fire button, fire score, comments section.
+
+### Admin Panel (User Detail)
+
+In the admin user detail videos section:
+- **Challenge videos:** approve/reject buttons (pending), fire score + revert button (approved/rejected)
+- **Personal videos:** "PERSONAL" label, no admin actions
+
+Video list and XP are fetched fresh every time the admin opens a user's detail screen.
 
 ---
 
