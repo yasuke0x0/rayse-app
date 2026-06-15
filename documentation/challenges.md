@@ -45,7 +45,14 @@ No separate "join" or "entry" mechanism — your submission IS your participatio
 
 **Unique constraint:** `(skill_id, week_number, week_year)` — one challenge per skill per week.
 
-No `challenge_participants` or `challenge_entries` tables needed. Participation data comes from `community_videos` (filtered by `skill_id` + `week_number` + `week_year`).
+No `challenge_participants` or `challenge_entries` tables needed. Participation data comes from `community_videos` (filtered by `skill_id` + `week_number` + `week_year` + `is_challenge = true`).
+
+### `community_videos.is_challenge` flag
+
+| Value | Meaning | Approval | Visibility |
+|-------|---------|----------|------------|
+| `true` | Challenge submission | Admin review (pending → approved/rejected) | Public leaderboard |
+| `false` | Personal skill recording | Auto-approved | Private to user |
 
 ---
 
@@ -86,7 +93,7 @@ Computed from the current day's position in the ISO week. Sunday = 0 days left.
 
 | User State | Button | Action |
 |------------|--------|--------|
-| Hasn't submitted | "SUBMIT YOUR VIDEO" (orange) | → `/submit-video/{skillId}` |
+| Hasn't submitted | "SUBMIT YOUR VIDEO" (orange) | → `/submit-video/{skillId}?challenge=true` |
 | Already submitted | "SUBMITTED ✓" (gray, disabled) | — |
 | Free user, premium skill | "🔒 PREMIUM — SUBMIT VIDEO" | → `/paywall` |
 
@@ -95,7 +102,7 @@ Computed from the current day's position in the ISO week. Sunday = 0 days left.
 - Ranked by fire score (descending)
 - Each row shows: rank badge (gold #1, dark #2-3), @username, 🔥 score
 - Tapping a row navigates to `/community-video` detail screen
-- **"SEE ALL"** link navigates to the Community tab with the challenge skill pre-filtered (full leaderboard lives there)
+- **"SEE ALL"** link navigates to the dedicated challenge leaderboard screen (`/challenge-leaderboard`)
 - Empty state: "No approved videos yet — be the first!"
 
 ### 4. Past Challenges
@@ -110,17 +117,27 @@ Computed from the current day's position in the ISO week. Sunday = 0 days left.
 
 ---
 
-## Separation of Concerns
+## Two Types of Videos
 
-Ranking data appears in three places, each with a distinct role:
+The app distinguishes between **personal recordings** and **challenge submissions**:
 
-| Place | Owns | Links to |
-|-------|------|----------|
-| **Community tab** | Full browsing: all videos, grid, skill filters, fire reactions | Video detail |
-| **Challenges tab** | Competition wrapper: hero card, top 3 podium, submit CTA, past challenges | "SEE ALL" → community tab |
-| **Skill node** | Personal progress: MY WEEK SUBMISSIONS with rank, submit CTA | Challenge banner → challenges tab |
+| Aspect | Personal (Skill Node) | Challenge |
+|--------|----------------------|-----------|
+| Submitted from | Skill detail "RECORD VIDEO" | Challenge hero card "SUBMIT YOUR VIDEO" |
+| `is_challenge` | `false` | `true` |
+| Approval | Auto-approved | Admin review required |
+| Visibility | Private (only the user) | Public (leaderboard + reactions) |
+| Weekly context | No (all-time) | Yes (ISO week) |
+| Fire reactions | No | Yes |
 
-No leaderboard duplication — the community tab is the single source of truth for full rankings.
+### Where videos appear
+
+| Place | Shows |
+|-------|-------|
+| **Skill node "MY VIDEOS"** | All personal recordings for that skill (all-time) |
+| **Challenges top 3 podium** | Top 3 approved challenge videos for the week |
+| **Challenge leaderboard screen** | Full ranked list of approved challenge videos |
+| **Profile "MY VIDEOS"** | All user videos (personal + challenge) |
 
 ---
 
@@ -139,10 +156,10 @@ The home tab shows a **featured challenge card** that dynamically pulls from `ac
 
 | Data | Source | How It's Used |
 |------|--------|---------------|
-| Top 3 podium | `fetchTopVideosForSkill(skillId, week, year, limit: 10)` | Top 3 shown in challenges, full list in community tab |
+| Top 3 podium | `fetchTopVideosForSkill(skillId, week, year, limit: 10)` | Top 3 in challenges tab, full list in leaderboard screen |
 | Participant count | Count of `community_videos` rows for skill+week | Shown in hero card |
 | Submission check | `fetchMyVideos(userId, skillId)` filtered by week | Determines CTA button state |
-| Video upload | `/submit-video/{skillId}` screen | Same 3-step flow (pick → caption → submit) |
+| Video upload | `/submit-video/{skillId}?challenge=true` | 3-step flow with `is_challenge = true` |
 | Video detail | `/community-video` screen | Tap leaderboard row to watch + react |
 | Fire reactions | `toggle_reaction` RPC + `myReactionsProvider` | Voting mechanism = leaderboard ranking |
 | Admin approval | Admin panel pending videos flow | Videos must be approved to appear on leaderboard |
@@ -194,13 +211,14 @@ lib/features/challenges/
   repository/
     challenge_repository.dart   -- Supabase queries (challenges table + participant count)
   screens/
-    challenges_screen.dart      -- Full screen: hero card, top 3 podium, past challenges
+    challenges_screen.dart              -- Main screen: hero card, top 3 podium, past challenges
+    challenge_leaderboard_screen.dart   -- Full leaderboard for a challenge (all ranked videos)
 ```
 
 Integration points:
 - `lib/features/content/screens/home_screen.dart` — dynamic featured challenge card
 - `lib/features/skill_tree/screens/skill_detail_screen.dart` — challenge banner when skill matches active challenge
-- `lib/features/community/` — video upload, approval, reactions, rankings (all reused)
+- `lib/features/community/screens/submit_video_screen.dart` — shared upload flow, `isChallenge` param distinguishes type
 - `lib/features/community/providers/community_provider.dart` — invalidates challenge providers on approve/reject
 
 ---

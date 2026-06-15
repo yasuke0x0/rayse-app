@@ -99,26 +99,33 @@ XP values range from 50 (Basic Bounce) to 500 (Freestyle). Full mastery of all 1
 
 ---
 
-## Community Integration
+## My Videos (Personal Recordings)
 
-Each mastered skill has a **Community** section in its detail screen focused on personal progress.
+Each mastered skill has a **"MY VIDEOS"** section in its detail screen — a personal library of all practice recordings for that skill.
+
+### How It Works
+
+- Videos are **private** — only visible to the user who recorded them
+- Videos are **auto-approved** — no admin review needed
+- Videos are **all-time** — every recording ever made for that skill, not weekly
+- No premium gate — any user with a mastered skill can record videos
 
 ### Challenge Banner
 
 If this skill is the **active weekly challenge**, a highlighted banner appears at the top of the section: "THIS WEEK'S CHALLENGE SKILL" with a "VIEW" link that navigates to the Challenges tab.
 
-### My Week Submissions
+### Before Mastery (Locked State)
 
-Shows the user's own submissions for the current week, with:
-- **Ranking position** (if approved) -- computed from the full approved leaderboard for that skill+week
-- **Status pill** -- PENDING, LIVE, or REJECTED
-- **Fire score** (if approved)
+For available/completed skills (not yet mastered), a locked teaser section shows:
+- "Complete X more session(s) to unlock video recording."
+- Progress bar (1/3, 2/3)
+- Session counter
 
-The full leaderboard and top videos live in the **Community tab** and **Challenges tab** -- the skill node only shows the user's own submissions to avoid duplication.
+The result screen snackbar also reminds users: "X sessions to unlock video recording"
 
-### Submit Video
+### Record Video
 
-Premium users can submit a video for any mastered skill. One submission per skill per week. Navigates to the video upload screen.
+"RECORD VIDEO" button navigates to the 3-step upload flow (pick video, add caption, submit). The video is saved with `is_challenge = false` and `status = 'approved'` immediately.
 
 ---
 
@@ -127,7 +134,9 @@ Premium users can submit a video for any mastered skill. One submission per skil
 | User Tier | Access |
 |-----------|--------|
 | Free | Basic Bounce, Forward Jump, Backward Jump only. Locked skills show paywall. Video overlays show "UNLOCK WITH PREMIUM". |
-| Premium | All 11 skills. Can submit community videos. |
+| Premium | All 11 skills. |
+
+Personal video recording is available to all users on mastered skills (no premium gate). Challenge video submissions require premium for premium-gated skills.
 
 Premium check uses `userTierProvider` which returns `'premium'` if the user has `is_premium` or `is_creator` set in their profile.
 
@@ -211,7 +220,7 @@ Skill Tree Tab
   |                   |                                              |-- "I GOT IT!" --> /skill-mastered/{skillId}
   |                   |                                              |                     |-- "CONTINUE" --> /home
   |                   |                                              |-- "NEEDS MORE PRACTICE" --> back to detail
-  |                   |-- "SUBMIT YOUR VIDEO" --> /submit-video/{skillId}
+  |                   |-- "RECORD VIDEO" --> /submit-video/{skillId} (personal, auto-approved)
   |                   |-- challenge banner "VIEW" --> Challenges tab
   |                   |-- premium lock --> /paywall
 ```
