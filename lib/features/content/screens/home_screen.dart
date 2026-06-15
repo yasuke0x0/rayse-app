@@ -9,6 +9,7 @@ import '../../community/providers/community_provider.dart';
 import '../../notifications/providers/notification_provider.dart';
 import '../../skill_tree/providers/skill_provider.dart';
 import '../../skill_tree/screens/skill_tree_screen.dart';
+import '../../challenges/providers/challenge_provider.dart';
 import '../../challenges/screens/challenges_screen.dart';
 import '../../community/screens/community_screen.dart';
 import '../../profile/screens/profile_screen.dart';
@@ -219,78 +220,7 @@ class _HomeTabBody extends ConsumerWidget {
 
               // ── Featured challenge card ───────────────────────────────────
               SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 12, 24, 0),
-                  child: GestureDetector(
-                    onTap: () => onSwitchTab(2),
-                    child: Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: AppColors.surface,
-                        borderRadius: BorderRadius.circular(24),
-                        border: Border.all(color: AppColors.accent),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Badge
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 10, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: AppColors.accent,
-                              borderRadius: BorderRadius.circular(999),
-                            ),
-                            child: Text(
-                              "THIS WEEK'S CHALLENGE",
-                              style: GoogleFonts.inter(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w700,
-                                color: Colors.white,
-                                letterSpacing: 0.8,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      '100 Double Unders',
-                                      style: GoogleFonts.poppins(
-                                        fontSize: 20,
-                                        fontWeight: FontWeight.w700,
-                                        color: AppColors.textPrimary,
-                                        height: 1.2,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      '7 days · Community challenge',
-                                      style: GoogleFonts.inter(
-                                        fontSize: 13,
-                                        color: AppColors.textSecondary,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const Icon(
-                                Icons.arrow_forward,
-                                color: AppColors.accent,
-                                size: 20,
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
+                child: _FeaturedChallengeCard(onTap: () => onSwitchTab(2)),
               ),
 
               // ── Free tutorials section ────────────────────────────────────
@@ -568,4 +498,89 @@ class _GridPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+// ─── Featured challenge card (dynamic) ────────────────────────────────────────
+
+class _FeaturedChallengeCard extends ConsumerWidget {
+  final VoidCallback onTap;
+  const _FeaturedChallengeCard({required this.onTap});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final challenge = ref.watch(activeChallengeProvider);
+    if (challenge == null) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 12, 24, 0),
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: AppColors.accent),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppColors.accent,
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  "THIS WEEK'S CHALLENGE",
+                  style: GoogleFonts.inter(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                    letterSpacing: 0.8,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          challenge.title,
+                          style: GoogleFonts.poppins(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textPrimary,
+                            height: 1.2,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '${challenge.daysLeft}d left · Community challenge',
+                          style: GoogleFonts.inter(
+                            fontSize: 13,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Icon(
+                    Icons.arrow_forward,
+                    color: AppColors.accent,
+                    size: 20,
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }

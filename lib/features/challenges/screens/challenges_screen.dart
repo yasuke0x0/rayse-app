@@ -1,10 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../community/models/community_video.dart';
+import '../../community/providers/community_provider.dart';
+import '../../skill_tree/providers/skill_provider.dart';
 import '../models/challenge.dart';
-import '../models/leaderboard_entry.dart';
 import '../providers/challenge_provider.dart';
+
+const _skillLabels = <String, String>{
+  'basic_bounce': 'Basic Bounce',
+  'forward_jump': 'Forward Jump',
+  'backward_jump': 'Backward Jump',
+  'alt_steps': 'Alternating Steps',
+  'double_unders': 'Double Unders',
+  'cross_overs': 'Cross Overs',
+  'side_swing': 'Side Swing',
+  'triple_unders': 'Triple Unders',
+  'cross_double': 'Cross Double',
+  'releases': 'Releases',
+  'freestyle': 'Freestyle',
+};
 
 class ChallengesScreen extends ConsumerWidget {
   const ChallengesScreen({super.key});
@@ -21,28 +38,42 @@ class ChallengesScreen extends ConsumerWidget {
           SafeArea(
             child: CustomScrollView(
               slivers: [
-                // ── Header ───────────────────────────────────────────────────
+                // Header
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
-                    child: Text(
-                      'CHALLENGES',
-                      style: GoogleFonts.poppins(
-                        fontSize: 28,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.textPrimary,
-                        letterSpacing: 0.5,
-                      ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'CHALLENGES',
+                          style: GoogleFonts.poppins(
+                            fontSize: 28,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textPrimary,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Compete with the community every week',
+                          style: GoogleFonts.inter(
+                            fontSize: 13,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
 
-                // ── Content ──────────────────────────────────────────────────
+                // Content
                 SliverToBoxAdapter(
                   child: challengesAsync.when(
                     loading: () => const _LoadingState(),
                     error: (_, _) => const _ErrorState(),
-                    data: (challenges) => _ChallengesBody(challenges: challenges),
+                    data: (challenges) =>
+                        _ChallengesBody(challenges: challenges),
                   ),
                 ),
               ],
@@ -62,70 +93,42 @@ class _ChallengesBody extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final active = challenges.firstWhere(
-      (c) => c.isActive,
-      orElse: () => challenges.first,
-    );
-    final rest = challenges.where((c) => c.id != active.id).toList();
-    final leaderboardAsync = ref.watch(leaderboardProvider(active.id));
+    if (challenges.isEmpty) return const _EmptyState();
+
+    final active = challenges.where((c) => c.isCurrentWeek).firstOrNull;
+    final past = challenges.where((c) => !c.isCurrentWeek).toList();
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 28, 24, 32),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── Active challenge hero ──────────────────────────────────────────
-          _ActiveChallengeCard(challenge: active),
+          // Active challenge
+          if (active != null) ...[
+            _ActiveChallengeCard(challenge: active),
+            const SizedBox(height: 32),
+            _Leaderboard(challenge: active),
+          ] else
+            const _NoChallengeCard(),
 
-          const SizedBox(height: 36),
-
-          // ── Leaderboard ───────────────────────────────────────────────────
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'LEADERBOARD',
-                style: GoogleFonts.poppins(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary,
-                  letterSpacing: 0.5,
-                ),
+          // Past challenges
+          if (past.isNotEmpty) ...[
+            const SizedBox(height: 36),
+            Text(
+              'PAST CHALLENGES',
+              style: GoogleFonts.poppins(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textPrimary,
+                letterSpacing: 0.5,
               ),
-              Text(
-                active.title.toUpperCase(),
-                style: GoogleFonts.inter(
-                  fontSize: 11,
-                  color: AppColors.textMuted,
-                  letterSpacing: 0.5,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          leaderboardAsync.when(
-            loading: () => const _LeaderboardSkeleton(),
-            error: (_, _) => const SizedBox.shrink(),
-            data: (entries) => _LeaderboardList(entries: entries),
-          ),
-
-          const SizedBox(height: 36),
-
-          // ── More challenges ───────────────────────────────────────────────
-          Text(
-            'MORE CHALLENGES',
-            style: GoogleFonts.poppins(
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
-              color: AppColors.textPrimary,
-              letterSpacing: 0.5,
             ),
-          ),
-          const SizedBox(height: 16),
-          ...rest.map((c) => Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: _ChallengeListCard(challenge: c),
-              )),
+            const SizedBox(height: 16),
+            ...past.map((c) => Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: _PastChallengeCard(challenge: c),
+                )),
+          ],
         ],
       ),
     );
@@ -140,7 +143,16 @@ class _ActiveChallengeCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final joined = ref.watch(joinedChallengesProvider).contains(challenge.id);
+    final hasSubmitted =
+        ref.watch(hasSubmittedChallengeProvider(challenge.id)).valueOrNull ??
+            false;
+    final participantCount =
+        ref.watch(challengeParticipantCountProvider(challenge.id)).valueOrNull;
+    final userTier = ref.watch(userTierProvider).valueOrNull ?? 'free';
+    final skills = ref.watch(skillsProvider);
+    final skill = skills.where((s) => s.id == challenge.skillId).firstOrNull;
+    final isPremiumLocked =
+        skill != null && !skill.isFreeNode && userTier == 'free';
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -204,27 +216,44 @@ class _ActiveChallengeCard extends ConsumerWidget {
               height: 1.5,
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 14),
 
-          // Stats row
+          // Skill + stats
           Row(
             children: [
-              _StatBadge(
-                icon: Icons.people_outline,
-                label:
-                    '${_formatCount(challenge.participantCount)} joined',
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppColors.accent.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(
+                      color: AppColors.accent.withValues(alpha: 0.3)),
+                ),
+                child: Text(
+                  (_skillLabels[challenge.skillId] ?? challenge.skillId)
+                      .toUpperCase(),
+                  style: GoogleFonts.inter(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.accent,
+                    letterSpacing: 0.5,
+                  ),
+                ),
               ),
               const SizedBox(width: 12),
-              _StatBadge(
-                icon: Icons.flag_outlined,
-                label:
-                    '${challenge.targetValue} ${challenge.unit}',
-              ),
-              const SizedBox(width: 12),
-              _StatBadge(
-                icon: Icons.schedule,
-                label: '${challenge.durationDays}d',
-              ),
+              if (participantCount != null) ...[
+                Icon(Icons.people_outline,
+                    size: 13, color: AppColors.textMuted),
+                const SizedBox(width: 4),
+                Text(
+                  _formatCount(participantCount),
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    color: AppColors.textMuted,
+                  ),
+                ),
+              ],
             ],
           ),
           const SizedBox(height: 20),
@@ -233,27 +262,37 @@ class _ActiveChallengeCard extends ConsumerWidget {
           SizedBox(
             width: double.infinity,
             child: GestureDetector(
-              onTap: joined
-                  ? null
-                  : () => ref
-                      .read(joinedChallengesProvider.notifier)
-                      .join(challenge.id),
+              onTap: () {
+                if (isPremiumLocked) {
+                  context.push('/paywall');
+                } else if (!hasSubmitted) {
+                  context.push('/submit-video/${challenge.skillId}');
+                }
+              },
               child: Container(
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 decoration: BoxDecoration(
-                  color: joined ? AppColors.surface : AppColors.accent,
+                  color: hasSubmitted
+                      ? AppColors.surface
+                      : isPremiumLocked
+                          ? const Color(0xFF3F3F46)
+                          : AppColors.accent,
                   borderRadius: BorderRadius.circular(12),
-                  border: joined
+                  border: hasSubmitted
                       ? Border.all(color: AppColors.border)
                       : null,
                 ),
                 alignment: Alignment.center,
                 child: Text(
-                  joined ? 'JOINED ✓' : 'JOIN CHALLENGE',
+                  hasSubmitted
+                      ? 'SUBMITTED ✓'
+                      : isPremiumLocked
+                          ? '🔒 PREMIUM — SUBMIT VIDEO'
+                          : 'SUBMIT YOUR VIDEO',
                   style: GoogleFonts.inter(
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
-                    color: joined
+                    color: hasSubmitted
                         ? AppColors.textSecondary
                         : Colors.white,
                     letterSpacing: 0.8,
@@ -269,139 +308,211 @@ class _ActiveChallengeCard extends ConsumerWidget {
 
   String _formatCount(int n) {
     if (n >= 1000) return '${(n / 1000).toStringAsFixed(1)}k';
-    return '$n';
+    return '$n participants';
   }
 }
 
 // ─── Leaderboard ──────────────────────────────────────────────────────────────
 
-class _LeaderboardList extends StatelessWidget {
-  final List<LeaderboardEntry> entries;
-  const _LeaderboardList({required this.entries});
+class _Leaderboard extends ConsumerWidget {
+  final Challenge challenge;
+  const _Leaderboard({required this.challenge});
 
   @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Column(
-        children: entries.asMap().entries.map((e) {
-          final i = e.key;
-          final entry = e.value;
-          final isLast = i == entries.length - 1;
-          return Column(
-            children: [
-              _LeaderboardRow(entry: entry),
-              if (!isLast)
-                Divider(
-                  height: 1,
-                  thickness: 1,
-                  color: AppColors.border,
+  Widget build(BuildContext context, WidgetRef ref) {
+    final leaderboardAsync =
+        ref.watch(challengeLeaderboardProvider(challenge.id));
+    final currentUserId =
+        ref.watch(profileProvider).valueOrNull?['id'] as String?;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Text(
+              'LEADERBOARD',
+              style: GoogleFonts.poppins(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textPrimary,
+                letterSpacing: 0.5,
+              ),
+            ),
+            const Spacer(),
+            Text(
+              '🔥 TOP 10',
+              style: GoogleFonts.inter(
+                fontSize: 11,
+                color: AppColors.textMuted,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        leaderboardAsync.when(
+          loading: () => const _LeaderboardSkeleton(),
+          error: (_, _) => const SizedBox.shrink(),
+          data: (videos) {
+            if (videos.isEmpty) {
+              return Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppColors.border),
                 ),
-            ],
-          );
-        }).toList(),
-      ),
+                child: Center(
+                  child: Text(
+                    'No approved videos yet — be the first!',
+                    style: GoogleFonts.inter(
+                      fontSize: 13,
+                      color: AppColors.textMuted,
+                    ),
+                  ),
+                ),
+              );
+            }
+            return Container(
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: AppColors.border),
+              ),
+              child: Column(
+                children: List.generate(videos.length, (i) {
+                  final video = videos[i];
+                  final isLast = i == videos.length - 1;
+                  final isCurrentUser = video.userId == currentUserId;
+                  return Column(
+                    children: [
+                      _LeaderboardRow(
+                        rank: i + 1,
+                        video: video,
+                        isCurrentUser: isCurrentUser,
+                      ),
+                      if (!isLast)
+                        Divider(
+                          height: 1,
+                          thickness: 1,
+                          color: AppColors.border,
+                        ),
+                    ],
+                  );
+                }),
+              ),
+            );
+          },
+        ),
+      ],
     );
   }
 }
 
 class _LeaderboardRow extends StatelessWidget {
-  final LeaderboardEntry entry;
-  const _LeaderboardRow({required this.entry});
+  final int rank;
+  final CommunityVideo video;
+  final bool isCurrentUser;
+
+  const _LeaderboardRow({
+    required this.rank,
+    required this.video,
+    required this.isCurrentUser,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final isTop3 = entry.rank <= 3;
-    final rankColor = switch (entry.rank) {
-      1 => const Color(0xFFFBBF24), // gold
-      2 => const Color(0xFF94A3B8), // silver
-      3 => const Color(0xFFD97706), // bronze
+    final rankColor = switch (rank) {
+      1 => const Color(0xFFFBBF24),
+      2 => const Color(0xFF94A3B8),
+      3 => const Color(0xFFD97706),
       _ => AppColors.textMuted,
     };
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      decoration: entry.isCurrentUser
-          ? BoxDecoration(
-              color: AppColors.accent.withValues(alpha: 0.06),
-              borderRadius: BorderRadius.circular(16),
-            )
-          : null,
-      child: Row(
-        children: [
-          // Rank
-          SizedBox(
-            width: 28,
-            child: Text(
-              '${entry.rank}',
-              style: GoogleFonts.poppins(
-                fontSize: 14,
-                fontWeight: FontWeight.w700,
-                color: isTop3 ? rankColor : AppColors.textMuted,
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-
-          // Avatar placeholder
-          Container(
-            width: 32,
-            height: 32,
-            decoration: BoxDecoration(
-              color: entry.isCurrentUser
-                  ? AppColors.accent.withValues(alpha: 0.2)
-                  : AppColors.background,
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: entry.isCurrentUser
-                    ? AppColors.accent
-                    : AppColors.border,
-              ),
-            ),
-            child: Center(
+    return GestureDetector(
+      onTap: () => context.push('/community-video', extra: video),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: isCurrentUser
+            ? BoxDecoration(
+                color: AppColors.accent.withValues(alpha: 0.06),
+                borderRadius: BorderRadius.circular(16),
+              )
+            : null,
+        child: Row(
+          children: [
+            // Rank
+            SizedBox(
+              width: 28,
               child: Text(
-                entry.username[0].toUpperCase(),
+                '$rank',
                 style: GoogleFonts.poppins(
-                  fontSize: 12,
+                  fontSize: 14,
                   fontWeight: FontWeight.w700,
-                  color: entry.isCurrentUser
-                      ? AppColors.accent
+                  color: rank <= 3 ? rankColor : AppColors.textMuted,
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+
+            // Avatar
+            Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                color: isCurrentUser
+                    ? AppColors.accent.withValues(alpha: 0.2)
+                    : AppColors.background,
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color:
+                      isCurrentUser ? AppColors.accent : AppColors.border,
+                ),
+              ),
+              child: Center(
+                child: Text(
+                  video.username[0].toUpperCase(),
+                  style: GoogleFonts.poppins(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: isCurrentUser
+                        ? AppColors.accent
+                        : AppColors.textSecondary,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+
+            // Username
+            Expanded(
+              child: Text(
+                isCurrentUser ? 'You' : '@${video.username}',
+                style: GoogleFonts.inter(
+                  fontSize: 14,
+                  fontWeight:
+                      isCurrentUser ? FontWeight.w600 : FontWeight.w400,
+                  color: isCurrentUser
+                      ? AppColors.textPrimary
                       : AppColors.textSecondary,
                 ),
               ),
             ),
-          ),
-          const SizedBox(width: 12),
 
-          // Username
-          Expanded(
-            child: Text(
-              entry.isCurrentUser ? 'You' : entry.username,
-              style: GoogleFonts.inter(
+            // Score
+            const Text('🔥', style: TextStyle(fontSize: 12)),
+            const SizedBox(width: 4),
+            Text(
+              '${video.score}',
+              style: GoogleFonts.poppins(
                 fontSize: 14,
-                fontWeight:
-                    entry.isCurrentUser ? FontWeight.w600 : FontWeight.w400,
-                color: entry.isCurrentUser
-                    ? AppColors.textPrimary
-                    : AppColors.textSecondary,
+                fontWeight: FontWeight.w700,
+                color: rank <= 3 ? rankColor : AppColors.textPrimary,
               ),
             ),
-          ),
-
-          // Score
-          Text(
-            '${entry.score} ${entry.unit}',
-            style: GoogleFonts.poppins(
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
-              color: isTop3 ? rankColor : AppColors.textPrimary,
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -419,162 +530,198 @@ class _LeaderboardSkeleton extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: AppColors.border),
       ),
+      child: const Center(
+        child: CircularProgressIndicator(color: AppColors.accent),
+      ),
     );
   }
 }
 
-// ─── Challenge list card ───────────────────────────────────────────────────────
+// ─── Past challenge card ──────────────────────────────────────────────────────
 
-class _ChallengeListCard extends ConsumerWidget {
+class _PastChallengeCard extends ConsumerWidget {
   final Challenge challenge;
-  const _ChallengeListCard({required this.challenge});
+  const _PastChallengeCard({required this.challenge});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final joined = ref.watch(joinedChallengesProvider).contains(challenge.id);
+    final userTier = ref.watch(userTierProvider).valueOrNull ?? 'free';
+    final isLocked = userTier == 'free';
 
+    return GestureDetector(
+      onTap: isLocked ? () => context.push('/paywall') : null,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: AppColors.background,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppColors.border),
+              ),
+              child: Icon(
+                isLocked
+                    ? Icons.lock_outline_rounded
+                    : Icons.emoji_events_outlined,
+                color: isLocked ? AppColors.textMuted : AppColors.accent,
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    challenge.title,
+                    style: GoogleFonts.poppins(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: isLocked
+                          ? AppColors.textMuted
+                          : AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'WK ${challenge.weekNumber} · ${_skillLabels[challenge.skillId] ?? challenge.skillId}',
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      color: AppColors.textMuted,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (isLocked)
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF3F3F46),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  '🔒 PREMIUM',
+                  style: GoogleFonts.inter(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textMuted,
+                    letterSpacing: 0.3,
+                  ),
+                ),
+              )
+            else
+              const Icon(Icons.chevron_right_rounded,
+                  color: AppColors.textMuted, size: 18),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─── No active challenge ──────────────────────────────────────────────────────
+
+class _NoChallengeCard extends StatelessWidget {
+  const _NoChallengeCard();
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(color: AppColors.border),
       ),
-      child: Row(
+      child: Column(
         children: [
-          // Icon
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: AppColors.background,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.border),
-            ),
-            child: Icon(
-              _iconFor(challenge.type),
-              color: AppColors.accent,
-              size: 20,
+          const Icon(Icons.emoji_events_outlined,
+              color: AppColors.textMuted, size: 40),
+          const SizedBox(height: 12),
+          Text(
+            'NO CHALLENGE THIS WEEK',
+            style: GoogleFonts.poppins(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textPrimary,
+              letterSpacing: 0.5,
             ),
           ),
-          const SizedBox(width: 14),
-
-          // Info
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  challenge.title,
-                  style: GoogleFonts.poppins(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  '${_formatCount(challenge.participantCount)} joined · ${challenge.daysLeft}d left',
-                  style: GoogleFonts.inter(
-                    fontSize: 12,
-                    color: AppColors.textMuted,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 12),
-
-          // Join button
-          GestureDetector(
-            onTap: joined
-                ? null
-                : () => ref
-                    .read(joinedChallengesProvider.notifier)
-                    .join(challenge.id),
-            child: Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-              decoration: BoxDecoration(
-                color: joined ? AppColors.surface : AppColors.accent,
-                borderRadius: BorderRadius.circular(999),
-                border: joined ? Border.all(color: AppColors.border) : null,
-              ),
-              child: Text(
-                joined ? 'JOINED' : 'JOIN',
-                style: GoogleFonts.inter(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  color: joined ? AppColors.textMuted : Colors.white,
-                  letterSpacing: 0.6,
-                ),
-              ),
+          const SizedBox(height: 6),
+          Text(
+            'Check back soon — a new challenge drops every week.',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.inter(
+              fontSize: 13,
+              color: AppColors.textSecondary,
             ),
           ),
         ],
       ),
     );
   }
-
-  IconData _iconFor(String type) => switch (type) {
-        'reps' => Icons.repeat,
-        'time' => Icons.timer_outlined,
-        'streak' => Icons.local_fire_department_outlined,
-        _ => Icons.emoji_events_outlined,
-      };
-
-  String _formatCount(int n) {
-    if (n >= 1000) return '${(n / 1000).toStringAsFixed(1)}k';
-    return '$n';
-  }
 }
 
-// ─── Stat badge ───────────────────────────────────────────────────────────────
+// ─── Empty / loading / error states ───────────────────────────────────────────
 
-class _StatBadge extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  const _StatBadge({required this.icon, required this.label});
+class _EmptyState extends StatelessWidget {
+  const _EmptyState();
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: 13, color: AppColors.textMuted),
-        const SizedBox(width: 4),
-        Text(
-          label,
-          style: GoogleFonts.inter(
-            fontSize: 12,
-            color: AppColors.textMuted,
-          ),
+    return Padding(
+      padding: const EdgeInsets.all(32),
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.emoji_events_outlined,
+                color: AppColors.textMuted, size: 48),
+            const SizedBox(height: 16),
+            Text(
+              'NO CHALLENGES YET',
+              style: GoogleFonts.poppins(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textPrimary,
+                letterSpacing: 0.5,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Challenges are coming soon — stay tuned!',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.inter(
+                fontSize: 14,
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 }
-
-// ─── Loading / error ──────────────────────────────────────────────────────────
 
 class _LoadingState extends StatelessWidget {
   const _LoadingState();
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 28, 24, 0),
-      child: Column(
-        children: [
-          Container(
-            height: 240,
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: AppColors.border),
-            ),
-          ),
-        ],
+    return const Padding(
+      padding: EdgeInsets.only(top: 80),
+      child: Center(
+        child: CircularProgressIndicator(color: AppColors.accent),
       ),
     );
   }
