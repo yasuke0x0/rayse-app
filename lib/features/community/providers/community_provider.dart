@@ -289,6 +289,7 @@ class MyReactionsNotifier extends AsyncNotifier<Set<String>> {
       await ref
           .read(communityVideoRepositoryProvider)
           .toggleReaction(videoId);
+      ref.invalidate(challengeLeaderboardProvider);
     } catch (_) {
       // Revert
       state = AsyncData(current);

@@ -93,8 +93,9 @@ Computed from the current day's position in the ISO week. Sunday = 0 days left.
 
 | User State | Button | Action |
 |------------|--------|--------|
-| Hasn't submitted | "SUBMIT YOUR VIDEO" (orange) | → `/submit-video/{skillId}?challenge=true` |
+| Hasn't submitted + mastered | "SUBMIT YOUR VIDEO" (orange) | → `/submit-video/{skillId}?challenge=true` |
 | Already submitted | "SUBMITTED ✓" (gray, disabled) | — |
+| Skill not mastered | "🔒 MASTER THE SKILL FIRST" (gray) | → `/skill-detail/{skillId}` |
 | Free user, premium skill | "🔒 PREMIUM — SUBMIT VIDEO" | → `/paywall` |
 
 ### 3. Top 3 Podium
@@ -199,11 +200,14 @@ The home tab shows a **featured challenge card** that dynamically pulls from `ac
 |---------|------|---------|
 | View active challenge | Yes | Yes |
 | View leaderboard | Yes | Yes |
-| Submit video (free skill) | Yes | Yes |
+| Submit video (free skill, mastered) | Yes | Yes |
 | Submit video (premium skill) | No → paywall | Yes |
+| Submit video (skill not mastered) | No → skill detail | No → skill detail |
 | View past challenges | No → paywall | Yes |
 
 Premium check uses `userTierProvider` (returns `'premium'` if `is_premium` or `is_creator`). Skill premium check uses `skill.isFreeNode` from the skill tree data.
+
+**Mastery gate:** Users must complete 3 practice sessions (mastered status) for a skill before they can submit a challenge video for it. The CTA shows "🔒 MASTER THE SKILL FIRST" and taps navigate to the skill detail screen. The submit video screen also has a safety guard — if someone navigates directly to `/submit-video/{skillId}?challenge=true` without mastery, they see a full-screen message with a "GO TO SKILL" button.
 
 ---
 

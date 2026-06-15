@@ -177,24 +177,7 @@ class SkillTreeScreen extends ConsumerWidget {
     Skill skill,
     String userTier,
   ) {
-    if (skill.status == SkillStatus.locked) {
-      if (!skill.isFreeNode && userTier == 'free') {
-        context.push('/paywall');
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Complete previous skills first',
-              style: GoogleFonts.inter(color: Colors.white),
-            ),
-            backgroundColor: AppColors.surface,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
-    } else {
-      context.push('/skill-detail/${skill.id}');
-    }
+    context.push('/skill-detail/${skill.id}');
   }
 }
 

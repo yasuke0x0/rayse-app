@@ -41,6 +41,8 @@ class _SkillDetailScreenState extends ConsumerState<SkillDetailScreen>
           orElse: () => ref.read(skillsProvider).first,
         );
 
+    if (skill.status == SkillStatus.locked) return;
+
     final controller =
         VideoPlayerController.networkUrl(Uri.parse(skill.videoUrl));
     _videoController = controller;
@@ -110,13 +112,15 @@ class _SkillDetailScreenState extends ConsumerState<SkillDetailScreen>
   @override
   Widget build(BuildContext context) {
     final skills = ref.watch(skillsProvider);
-    final userTier = ref.watch(userTierProvider).valueOrNull ?? 'free';
+    final userTierAsync = ref.watch(userTierProvider);
+    final userTier = userTierAsync.valueOrNull;
     final skill = skills.firstWhere(
       (s) => s.id == widget.skillId,
       orElse: () => skills.first,
     );
     final isLocked = skill.status == SkillStatus.locked;
-    final isPremiumLocked = !skill.isFreeNode && userTier == 'free';
+    final isPremiumLocked =
+        userTier != null && !skill.isFreeNode && userTier == 'free';
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -128,14 +132,21 @@ class _SkillDetailScreenState extends ConsumerState<SkillDetailScreen>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildHeader(context, skill),
-                  _buildVideoSection(skill, isPremiumLocked),
+                  if (isLocked)
+                    _buildLockedVideoPlaceholder()
+                  else
+                    _buildVideoSection(skill, isPremiumLocked),
                   _buildSkillInfo(skill),
-                  if (_tipsInitialized) _buildTips(skill),
-                  if (skill.status == SkillStatus.mastered)
-                    _buildCommunitySection(skill, userTier)
-                  else if (skill.status == SkillStatus.available ||
-                      skill.status == SkillStatus.completed)
-                    _buildCommunitySectionLocked(skill),
+                  if (isLocked)
+                    _buildPrerequisites(skill, skills)
+                  else ...[
+                    if (_tipsInitialized) _buildTips(skill),
+                    if (skill.status == SkillStatus.mastered)
+                      _buildCommunitySection(skill, userTier ?? 'free')
+                    else if (skill.status == SkillStatus.available ||
+                        skill.status == SkillStatus.completed)
+                      _buildCommunitySectionLocked(skill),
+                  ],
                   const SizedBox(height: 100),
                 ],
               ),
@@ -298,6 +309,145 @@ class _SkillDetailScreenState extends ConsumerState<SkillDetailScreen>
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildLockedVideoPlaceholder() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+      child: AspectRatio(
+        aspectRatio: 16 / 9,
+        child: Container(
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.border),
+          ),
+          child: Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.lock_outline_rounded,
+                    color: AppColors.textMuted, size: 40),
+                const SizedBox(height: 10),
+                Text(
+                  'VIDEO LOCKED',
+                  style: GoogleFonts.inter(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textMuted,
+                    letterSpacing: 0.8,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Master the prerequisites to unlock',
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    color: AppColors.textMuted,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPrerequisites(Skill skill, List<Skill> allSkills) {
+    final prerequisites =
+        allSkills.where((s) => s.unlockIds.contains(skill.id)).toList();
+    if (prerequisites.isEmpty) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 24, 16, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'PREREQUISITES',
+            style: GoogleFonts.inter(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: AppColors.accent,
+              letterSpacing: 1.5,
+            ),
+          ),
+          const SizedBox(height: 12),
+          ...prerequisites.map((prereq) {
+            final isMastered = prereq.status == SkillStatus.mastered;
+            return GestureDetector(
+              onTap: () => context.push('/skill-detail/${prereq.id}'),
+              child: Container(
+                margin: const EdgeInsets.only(bottom: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: isMastered
+                        ? AppColors.accent.withValues(alpha: 0.4)
+                        : AppColors.border,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: isMastered
+                            ? AppColors.accent
+                            : const Color(0xFF3F3F46),
+                      ),
+                      child: Icon(
+                        isMastered
+                            ? Icons.check_rounded
+                            : Icons.lock_outline_rounded,
+                        color: Colors.white,
+                        size: 16,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            prereq.title,
+                            style: GoogleFonts.poppins(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            isMastered
+                                ? 'Mastered ⭐'
+                                : '${prereq.sessionsCompleted}/3 sessions',
+                            style: GoogleFonts.inter(
+                              fontSize: 12,
+                              color: isMastered
+                                  ? AppColors.accent
+                                  : AppColors.textMuted,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Icon(Icons.chevron_right_rounded,
+                        color: AppColors.textMuted, size: 18),
+                  ],
+                ),
+              ),
+            );
+          }),
+        ],
       ),
     );
   }
@@ -667,13 +817,23 @@ class _SkillDetailScreenState extends ConsumerState<SkillDetailScreen>
         border: Border(top: BorderSide(color: AppColors.border)),
       ),
       child: Builder(builder: (ctx) {
-        if (isPremiumLocked || isLocked) {
+        if (isPremiumLocked) {
           return SizedBox(
             width: double.infinity,
             child: _ctaButton(
               label: 'UNLOCK WITH PREMIUM',
               color: AppColors.accent,
               onTap: () => ctx.push('/paywall'),
+            ),
+          );
+        }
+        if (isLocked) {
+          return SizedBox(
+            width: double.infinity,
+            child: _ctaButton(
+              label: '🔒 MASTER PREREQUISITES FIRST',
+              color: const Color(0xFF3F3F46),
+              onTap: null,
             ),
           );
         }

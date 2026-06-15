@@ -71,7 +71,6 @@ class _MasteredScreenState extends ConsumerState<MasteredScreen>
     final skills = ref.watch(skillsProvider);
     final skill = skills.firstWhere((s) => s.id == widget.skillId);
     final totalXP = ref.watch(xpProvider);
-    final userTier = ref.watch(userTierProvider).valueOrNull ?? 'free';
     final unlockedNames = skill.unlockIds
         .map((id) {
           try {
@@ -242,7 +241,7 @@ class _MasteredScreenState extends ConsumerState<MasteredScreen>
                   ),
                   const SizedBox(height: 16),
 
-                  // Community CTA
+                  // What's next
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(20),
@@ -254,58 +253,34 @@ class _MasteredScreenState extends ConsumerState<MasteredScreen>
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Row(
-                          children: [
-                            const Text('🎥',
-                                style: TextStyle(fontSize: 20)),
-                            const SizedBox(width: 8),
-                            Text(
-                              'COMMUNITY CHALLENGE',
-                              style: GoogleFonts.inter(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w700,
-                                color: AppColors.accent,
-                                letterSpacing: 1.5,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
                         Text(
-                          'Show the community how you do ${skill.title}. Top 10 this week get featured on @samsjump — 279K followers.',
+                          "WHAT'S NEXT",
                           style: GoogleFonts.inter(
-                            fontSize: 13,
-                            color: AppColors.textSecondary,
-                            height: 1.5,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.accent,
+                            letterSpacing: 1.5,
                           ),
                         ),
-                        const SizedBox(height: 16),
-                        SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton(
-                            onPressed: () => userTier == 'premium'
-                                ? context.push('/submit-video/${widget.skillId}')
-                                : context.push('/paywall'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.accent,
-                              padding:
-                                  const EdgeInsets.symmetric(vertical: 14),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                            child: Text(
-                              userTier == 'premium'
-                                  ? 'SUBMIT YOUR VIDEO'
-                                  : '🔒 PREMIUM — SUBMIT VIDEO',
-                              style: GoogleFonts.inter(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w700,
-                                color: Colors.white,
-                                letterSpacing: 0.8,
-                              ),
-                            ),
-                          ),
+                        const SizedBox(height: 14),
+                        _nextStepRow(
+                          icon: Icons.emoji_events_outlined,
+                          title: 'Join the weekly challenge',
+                          subtitle:
+                              'Compete with the community and climb the leaderboard',
+                          onTap: () {
+                            context.go('/home');
+                            ref.read(homeTabIndexProvider.notifier).state = 2;
+                          },
+                        ),
+                        const SizedBox(height: 10),
+                        _nextStepRow(
+                          icon: Icons.videocam_outlined,
+                          title: 'Record a personal video',
+                          subtitle:
+                              'Track your progress with private recordings',
+                          onTap: () =>
+                              context.push('/submit-video/${widget.skillId}'),
                         ),
                       ],
                     ),
@@ -338,6 +313,60 @@ class _MasteredScreenState extends ConsumerState<MasteredScreen>
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _nextStepRow({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: AppColors.background,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: AppColors.accent.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, color: AppColors.accent, size: 18),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title,
+                      style: GoogleFonts.poppins(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimary,
+                      )),
+                  const SizedBox(height: 2),
+                  Text(subtitle,
+                      style: GoogleFonts.inter(
+                        fontSize: 11,
+                        color: AppColors.textMuted,
+                      )),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right_rounded,
+                color: AppColors.textMuted, size: 18),
+          ],
+        ),
       ),
     );
   }

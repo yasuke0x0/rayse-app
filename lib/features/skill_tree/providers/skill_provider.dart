@@ -80,12 +80,19 @@ class SkillsNotifier extends StateNotifier<List<Skill>> {
       status: newStatus,
     );
 
-    // Unlock next skills
+    // Unlock next skills (only if ALL prerequisites are mastered)
     final newlyUnlocked = <String>[];
     for (final unlockId in skill.unlockIds) {
       final unlockIdx = updatedSkills.indexWhere((s) => s.id == unlockId);
-      if (unlockIdx != -1 &&
-          updatedSkills[unlockIdx].status == SkillStatus.locked) {
+      if (unlockIdx == -1 ||
+          updatedSkills[unlockIdx].status != SkillStatus.locked) {
+        continue;
+      }
+
+      final allPrereqsMastered = updatedSkills
+          .where((s) => s.unlockIds.contains(unlockId))
+          .every((s) => s.status == SkillStatus.mastered);
+      if (allPrereqsMastered) {
         updatedSkills[unlockIdx] = updatedSkills[unlockIdx].copyWith(
           status: SkillStatus.available,
         );

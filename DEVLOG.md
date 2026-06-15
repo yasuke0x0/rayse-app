@@ -1,4 +1,37 @@
 
+## 2026-06-16 — Mastery gates, prerequisites, unlock fixes, fire reaction sync
+
+### What changed
+- Challenge submissions require skill mastery — CTA shows "🔒 MASTER THE SKILL FIRST" if not mastered
+- Submit video screen has safety guard for unmastered challenge attempts (full-screen blocker with "GO TO SKILL" button)
+- Locked skill nodes are now tappable — detail screen shows locked video placeholder, skill info preview, and prerequisites list
+- Prerequisites section shows mastery status of each required skill (tappable to navigate)
+- Skill detail CTA for premium users with locked skill shows "MASTER PREREQUISITES FIRST" instead of "UNLOCK WITH PREMIUM"
+- Fixed `isPremiumLocked` defaulting to true while `userTierProvider` is loading (was showing premium lock for premium users)
+- Fixed `alt_steps` missing `cross_overs` in `unlockIds` — Cross Overs now correctly requires both Forward Jump AND Alt Steps
+- Fixed `double_unders` missing `cross_double` in `unlockIds` — Cross Double now correctly requires both Double Unders AND Cross Overs
+- Fixed unlock logic: multi-prerequisite skills only unlock when ALL parents are mastered (was unlocking on first parent)
+- Fixed challenge submission cache: `hasSubmittedChallengeProvider`, `challengeLeaderboardProvider`, `challengeParticipantCountProvider` now invalidated on auth state change
+- Fire reactions now invalidate `challengeLeaderboardProvider` so top 3 and full leaderboard update after voting
+- Mastered celebration screen: replaced "COMMUNITY CHALLENGE" section with "WHAT'S NEXT" (join challenge / record personal video)
+
+### Files touched
+- `lib/features/challenges/screens/challenges_screen.dart` — mastery gate on CTA
+- `lib/features/community/screens/submit_video_screen.dart` — mastery guard for challenge uploads
+- `lib/features/skill_tree/screens/skill_tree_screen.dart` — locked nodes now navigate to detail
+- `lib/features/skill_tree/screens/skill_detail_screen.dart` — locked video placeholder, prerequisites, premium fix
+- `lib/features/skill_tree/screens/mastered_screen.dart` — replaced community CTA with "WHAT'S NEXT"
+- `lib/features/skill_tree/providers/skill_provider.dart` — multi-prerequisite unlock logic
+- `lib/features/skill_tree/data/mock_skills.dart` — fixed unlockIds for alt_steps and double_unders
+- `lib/features/community/providers/community_provider.dart` — fire reaction invalidates challenge leaderboard
+- `lib/features/content/screens/home_screen.dart` — invalidate challenge providers on auth change
+- `documentation/challenges.md` — mastery gate docs
+- `documentation/skill-tree.md` — locked detail screen, prerequisites, unlock logic docs
+
+### Gotchas
+- `userTierProvider.valueOrNull ?? 'free'` causes false premium locks while provider is loading — use null check instead of defaulting to 'free'
+- `unlockIds` defines what a skill unlocks (children), not what it needs — prerequisites are derived by reverse lookup
+
 ## 2026-06-13 — Comments on community videos + in-app notifications
 
 ### What changed

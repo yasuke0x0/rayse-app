@@ -50,12 +50,24 @@ The skill tree is the core learning progression system. Users unlock skills in a
 
 Each skill has one of four statuses that determines what the user can do with it.
 
-| Status | Meaning | Tree Visual | Detail Screen CTA |
-|--------|---------|-------------|-------------------|
-| Locked | Prerequisites not mastered (or premium-gated) | Gray circle + lock icon | "UNLOCK WITH PREMIUM" or disabled |
-| Available | Ready to practice | Gray circle + orange glow border | "START PRACTICE" (after watching video) |
-| Completed | 1-2 sessions done | Gray circle + progress arc (1/3 or 2/3) | "START PRACTICE" |
-| Mastered | 3 sessions done | Orange circle + gold star | "PRACTICE AGAIN" |
+| Status | Meaning | Tree Visual | Detail Screen |
+|--------|---------|-------------|---------------|
+| Locked | Prerequisites not mastered (or premium-gated) | Gray circle + lock icon | Locked video placeholder, prerequisites list, "MASTER PREREQUISITES FIRST" (premium) or "UNLOCK WITH PREMIUM" (free) |
+| Available | Ready to practice | Gray circle + orange glow border | Tutorial video, tips, "START PRACTICE" (after watching video) |
+| Completed | 1-2 sessions done | Gray circle + progress arc (1/3 or 2/3) | Tutorial video, tips, "START PRACTICE" |
+| Mastered | 3 sessions done | Orange circle + gold star | Tutorial video, tips, MY VIDEOS section, "PRACTICE AGAIN" |
+
+### Locked Skill Detail
+
+Tapping a locked node in the skill tree opens its detail screen with:
+- **Locked video placeholder** — "VIDEO LOCKED — Master the prerequisites to unlock" (no video loads)
+- **Skill info** — title, description, tier badge, XP reward (visible for preview)
+- **Prerequisites section** — lists all skills that must be mastered, each showing:
+  - Check icon + "Mastered" (orange) if done
+  - Lock icon + "X/3 sessions" (gray) if not
+  - Tappable — navigates to that prerequisite's detail screen
+- **No coaching tips** — hidden until skill is unlocked
+- **Bottom CTA** — "MASTER PREREQUISITES FIRST" (disabled) for premium users, "UNLOCK WITH PREMIUM" for free users
 
 ---
 
@@ -74,16 +86,16 @@ Available (0/3) --> Completed (1/3) --> Completed (2/3) --> Mastered (3/3)
 3. **Result Screen** -- user logs their rep count and confirms:
    - "I GOT IT!" -- saves the session, awards XP, advances progress
    - "NEEDS MORE PRACTICE" -- goes back without saving
-4. **Mastered Screen** (on 3rd session) -- celebration with confetti, animated XP count, share-to-Instagram card, and community challenge CTA
+4. **Mastered Screen** (on 3rd session) -- celebration with confetti, animated XP count, share-to-Instagram card, and "WHAT'S NEXT" section with two options: join the weekly challenge (→ Challenges tab) or record a personal video (→ upload flow)
 
 ### What Happens on Mastery
 
 When a skill reaches 3/3 sessions:
 - Status changes to **mastered**
-- All skills in its `unlockIds` list change from **locked** to **available**
+- Skills in its `unlockIds` list change from **locked** to **available** (only if ALL their prerequisites are mastered)
 - XP is awarded
 - User sees the mastered celebration screen
-- Community video submission becomes available for that skill
+- Personal video recording and challenge submissions become available for that skill
 
 ---
 

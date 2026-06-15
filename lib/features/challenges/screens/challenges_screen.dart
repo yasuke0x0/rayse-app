@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../community/providers/community_provider.dart';
+import '../../skill_tree/models/skill.dart';
 import '../../skill_tree/providers/skill_provider.dart';
 import '../models/challenge.dart';
 import '../providers/challenge_provider.dart';
@@ -152,6 +153,8 @@ class _ActiveChallengeCard extends ConsumerWidget {
     final skill = skills.where((s) => s.id == challenge.skillId).firstOrNull;
     final isPremiumLocked =
         skill != null && !skill.isFreeNode && userTier == 'free';
+    final isNotMastered =
+        skill != null && skill.status != SkillStatus.mastered;
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -264,6 +267,8 @@ class _ActiveChallengeCard extends ConsumerWidget {
               onTap: () {
                 if (isPremiumLocked) {
                   context.push('/paywall');
+                } else if (isNotMastered) {
+                  context.push('/skill-detail/${challenge.skillId}');
                 } else if (!hasSubmitted) {
                   context.push('/submit-video/${challenge.skillId}?challenge=true');
                 }
@@ -273,7 +278,7 @@ class _ActiveChallengeCard extends ConsumerWidget {
                 decoration: BoxDecoration(
                   color: hasSubmitted
                       ? AppColors.surface
-                      : isPremiumLocked
+                      : isPremiumLocked || isNotMastered
                           ? const Color(0xFF3F3F46)
                           : AppColors.accent,
                   borderRadius: BorderRadius.circular(12),
@@ -287,11 +292,13 @@ class _ActiveChallengeCard extends ConsumerWidget {
                       ? 'SUBMITTED ✓'
                       : isPremiumLocked
                           ? '🔒 PREMIUM — SUBMIT VIDEO'
-                          : 'SUBMIT YOUR VIDEO',
+                          : isNotMastered
+                              ? '🔒 MASTER THE SKILL FIRST'
+                              : 'SUBMIT YOUR VIDEO',
                   style: GoogleFonts.inter(
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
-                    color: hasSubmitted
+                    color: hasSubmitted || isNotMastered
                         ? AppColors.textSecondary
                         : Colors.white,
                     letterSpacing: 0.8,
