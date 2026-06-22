@@ -1,4 +1,17 @@
 
+## 2026-06-16 — Admin user search
+
+### What changed
+- Added search bar to Manage Users screen (searches first name, last name, username, email)
+- Matches any order: "Yassine Ksabi", "Ksabi Yassine", "yassine", "ksabi", "@username", "email@..."
+- User count updates to show "X of Y users" when filtering
+- Empty state when no users match the query
+- User cards now show full name as primary text, @username + email as subtitle
+- Clear button (×) to reset search
+
+### Files touched
+- `lib/features/community/screens/admin_users_screen.dart` — search bar, local filtering, updated card layout
+
 ## 2026-06-16 — User profiles: first/last name, username, avatar upload, edit screen
 
 ### What changed
