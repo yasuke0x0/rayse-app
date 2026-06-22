@@ -15,7 +15,9 @@ class SignupScreen extends ConsumerStatefulWidget {
 }
 
 class _SignupScreenState extends ConsumerState<SignupScreen> {
-  final _nameController = TextEditingController();
+  final _firstNameController = TextEditingController();
+  final _lastNameController = TextEditingController();
+  final _usernameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _loading = false;
@@ -23,25 +25,46 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
 
   @override
   void dispose() {
-    _nameController.dispose();
+    _firstNameController.dispose();
+    _lastNameController.dispose();
+    _usernameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
 
   Future<void> _signUp() async {
-    final name = _nameController.text.trim();
+    final firstName = _firstNameController.text.trim();
+    final lastName = _lastNameController.text.trim();
+    final username = _usernameController.text.trim();
     final email = _emailController.text.trim();
     final password = _passwordController.text;
 
-    if (name.isEmpty || email.isEmpty || password.isEmpty) {
+    if (firstName.isEmpty || lastName.isEmpty || username.isEmpty ||
+        email.isEmpty || password.isEmpty) {
       _showError('Please fill in all fields.');
+      return;
+    }
+
+    if (username.length < 3) {
+      _showError('Username must be at least 3 characters.');
+      return;
+    }
+
+    if (!RegExp(r'^[a-zA-Z0-9_]+$').hasMatch(username)) {
+      _showError('Username can only contain letters, numbers and underscores.');
       return;
     }
 
     setState(() => _loading = true);
     try {
-      await ref.read(authRepositoryProvider).signUp(email, password);
+      await ref.read(authRepositoryProvider).signUp(
+            email,
+            password,
+            firstName: firstName,
+            lastName: lastName,
+            username: username,
+          );
       if (mounted) {
         ref.invalidate(profileProvider);
         ref.invalidate(userTierProvider);
@@ -120,11 +143,32 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                     ),
                   ),
                   const SizedBox(height: 40),
-                  // Full name
+                  // First + Last name (side by side)
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _InputField(
+                          controller: _firstNameController,
+                          hint: 'First name',
+                          keyboardType: TextInputType.name,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: _InputField(
+                          controller: _lastNameController,
+                          hint: 'Last name',
+                          keyboardType: TextInputType.name,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  // Username
                   _InputField(
-                    controller: _nameController,
-                    hint: 'Full name',
-                    keyboardType: TextInputType.name,
+                    controller: _usernameController,
+                    hint: 'Username',
+                    keyboardType: TextInputType.text,
                   ),
                   const SizedBox(height: 12),
                   // Email

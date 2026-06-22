@@ -1,4 +1,37 @@
 
+## 2026-06-16 — User profiles: first/last name, username, avatar upload, edit screen
+
+### What changed
+- Registration now collects first name, last name, username (was single "full name" field that was discarded)
+- Username validated: min 3 chars, alphanumeric + underscores, unique (DB constraint)
+- Home greeting uses first name from profile ("GOOD MORNING, YASSINE") instead of email prefix
+- Profile screen shows avatar image, full name, @username, edit icon (tappable → edit screen)
+- New Edit Profile screen (`/edit-profile`): first name, last name, username, email change, avatar upload
+- Avatar upload: pick from gallery (512x512, 80% quality), uploads to Supabase `avatars` bucket
+- Email change via Supabase auth (sends confirmation to new address)
+- Avatar fallback: first name initial → username initial → "?"
+
+### Database changes
+```sql
+ALTER TABLE profiles ADD COLUMN first_name text NOT NULL DEFAULT '';
+ALTER TABLE profiles ADD COLUMN last_name text NOT NULL DEFAULT '';
+ALTER TABLE profiles ADD CONSTRAINT profiles_username_unique UNIQUE (username);
+-- avatar_url column already existed
+-- Supabase storage bucket "avatars" (public) created
+```
+
+### Files touched
+- `lib/features/auth/repository/auth_repository.dart` — signUp now saves first_name, last_name, username
+- `lib/features/auth/screens/signup_screen.dart` — split name into first/last + username field + validation
+- `lib/features/content/screens/home_screen.dart` — greeting uses first_name from profileProvider
+- `lib/features/profile/screens/profile_screen.dart` — avatar image, full name, edit button
+- `lib/features/profile/screens/edit_profile_screen.dart` — NEW: edit profile + avatar upload
+- `lib/core/router/app_router.dart` — added /edit-profile route
+
+### Gotchas
+- Avatar URL needs cache-bust timestamp query param (`?t=...`) or browsers show stale image after re-upload
+- Supabase unique constraint violation is error code `23505` — catch `PostgrestException` specifically
+
 ## 2026-06-16 — Mastery gates, prerequisites, unlock fixes, fire reaction sync
 
 ### What changed

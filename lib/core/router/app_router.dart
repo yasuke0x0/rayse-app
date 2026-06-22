@@ -22,6 +22,7 @@ import 'package:rayse/features/challenges/models/challenge.dart' as challenge_mo
 import 'package:rayse/features/community/screens/community_video_detail_screen.dart';
 import 'package:rayse/features/community/models/community_video.dart';
 import 'package:rayse/features/notifications/screens/notifications_screen.dart';
+import 'package:rayse/features/profile/screens/edit_profile_screen.dart';
 
 final appRouter = GoRouter(
   initialLocation: '/splash',
@@ -134,6 +135,10 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/notifications',
       builder: (context, state) => const NotificationsScreen(),
+    ),
+    GoRoute(
+      path: '/edit-profile',
+      builder: (context, state) => const EditProfileScreen(),
     ),
   ],
 );

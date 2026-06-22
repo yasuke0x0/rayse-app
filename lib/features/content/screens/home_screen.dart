@@ -146,9 +146,11 @@ class _HomeTabBody extends ConsumerWidget {
     return 'GOOD EVENING,';
   }
 
-  String get _displayName {
-    final user = SupabaseService.client.auth.currentUser;
-    final email = user?.email ?? '';
+  String _displayName(WidgetRef ref) {
+    final profile = ref.watch(profileProvider).valueOrNull;
+    final firstName = profile?['first_name'] as String? ?? '';
+    if (firstName.isNotEmpty) return firstName.toUpperCase();
+    final email = SupabaseService.client.auth.currentUser?.email ?? '';
     if (email.isEmpty) return 'JUMPER';
     return email.split('@').first.toUpperCase();
   }
@@ -185,7 +187,7 @@ class _HomeTabBody extends ConsumerWidget {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              _displayName,
+                              _displayName(ref),
                               style: GoogleFonts.poppins(
                                 fontSize: 28,
                                 fontWeight: FontWeight.w700,

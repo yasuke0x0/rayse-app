@@ -41,9 +41,14 @@ class ProfileScreen extends ConsumerWidget {
     final pendingAsync = ref.watch(pendingVideosProvider);
 
     final email = user?.email ?? '';
-    final username = profileAsync.valueOrNull?['username'] as String? ??
+    final profile = profileAsync.valueOrNull;
+    final username = profile?['username'] as String? ??
         email.split('@').first;
-    final isCreator = profileAsync.valueOrNull?['is_creator'] == true;
+    final firstName = profile?['first_name'] as String? ?? '';
+    final lastName = profile?['last_name'] as String? ?? '';
+    final fullName = '$firstName $lastName'.trim();
+    final avatarUrl = profile?['avatar_url'] as String?;
+    final isCreator = profile?['is_creator'] == true;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -76,69 +81,91 @@ class ProfileScreen extends ConsumerWidget {
                     const SizedBox(height: 24),
 
                     // ── Avatar + identity ───────────────────────────────
-                    Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: AppColors.surface,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: AppColors.border),
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 56,
-                            height: 56,
-                            decoration: BoxDecoration(
-                              color:
-                                  AppColors.accent.withValues(alpha: 0.15),
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                  color: AppColors.accent
-                                      .withValues(alpha: 0.4),
-                                  width: 2),
+                    GestureDetector(
+                      onTap: () => context.push('/edit-profile'),
+                      child: Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: AppColors.surface,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: AppColors.border),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 56,
+                              height: 56,
+                              decoration: BoxDecoration(
+                                color:
+                                    AppColors.accent.withValues(alpha: 0.15),
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                    color: AppColors.accent
+                                        .withValues(alpha: 0.4),
+                                    width: 2),
+                                image: avatarUrl != null &&
+                                        avatarUrl.isNotEmpty
+                                    ? DecorationImage(
+                                        image: NetworkImage(avatarUrl),
+                                        fit: BoxFit.cover,
+                                      )
+                                    : null,
+                              ),
+                              child: avatarUrl == null || avatarUrl.isEmpty
+                                  ? Center(
+                                      child: Text(
+                                        firstName.isNotEmpty
+                                            ? firstName[0].toUpperCase()
+                                            : username.isNotEmpty
+                                                ? username[0].toUpperCase()
+                                                : '?',
+                                        style: GoogleFonts.poppins(
+                                          fontSize: 22,
+                                          fontWeight: FontWeight.w700,
+                                          color: AppColors.accent,
+                                        ),
+                                      ),
+                                    )
+                                  : null,
                             ),
-                            child: Center(
-                              child: Text(
-                                username.isNotEmpty
-                                    ? username[0].toUpperCase()
-                                    : '?',
-                                style: GoogleFonts.poppins(
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.w700,
-                                  color: AppColors.accent,
-                                ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment:
+                                    CrossAxisAlignment.start,
+                                children: [
+                                  if (fullName.isNotEmpty)
+                                    Text(
+                                      fullName,
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w700,
+                                        color: AppColors.textPrimary,
+                                      ),
+                                    ),
+                                  Text(
+                                    '@$username',
+                                    style: GoogleFonts.inter(
+                                      fontSize: 13,
+                                      color: fullName.isNotEmpty
+                                          ? AppColors.textSecondary
+                                          : AppColors.textPrimary,
+                                      fontWeight: fullName.isNotEmpty
+                                          ? FontWeight.normal
+                                          : FontWeight.w700,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  _RoleBadge(
+                                      isCreator: isCreator,
+                                      userTier: userTier),
+                                ],
                               ),
                             ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  '@$username',
-                                  style: GoogleFonts.poppins(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w700,
-                                    color: AppColors.textPrimary,
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  email,
-                                  style: GoogleFonts.inter(
-                                    fontSize: 12,
-                                    color: AppColors.textSecondary,
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                _RoleBadge(
-                                    isCreator: isCreator,
-                                    userTier: userTier),
-                              ],
-                            ),
-                          ),
-                        ],
+                            const Icon(Icons.edit_outlined,
+                                color: AppColors.textMuted, size: 18),
+                          ],
+                        ),
                       ),
                     ),
                     const SizedBox(height: 16),
