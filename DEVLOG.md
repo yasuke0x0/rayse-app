@@ -1,4 +1,16 @@
 
+## 2026-06-16 — Challenges tab: live signals (recent activity strip + today badge)
+
+### What changed (E from challenges tab enhancement plan)
+- **LIVE ACTIVITY section:** New section between My Stats and Top 3 podium showing the 3 most recent submissions for the active challenge (avatar + "@username submitted · 2h ago" + 🔥 score). Tappable rows open the video detail. Hidden when leaderboard is empty.
+- **"+X today" badge on hero card:** Inline with the participant count, a green pulse dot + "+X today" pill appears when there are approved submissions today. Hidden when zero.
+- Both signals derive from the existing `challengeLeaderboardProvider` — no new DB queries.
+- Relative time stamps: just now / Xm ago / Xh ago / Xd ago / Xw ago
+
+### Files touched
+- `lib/features/challenges/screens/challenges_screen.dart` — added `_RecentActivityStrip` widget, "+X today" badge, `_countSubmittedToday` helper
+- `documentation/challenges.md` — new section 4, renumbered following sections
+
 ## 2026-06-16 — Challenges tab: upcoming teaser + last week's winner spotlight
 
 ### What changed (F + G from challenges tab enhancement plan)

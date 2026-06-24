@@ -126,7 +126,19 @@ Between the active hero card and the Top 3 podium, a "MY CHALLENGE STATS" sectio
 
 Hidden entirely when the user has never joined a challenge.
 
-### 4. Top 3 Podium
+### 4. Live Activity Strip
+
+Between My Challenge Stats and Top 3 Podium, a "LIVE ACTIVITY" section shows the 3 most recent submissions for the active challenge:
+- Green pulse dot + "LIVE ACTIVITY" header
+- Each row: avatar (username initial), "@username submitted · 2h ago", 🔥 score
+- Tappable rows → opens the video detail screen
+- Hidden when the leaderboard is empty
+
+Reuses `challengeLeaderboardProvider` data (no extra DB query). Relative time stamps (`just now / 12m ago / 3h ago / 2d ago`) keep the feel current even between visits.
+
+Additionally, the active hero card shows a green "+X today" badge inline with the participant count when there are approved submissions today.
+
+### 5. Top 3 Podium
 - Shows the top 3 approved community videos for the challenge's skill+week
 - Ranked by fire score (descending)
 - Each row shows: rank badge (gold #1, dark #2-3), @username, 🔥 score
@@ -134,7 +146,7 @@ Hidden entirely when the user has never joined a challenge.
 - **"SEE ALL"** link navigates to the dedicated challenge leaderboard screen (`/challenge-leaderboard`)
 - Empty state: "No approved videos yet — be the first!"
 
-### 5. Upcoming Challenge Teaser
+### 6. Upcoming Challenge Teaser
 
 If a challenge exists with a future `week_number` (computed from `Challenge.isUpcoming`), a teaser card appears below the active challenge sections:
 - "⏳ COMING UP" blue badge + countdown ("starts today" / "in 1 day" / "in X days")
@@ -143,7 +155,7 @@ If a challenge exists with a future `week_number` (computed from `Challenge.isUp
 
 Sorted by soonest first if multiple upcoming challenges exist (only the closest is shown). Hidden when no upcoming challenges exist in the DB. Gives users a reason to push toward mastering the next skill in advance.
 
-### 6. Last Week's Winner Spotlight
+### 7. Last Week's Winner Spotlight
 
 The most recent past challenge's winner is highlighted in a dedicated card above the past challenges list:
 - 🏆 "LAST WEEK'S WINNER" badge with orange accent
@@ -156,7 +168,7 @@ The most recent past challenge's winner is highlighted in a dedicated card above
 
 Reuses the existing `challengeLeaderboardProvider` — no extra DB query.
 
-### 7. Past Challenges
+### 8. Past Challenges
 - List of previous week challenges
 - Each card shows: title, week number, skill name, **placement chip**
 - Placement chip surfaces the user's history with each challenge:

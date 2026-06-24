@@ -117,7 +117,8 @@ class _ChallengesBody extends ConsumerWidget {
             _ActiveChallengeCard(challenge: active),
             const SizedBox(height: 28),
             const _MyStatsSection(),
-            const SizedBox(height: 28),
+            const SizedBox(height: 20),
+            _RecentActivityStrip(challenge: active),
             _Podium(challenge: active),
           ] else ...[
             const _NoChallengeCard(),
@@ -281,6 +282,9 @@ class _ActiveChallengeCard extends ConsumerWidget {
             false;
     final participantCount =
         ref.watch(challengeParticipantCountProvider(challenge.id)).valueOrNull;
+    final leaderboard =
+        ref.watch(challengeLeaderboardProvider(challenge.id)).valueOrNull ??
+            const <CommunityVideo>[];
     final userTier = ref.watch(userTierProvider).valueOrNull ?? 'free';
     final skills = ref.watch(skillsProvider);
     final skill = skills.where((s) => s.id == challenge.skillId).firstOrNull;
@@ -288,6 +292,7 @@ class _ActiveChallengeCard extends ConsumerWidget {
         skill != null && !skill.isFreeNode && userTier == 'free';
     final isNotMastered =
         skill != null && skill.status != SkillStatus.mastered;
+    final newToday = _countSubmittedToday(leaderboard);
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -389,6 +394,40 @@ class _ActiveChallengeCard extends ConsumerWidget {
                   ),
                 ),
               ],
+              if (newToday > 0) ...[
+                const SizedBox(width: 10),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 7, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF14532D),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 5,
+                        height: 5,
+                        decoration: const BoxDecoration(
+                          color: Color(0xFF4ADE80),
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 5),
+                      Text(
+                        '+$newToday today',
+                        style: GoogleFonts.inter(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          color: const Color(0xFF4ADE80),
+                          letterSpacing: 0.3,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ],
           ),
           const SizedBox(height: 20),
@@ -451,6 +490,14 @@ class _ActiveChallengeCard extends ConsumerWidget {
   String _formatCount(int n) {
     if (n >= 1000) return '${(n / 1000).toStringAsFixed(1)}k';
     return '$n participants';
+  }
+
+  int _countSubmittedToday(List<CommunityVideo> videos) {
+    final now = DateTime.now();
+    final startOfDay = DateTime(now.year, now.month, now.day);
+    return videos
+        .where((v) => v.submittedAt.toLocal().isAfter(startOfDay))
+        .length;
   }
 }
 
@@ -875,6 +922,170 @@ class _LastWinnerSpotlight extends ConsumerWidget {
         ),
       ),
     );
+  }
+}
+
+// ─── Recent activity strip (live signals) ────────────────────────────────────
+
+class _RecentActivityStrip extends ConsumerWidget {
+  final Challenge challenge;
+  const _RecentActivityStrip({required this.challenge});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final leaderboardAsync =
+        ref.watch(challengeLeaderboardProvider(challenge.id));
+    final leaderboard = leaderboardAsync.valueOrNull ?? [];
+    if (leaderboard.isEmpty) return const SizedBox.shrink();
+
+    // Sort by submittedAt desc, take latest 3
+    final recent = [...leaderboard]
+      ..sort((a, b) => b.submittedAt.compareTo(a.submittedAt));
+    final latest = recent.take(3).toList();
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 6,
+                height: 6,
+                decoration: const BoxDecoration(
+                  color: Color(0xFF4ADE80),
+                  shape: BoxShape.circle,
+                ),
+              ),
+              const SizedBox(width: 6),
+              Text(
+                'LIVE ACTIVITY',
+                style: GoogleFonts.poppins(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimary,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: Column(
+              children: List.generate(latest.length, (i) {
+                final video = latest[i];
+                final isLast = i == latest.length - 1;
+                return Column(
+                  children: [
+                    GestureDetector(
+                      onTap: () => context.push('/community-video',
+                          extra: video),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 10),
+                        child: Row(
+                          children: [
+                            // Avatar
+                            Container(
+                              width: 28,
+                              height: 28,
+                              decoration: BoxDecoration(
+                                color: AppColors.accent
+                                    .withValues(alpha: 0.15),
+                                shape: BoxShape.circle,
+                              ),
+                              alignment: Alignment.center,
+                              child: Text(
+                                video.username.isNotEmpty
+                                    ? video.username[0].toUpperCase()
+                                    : '?',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.accent,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: RichText(
+                                overflow: TextOverflow.ellipsis,
+                                text: TextSpan(
+                                  style: GoogleFonts.inter(
+                                    fontSize: 13,
+                                    color: AppColors.textPrimary,
+                                  ),
+                                  children: [
+                                    TextSpan(
+                                      text: '@${video.username}',
+                                      style: const TextStyle(
+                                          fontWeight: FontWeight.w700),
+                                    ),
+                                    TextSpan(
+                                      text: ' submitted · ',
+                                      style: GoogleFonts.inter(
+                                        color: AppColors.textSecondary,
+                                      ),
+                                    ),
+                                    TextSpan(
+                                      text: _relativeTime(video.submittedAt),
+                                      style: GoogleFonts.inter(
+                                        color: AppColors.textMuted,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            const Text('🔥',
+                                style: TextStyle(fontSize: 11)),
+                            const SizedBox(width: 2),
+                            Text(
+                              '${video.score}',
+                              style: GoogleFonts.poppins(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.accent,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    if (!isLast)
+                      Divider(
+                        height: 1,
+                        thickness: 1,
+                        color: AppColors.border,
+                        indent: 50,
+                      ),
+                  ],
+                );
+              }),
+            ),
+          ),
+          const SizedBox(height: 28),
+        ],
+      ),
+    );
+  }
+
+  String _relativeTime(DateTime dt) {
+    final diff = DateTime.now().difference(dt);
+    if (diff.inMinutes < 1) return 'just now';
+    if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
+    if (diff.inHours < 24) return '${diff.inHours}h ago';
+    if (diff.inDays < 7) return '${diff.inDays}d ago';
+    return '${(diff.inDays / 7).floor()}w ago';
   }
 }
 
