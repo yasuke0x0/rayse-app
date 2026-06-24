@@ -95,8 +95,15 @@ Computed from the current day's position in the ISO week. Sunday = 0 days left.
 |------------|--------|--------|
 | Hasn't submitted + mastered | "SUBMIT YOUR VIDEO" (orange) | → `/submit-video/{skillId}?challenge=true` |
 | Already submitted | "SUBMITTED ✓" (gray, disabled) | — |
-| Skill not mastered | "🔒 MASTER THE SKILL FIRST" (gray) | → `/skill-detail/{skillId}` |
+| Skill not mastered | "GO PRACTICE →" (muted orange) | → `/skill-detail/{skillId}` |
 | Free user, premium skill | "🔒 PREMIUM — SUBMIT VIDEO" | → `/paywall` |
+
+When the user has not mastered the challenge's skill, a **"NOT ELIGIBLE YET"** progress panel appears between the description and the CTA showing:
+- Current sessions count (X/3)
+- "Complete X practice sessions on [Skill] to unlock this challenge"
+- Progress bar
+
+This replaces the previous flat "🔒 MASTER THE SKILL FIRST" with an actionable path forward.
 
 ### 3. Top 3 Podium
 - Shows the top 3 approved community videos for the challenge's skill+week
@@ -108,9 +115,14 @@ Computed from the current day's position in the ISO week. Sunday = 0 days left.
 
 ### 4. Past Challenges
 - List of previous week challenges
-- Each card shows: title, week number, skill name
-- **Free users:** locked with "🔒 PREMIUM" badge, tapping → `/paywall`
-- **Premium users:** can browse past challenges
+- Each card shows: title, week number, skill name, **placement chip**
+- Placement chip surfaces the user's history with each challenge:
+  - 🥇 #1 — YOU WON (gold accent border on card)
+  - 🥈 #2 / 🥉 #3 (medal pill, accent border)
+  - "YOU PLACED #X" (regular pill) for ranks 4+
+  - "You didn't enter" (muted pill) if no submission
+- **Free users:** locked with "🔒 PREMIUM" badge, tapping → `/paywall`. Placement chip is hidden.
+- **Premium users:** can browse past challenges with their placement context
 
 ### Empty States
 - No challenges in DB: "NO CHALLENGES YET — Challenges are coming soon!"
@@ -193,6 +205,7 @@ The home tab shows a **featured challenge card** that dynamically pulls from `ac
 | `challengeLeaderboardProvider(id)` | FutureProvider.family | Top 10 approved videos for the challenge |
 | `hasSubmittedChallengeProvider(id)` | FutureProvider.family | Whether current user submitted this week |
 | `challengeParticipantCountProvider(id)` | FutureProvider.family | Total submissions for the challenge |
+| `myChallengePlacementProvider(id)` | FutureProvider.family | The user's 1-indexed rank in the challenge (null if not entered). Derived from `challengeLeaderboardProvider`. |
 
 ---
 

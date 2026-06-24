@@ -1,4 +1,19 @@
 
+## 2026-06-16 — Challenges tab: eligibility-aware hero + placement on past challenges
+
+### What changed (B + D from challenges tab enhancement plan)
+- **Eligibility-aware hero (B):** When the user hasn't mastered the challenge's skill, the hero card now shows a "NOT ELIGIBLE YET" panel with the actual mastery progress (X/3 sessions + progress bar) and "Complete X sessions on [Skill] to unlock this challenge" copy
+- Hero CTA changed from grayed "🔒 MASTER THE SKILL FIRST" to actionable "GO PRACTICE →" (muted orange) — same destination (skill detail) but framed as an action, not a wall
+- **Past challenge placement (D):** Each past challenge card now shows the user's placement: 🥇 #1 YOU WON / 🥈 #2 / 🥉 #3 / YOU PLACED #X / You didn't enter
+- Top 3 placements get an orange-tinted card border for visual emphasis
+- Placement hidden for free users (they see the premium lock)
+- New `myChallengePlacementProvider` derives rank from existing `challengeLeaderboardProvider` (no extra DB calls)
+
+### Files touched
+- `lib/features/challenges/providers/challenge_provider.dart` — added `myChallengePlacementProvider`
+- `lib/features/challenges/screens/challenges_screen.dart` — `_MasteryProgressPanel` widget, `_placementChip` helper, updated CTA logic
+- `documentation/challenges.md` — updated CTA table, past challenges section, providers table
+
 ## 2026-06-16 — Personal vs challenge video isolation, mastery unlock messaging
 
 ### What changed

@@ -260,6 +260,12 @@ class _ActiveChallengeCard extends ConsumerWidget {
           ),
           const SizedBox(height: 20),
 
+          // Mastery progress (only when skill not mastered, not premium-locked)
+          if (skill != null && isNotMastered && !isPremiumLocked) ...[
+            _MasteryProgressPanel(skill: skill),
+            const SizedBox(height: 14),
+          ],
+
           // CTA
           SizedBox(
             width: double.infinity,
@@ -278,9 +284,11 @@ class _ActiveChallengeCard extends ConsumerWidget {
                 decoration: BoxDecoration(
                   color: hasSubmitted
                       ? AppColors.surface
-                      : isPremiumLocked || isNotMastered
+                      : isPremiumLocked
                           ? const Color(0xFF3F3F46)
-                          : AppColors.accent,
+                          : isNotMastered
+                              ? AppColors.accent.withValues(alpha: 0.85)
+                              : AppColors.accent,
                   borderRadius: BorderRadius.circular(12),
                   border: hasSubmitted
                       ? Border.all(color: AppColors.border)
@@ -293,12 +301,12 @@ class _ActiveChallengeCard extends ConsumerWidget {
                       : isPremiumLocked
                           ? '🔒 PREMIUM — SUBMIT VIDEO'
                           : isNotMastered
-                              ? '🔒 MASTER THE SKILL FIRST'
+                              ? 'GO PRACTICE →'
                               : 'SUBMIT YOUR VIDEO',
                   style: GoogleFonts.inter(
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
-                    color: hasSubmitted || isNotMastered
+                    color: hasSubmitted
                         ? AppColors.textSecondary
                         : Colors.white,
                     letterSpacing: 0.8,
@@ -315,6 +323,80 @@ class _ActiveChallengeCard extends ConsumerWidget {
   String _formatCount(int n) {
     if (n >= 1000) return '${(n / 1000).toStringAsFixed(1)}k';
     return '$n participants';
+  }
+}
+
+// ─── Mastery progress panel (shown when challenge skill not yet mastered) ────
+
+class _MasteryProgressPanel extends StatelessWidget {
+  final Skill skill;
+  const _MasteryProgressPanel({required this.skill});
+
+  @override
+  Widget build(BuildContext context) {
+    final sessionsLeft = 3 - skill.sessionsCompleted;
+    final progress = skill.sessionsCompleted / 3;
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.background,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.lock_outline_rounded,
+                  color: AppColors.textMuted, size: 14),
+              const SizedBox(width: 6),
+              Text(
+                'NOT ELIGIBLE YET',
+                style: GoogleFonts.inter(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textMuted,
+                  letterSpacing: 1,
+                ),
+              ),
+              const Spacer(),
+              Text(
+                '${skill.sessionsCompleted}/3',
+                style: GoogleFonts.inter(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.accent,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            sessionsLeft == 1
+                ? 'One more practice session to master ${skill.title} and unlock this challenge.'
+                : 'Complete $sessionsLeft practice sessions on ${skill.title} to unlock this challenge.',
+            style: GoogleFonts.inter(
+              fontSize: 12,
+              color: AppColors.textSecondary,
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: 10),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(999),
+            child: LinearProgressIndicator(
+              value: progress,
+              minHeight: 5,
+              backgroundColor: AppColors.surface,
+              valueColor:
+                  const AlwaysStoppedAnimation<Color>(AppColors.accent),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 
@@ -496,6 +578,8 @@ class _PastChallengeCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final userTier = ref.watch(userTierProvider).valueOrNull ?? 'free';
     final isLocked = userTier == 'free';
+    final placement =
+        ref.watch(myChallengePlacementProvider(challenge.id)).valueOrNull;
 
     return GestureDetector(
       onTap: isLocked
@@ -506,7 +590,11 @@ class _PastChallengeCard extends ConsumerWidget {
         decoration: BoxDecoration(
           color: AppColors.surface,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.border),
+          border: Border.all(
+            color: placement != null && placement <= 3
+                ? AppColors.accent.withValues(alpha: 0.4)
+                : AppColors.border,
+          ),
         ),
         child: Row(
           children: [
@@ -549,6 +637,10 @@ class _PastChallengeCard extends ConsumerWidget {
                       color: AppColors.textMuted,
                     ),
                   ),
+                  if (!isLocked) ...[
+                    const SizedBox(height: 6),
+                    _placementChip(placement),
+                  ],
                 ],
               ),
             ),
@@ -574,6 +666,55 @@ class _PastChallengeCard extends ConsumerWidget {
               const Icon(Icons.chevron_right_rounded,
                   color: AppColors.textMuted, size: 18),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _placementChip(int? placement) {
+    if (placement == null) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+        decoration: BoxDecoration(
+          color: const Color(0xFF27272A),
+          borderRadius: BorderRadius.circular(999),
+        ),
+        child: Text(
+          'You didn\'t enter',
+          style: GoogleFonts.inter(
+            fontSize: 10,
+            fontWeight: FontWeight.w700,
+            color: AppColors.textMuted,
+            letterSpacing: 0.3,
+          ),
+        ),
+      );
+    }
+
+    final (label, bg, fg) = switch (placement) {
+      1 => ('🥇 #1 — YOU WON', const Color(0xFF7C2D12), AppColors.accent),
+      2 => ('🥈 #2', const Color(0xFF334155), const Color(0xFF94A3B8)),
+      3 => ('🥉 #3', const Color(0xFF7C2D12), const Color(0xFFD97706)),
+      _ => (
+          'YOU PLACED #$placement',
+          const Color(0xFF27272A),
+          AppColors.textSecondary
+        ),
+    };
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        label,
+        style: GoogleFonts.inter(
+          fontSize: 10,
+          fontWeight: FontWeight.w700,
+          color: fg,
+          letterSpacing: 0.3,
         ),
       ),
     );

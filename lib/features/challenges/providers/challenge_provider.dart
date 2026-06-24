@@ -79,3 +79,16 @@ final challengeParticipantCountProvider =
         weekYear: challenge.weekYear,
       );
 });
+
+// The current user's placement in a challenge.
+// Null = not entered or no approved video. Returns 1-indexed rank.
+final myChallengePlacementProvider =
+    FutureProvider.family<int?, String>((ref, challengeId) async {
+  final userId = Supabase.instance.client.auth.currentUser?.id;
+  if (userId == null) return null;
+  final leaderboard =
+      await ref.watch(challengeLeaderboardProvider(challengeId).future);
+  if (leaderboard.isEmpty) return null;
+  final idx = leaderboard.indexWhere((v) => v.userId == userId);
+  return idx == -1 ? null : idx + 1;
+});
