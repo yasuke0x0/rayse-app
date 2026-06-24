@@ -92,3 +92,70 @@ final myChallengePlacementProvider =
   final idx = leaderboard.indexWhere((v) => v.userId == userId);
   return idx == -1 ? null : idx + 1;
 });
+
+// The current user's aggregate challenge stats.
+class MyChallengeStats {
+  final int joined;
+  final int totalFires;
+  final int? bestPlacement; // null if no approved videos yet
+
+  const MyChallengeStats({
+    required this.joined,
+    required this.totalFires,
+    required this.bestPlacement,
+  });
+}
+
+final myChallengeStatsProvider =
+    FutureProvider<MyChallengeStats>((ref) async {
+  final userId = Supabase.instance.client.auth.currentUser?.id;
+  if (userId == null) {
+    return const MyChallengeStats(
+        joined: 0, totalFires: 0, bestPlacement: null);
+  }
+
+  final allVideos = await ref.watch(myAllVideosProvider.future);
+  final challengeVideos = allVideos.where((v) => v.isChallenge).toList();
+
+  // Joined = distinct (skill_id, week, year) tuples
+  final joinedKeys = challengeVideos
+      .map((v) => '${v.skillId}-${v.weekNumber}-${v.weekYear}')
+      .toSet();
+
+  // Fires = sum of scores on approved videos
+  final totalFires = challengeVideos
+      .where((v) => v.status == VideoStatus.approved)
+      .fold<int>(0, (sum, v) => sum + v.score);
+
+  // Best placement: scan known challenges for ones the user entered, fetch leaderboards
+  final challenges = ref.watch(challengesProvider).valueOrNull ?? [];
+  int? bestPlacement;
+  final futures = <Future<int?>>[];
+  for (final challenge in challenges) {
+    final entered = challengeVideos.any((v) =>
+        v.skillId == challenge.skillId &&
+        v.weekNumber == challenge.weekNumber &&
+        v.weekYear == challenge.weekYear &&
+        v.status == VideoStatus.approved);
+    if (!entered) continue;
+    futures.add(
+      ref.watch(challengeLeaderboardProvider(challenge.id).future).then(
+        (leaderboard) {
+          final idx = leaderboard.indexWhere((v) => v.userId == userId);
+          return idx == -1 ? null : idx + 1;
+        },
+      ),
+    );
+  }
+  final placements = await Future.wait(futures);
+  for (final p in placements) {
+    if (p == null) continue;
+    if (bestPlacement == null || p < bestPlacement) bestPlacement = p;
+  }
+
+  return MyChallengeStats(
+    joined: joinedKeys.length,
+    totalFires: totalFires,
+    bestPlacement: bestPlacement,
+  );
+});

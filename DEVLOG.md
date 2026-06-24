@@ -1,4 +1,21 @@
 
+## 2026-06-16 — Challenges tab: my stats section + live placement card
+
+### What changed (C + H from challenges tab enhancement plan)
+- **My Challenge Stats section (C):** Three stat tiles between the active hero and the Top 3 podium: Joined (count of distinct challenges entered), Total Fires (sum of approved scores), Best (lowest placement). Hidden when user has zero participation.
+- **Live placement card (H):** When the user has submitted to the active challenge, the CTA transforms into a rich placement card: medal badge / rank circle, "YOU'RE CURRENTLY #N", and a context-aware subtitle showing fires-to-next-rank or "Holding #1 by X fires"
+- Top 3 placement gets accent border + 1.5px width for emphasis
+- Card is tappable and opens the full leaderboard
+- New `myChallengeStatsProvider` aggregates by fanning out across recent leaderboards
+
+### Files touched
+- `lib/features/challenges/providers/challenge_provider.dart` — added `MyChallengeStats` model + `myChallengeStatsProvider`
+- `lib/features/challenges/screens/challenges_screen.dart` — `_MyStatsSection`, `_StatTile`, `_LivePlacementCTA` widgets; replaced static "SUBMITTED ✓" button with live card
+- `documentation/challenges.md` — updated screen layout numbering, CTA table, providers table
+
+### Gotchas
+- `myChallengeStatsProvider` only considers challenges visible in `challengesProvider` (recent 10) when computing best placement — older challenges aren't in scope. For lifetime stats across all history, we'd need a dedicated query that joins user videos with leaderboard ranks (likely an RPC).
+
 ## 2026-06-16 — Challenges tab: eligibility-aware hero + placement on past challenges
 
 ### What changed (B + D from challenges tab enhancement plan)

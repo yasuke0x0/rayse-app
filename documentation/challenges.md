@@ -94,9 +94,20 @@ Computed from the current day's position in the ISO week. Sunday = 0 days left.
 | User State | Button | Action |
 |------------|--------|--------|
 | Hasn't submitted + mastered | "SUBMIT YOUR VIDEO" (orange) | → `/submit-video/{skillId}?challenge=true` |
-| Already submitted | "SUBMITTED ✓" (gray, disabled) | — |
+| Already submitted | **Live placement card** with rank, fires-to-next, accent border for top 3 | → `/challenge-leaderboard` |
 | Skill not mastered | "GO PRACTICE →" (muted orange) | → `/skill-detail/{skillId}` |
 | Free user, premium skill | "🔒 PREMIUM — SUBMIT VIDEO" | → `/paywall` |
+
+When the user has submitted to the active challenge, the CTA transforms into a live placement card showing:
+- Medal badge (🥇/🥈/🥉) or rank number circle
+- "YOU'RE CURRENTLY #N" as primary text
+- Context-aware subtitle:
+  - At #1 with others below: "🔥 Holding #1 by X fires"
+  - At #1 alone: "🔥 Standing alone at the top"
+  - At any other rank: "X 🔥 from #N-1 · See leaderboard"
+  - Pending/no data yet: "Pending review or building your score"
+- Top 3 get an accent border for emphasis
+- Card is tappable → opens the full leaderboard screen
 
 When the user has not mastered the challenge's skill, a **"NOT ELIGIBLE YET"** progress panel appears between the description and the CTA showing:
 - Current sessions count (X/3)
@@ -105,7 +116,16 @@ When the user has not mastered the challenge's skill, a **"NOT ELIGIBLE YET"** p
 
 This replaces the previous flat "🔒 MASTER THE SKILL FIRST" with an actionable path forward.
 
-### 3. Top 3 Podium
+### 3. My Challenge Stats
+
+Between the active hero card and the Top 3 podium, a "MY CHALLENGE STATS" section shows three tiles aggregating the user's lifetime challenge participation:
+- 🏆 **JOINED** — count of distinct challenges entered (any status counts)
+- 🔥 **TOTAL FIRES** — sum of fire scores across approved challenge submissions
+- 🎖️ **BEST** — best (lowest) placement across all entered challenges (e.g. "#3")
+
+Hidden entirely when the user has never joined a challenge.
+
+### 4. Top 3 Podium
 - Shows the top 3 approved community videos for the challenge's skill+week
 - Ranked by fire score (descending)
 - Each row shows: rank badge (gold #1, dark #2-3), @username, 🔥 score
@@ -113,7 +133,7 @@ This replaces the previous flat "🔒 MASTER THE SKILL FIRST" with an actionable
 - **"SEE ALL"** link navigates to the dedicated challenge leaderboard screen (`/challenge-leaderboard`)
 - Empty state: "No approved videos yet — be the first!"
 
-### 4. Past Challenges
+### 5. Past Challenges
 - List of previous week challenges
 - Each card shows: title, week number, skill name, **placement chip**
 - Placement chip surfaces the user's history with each challenge:
@@ -206,6 +226,7 @@ The home tab shows a **featured challenge card** that dynamically pulls from `ac
 | `hasSubmittedChallengeProvider(id)` | FutureProvider.family | Whether current user submitted this week |
 | `challengeParticipantCountProvider(id)` | FutureProvider.family | Total submissions for the challenge |
 | `myChallengePlacementProvider(id)` | FutureProvider.family | The user's 1-indexed rank in the challenge (null if not entered). Derived from `challengeLeaderboardProvider`. |
+| `myChallengeStatsProvider` | FutureProvider | Aggregate stats: total challenges joined, total fires received, best placement. Fans out across recent challenge leaderboards to find the best rank. |
 
 ---
 

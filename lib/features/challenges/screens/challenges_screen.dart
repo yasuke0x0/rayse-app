@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../community/models/community_video.dart';
 import '../../community/providers/community_provider.dart';
 import '../../skill_tree/models/skill.dart';
 import '../../skill_tree/providers/skill_provider.dart';
@@ -106,10 +107,15 @@ class _ChallengesBody extends ConsumerWidget {
           // Active challenge
           if (active != null) ...[
             _ActiveChallengeCard(challenge: active),
-            const SizedBox(height: 32),
+            const SizedBox(height: 28),
+            const _MyStatsSection(),
+            const SizedBox(height: 28),
             _Podium(challenge: active),
-          ] else
+          ] else ...[
             const _NoChallengeCard(),
+            const SizedBox(height: 28),
+            const _MyStatsSection(),
+          ],
 
           // Past challenges
           if (past.isNotEmpty) ...[
@@ -129,6 +135,113 @@ class _ChallengesBody extends ConsumerWidget {
                   child: _PastChallengeCard(challenge: c),
                 )),
           ],
+        ],
+      ),
+    );
+  }
+}
+
+// ─── My challenge stats ───────────────────────────────────────────────────────
+
+class _MyStatsSection extends ConsumerWidget {
+  const _MyStatsSection();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final statsAsync = ref.watch(myChallengeStatsProvider);
+    final stats = statsAsync.valueOrNull;
+    if (stats == null) return const SizedBox.shrink();
+    if (stats.joined == 0) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'MY CHALLENGE STATS',
+          style: GoogleFonts.poppins(
+            fontSize: 14,
+            fontWeight: FontWeight.w700,
+            color: AppColors.textPrimary,
+            letterSpacing: 0.5,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: _StatTile(
+                icon: Icons.emoji_events_outlined,
+                value: '${stats.joined}',
+                label: 'JOINED',
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _StatTile(
+                icon: Icons.local_fire_department_outlined,
+                value: '${stats.totalFires}',
+                label: 'TOTAL FIRES',
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _StatTile(
+                icon: Icons.military_tech_outlined,
+                value: stats.bestPlacement == null
+                    ? '—'
+                    : '#${stats.bestPlacement}',
+                label: 'BEST',
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _StatTile extends StatelessWidget {
+  final IconData icon;
+  final String value;
+  final String label;
+  const _StatTile({
+    required this.icon,
+    required this.value,
+    required this.label,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 10),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        children: [
+          Icon(icon, color: AppColors.accent, size: 18),
+          const SizedBox(height: 6),
+          Text(
+            value,
+            style: GoogleFonts.poppins(
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textPrimary,
+              height: 1,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            style: GoogleFonts.inter(
+              fontSize: 9,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textMuted,
+              letterSpacing: 0.5,
+            ),
+          ),
         ],
       ),
     );
@@ -266,55 +379,50 @@ class _ActiveChallengeCard extends ConsumerWidget {
             const SizedBox(height: 14),
           ],
 
-          // CTA
-          SizedBox(
-            width: double.infinity,
-            child: GestureDetector(
-              onTap: () {
-                if (isPremiumLocked) {
-                  context.push('/paywall');
-                } else if (isNotMastered) {
-                  context.push('/skill-detail/${challenge.skillId}');
-                } else if (!hasSubmitted) {
-                  context.push('/submit-video/${challenge.skillId}?challenge=true');
-                }
-              },
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                decoration: BoxDecoration(
-                  color: hasSubmitted
-                      ? AppColors.surface
-                      : isPremiumLocked
-                          ? const Color(0xFF3F3F46)
-                          : isNotMastered
-                              ? AppColors.accent.withValues(alpha: 0.85)
-                              : AppColors.accent,
-                  borderRadius: BorderRadius.circular(12),
-                  border: hasSubmitted
-                      ? Border.all(color: AppColors.border)
-                      : null,
-                ),
-                alignment: Alignment.center,
-                child: Text(
-                  hasSubmitted
-                      ? 'SUBMITTED ✓'
-                      : isPremiumLocked
-                          ? '🔒 PREMIUM — SUBMIT VIDEO'
-                          : isNotMastered
-                              ? 'GO PRACTICE →'
-                              : 'SUBMIT YOUR VIDEO',
-                  style: GoogleFonts.inter(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: hasSubmitted
-                        ? AppColors.textSecondary
-                        : Colors.white,
-                    letterSpacing: 0.8,
+          // CTA — when submitted, show live placement; otherwise show action button
+          if (hasSubmitted)
+            _LivePlacementCTA(challenge: challenge)
+          else
+            SizedBox(
+              width: double.infinity,
+              child: GestureDetector(
+                onTap: () {
+                  if (isPremiumLocked) {
+                    context.push('/paywall');
+                  } else if (isNotMastered) {
+                    context.push('/skill-detail/${challenge.skillId}');
+                  } else {
+                    context.push(
+                        '/submit-video/${challenge.skillId}?challenge=true');
+                  }
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  decoration: BoxDecoration(
+                    color: isPremiumLocked
+                        ? const Color(0xFF3F3F46)
+                        : isNotMastered
+                            ? AppColors.accent.withValues(alpha: 0.85)
+                            : AppColors.accent,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  alignment: Alignment.center,
+                  child: Text(
+                    isPremiumLocked
+                        ? '🔒 PREMIUM — SUBMIT VIDEO'
+                        : isNotMastered
+                            ? 'GO PRACTICE →'
+                            : 'SUBMIT YOUR VIDEO',
+                    style: GoogleFonts.inter(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                      letterSpacing: 0.8,
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
         ],
       ),
     );
@@ -397,6 +505,124 @@ class _MasteryProgressPanel extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+// ─── Live placement (shown to users who have submitted) ──────────────────────
+
+class _LivePlacementCTA extends ConsumerWidget {
+  final Challenge challenge;
+  const _LivePlacementCTA({required this.challenge});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final placementAsync =
+        ref.watch(myChallengePlacementProvider(challenge.id));
+    final leaderboardAsync =
+        ref.watch(challengeLeaderboardProvider(challenge.id));
+    final placement = placementAsync.valueOrNull;
+    final leaderboard = leaderboardAsync.valueOrNull ?? [];
+
+    return GestureDetector(
+      onTap: () =>
+          context.push('/challenge-leaderboard', extra: challenge),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: placement != null && placement <= 3
+                ? AppColors.accent
+                : AppColors.border,
+            width: placement != null && placement <= 3 ? 1.5 : 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            // Placement badge
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: placement == 1
+                    ? AppColors.accent
+                    : const Color(0xFF3F3F46),
+                shape: BoxShape.circle,
+              ),
+              alignment: Alignment.center,
+              child: Text(
+                placement == null
+                    ? '?'
+                    : placement == 1
+                        ? '🥇'
+                        : placement == 2
+                            ? '🥈'
+                            : placement == 3
+                                ? '🥉'
+                                : '#$placement',
+                style: GoogleFonts.poppins(
+                  fontSize: placement != null && placement <= 3 ? 18 : 14,
+                  fontWeight: FontWeight.w800,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        placement == null
+                            ? 'SUBMITTED ✓'
+                            : "YOU'RE CURRENTLY #$placement",
+                        style: GoogleFonts.inter(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textPrimary,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    _subtitle(placement, leaderboard),
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right_rounded,
+                color: AppColors.textMuted, size: 18),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _subtitle(int? placement, List<CommunityVideo> leaderboard) {
+    if (placement == null) {
+      return 'Pending review or building your score';
+    }
+    if (placement == 1) {
+      if (leaderboard.length >= 2) {
+        final firesAhead = leaderboard[0].score - leaderboard[1].score;
+        return '🔥 Holding #1 by $firesAhead fire${firesAhead == 1 ? '' : 's'}';
+      }
+      return '🔥 Standing alone at the top';
+    }
+    final me = leaderboard[placement - 1];
+    final above = leaderboard[placement - 2];
+    final gap = above.score - me.score;
+    return '${gap == 0 ? 'Tied' : '$gap 🔥'} from #${placement - 1} · See leaderboard';
   }
 }
 
