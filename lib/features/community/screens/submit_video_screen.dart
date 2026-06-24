@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../challenges/providers/challenge_provider.dart';
+import '../../challenges/utils/tier_utils.dart';
 import '../../skill_tree/models/skill.dart';
 import '../../skill_tree/providers/skill_provider.dart';
 import '../providers/community_provider.dart';
@@ -569,78 +570,32 @@ class _SubmitVideoScreenState extends ConsumerState<SubmitVideoScreen> {
       final skills = ref.watch(skillsProvider);
       final skill =
           skills.where((s) => s.id == widget.skillId).firstOrNull;
+      final challengeTier = tierForSkill(widget.skillId);
+      final myTier = highestMasteredTier(skills);
+      final isWrongTier = challengeTier != myTier;
+
+      if (isWrongTier) {
+        return _buildBlocker(
+          icon: Icons.workspace_premium_outlined,
+          title: 'RESERVED FOR ${tierLabels[challengeTier]}',
+          message:
+              'You can spectate this challenge, but submissions are limited to your tier (${tierLabels[myTier]}). Look for a ${tierLabels[myTier]} challenge to enter.',
+          primaryLabel: 'BACK TO CHALLENGES',
+          onPrimaryTap: () => context.pop(),
+        );
+      }
+
       if (skill == null || skill.status != SkillStatus.mastered) {
-        return Scaffold(
-          backgroundColor: AppColors.background,
-          body: SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.lock_outline_rounded,
-                      color: AppColors.textMuted, size: 48),
-                  const SizedBox(height: 16),
-                  Text(
-                    'MASTER THIS SKILL FIRST',
-                    style: GoogleFonts.poppins(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textPrimary,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Complete 3 practice sessions for ${widget.skillId.replaceAll('_', ' ')} to unlock challenge submissions.',
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.inter(
-                      fontSize: 14,
-                      color: AppColors.textSecondary,
-                      height: 1.5,
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        context.pop();
-                        context.push('/skill-detail/${widget.skillId}');
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.accent,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12)),
-                      ),
-                      child: Text(
-                        'GO TO SKILL',
-                        style: GoogleFonts.inter(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white,
-                          letterSpacing: 0.8,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  TextButton(
-                    onPressed: () => context.pop(),
-                    child: Text(
-                      'BACK',
-                      style: GoogleFonts.inter(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textMuted,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
+        return _buildBlocker(
+          icon: Icons.lock_outline_rounded,
+          title: 'MASTER THIS SKILL FIRST',
+          message:
+              'Complete 3 practice sessions for ${widget.skillId.replaceAll('_', ' ')} to unlock challenge submissions.',
+          primaryLabel: 'GO TO SKILL',
+          onPrimaryTap: () {
+            context.pop();
+            context.push('/skill-detail/${widget.skillId}');
+          },
         );
       }
     }
@@ -690,6 +645,83 @@ class _SubmitVideoScreenState extends ConsumerState<SubmitVideoScreen> {
                   ),
                 ],
               ),
+      ),
+    );
+  }
+
+  Widget _buildBlocker({
+    required IconData icon,
+    required String title,
+    required String message,
+    required String primaryLabel,
+    required VoidCallback onPrimaryTap,
+  }) {
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, color: AppColors.textMuted, size: 48),
+              const SizedBox(height: 16),
+              Text(
+                title,
+                style: GoogleFonts.poppins(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimary,
+                  letterSpacing: 0.5,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                message,
+                textAlign: TextAlign.center,
+                style: GoogleFonts.inter(
+                  fontSize: 14,
+                  color: AppColors.textSecondary,
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: onPrimaryTap,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.accent,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: Text(
+                    primaryLabel,
+                    style: GoogleFonts.inter(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                      letterSpacing: 0.8,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextButton(
+                onPressed: () => context.pop(),
+                child: Text(
+                  'BACK',
+                  style: GoogleFonts.inter(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textMuted,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

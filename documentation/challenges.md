@@ -185,6 +185,43 @@ Reuses the existing `challengeLeaderboardProvider` — no extra DB query.
 
 ---
 
+## Multi-tier Weekly Challenges
+
+To keep competition fair across skill levels, challenges are bucketed into three tiers based on the linked skill:
+
+| Tier | Tier indexes | Skills |
+|------|--------------|--------|
+| Beginner | 0-1 | Basic Bounce, Forward Jump, Backward Jump, Alternating Steps |
+| Intermediate | 2 | Double Unders, Cross Overs, Side Swing |
+| Advanced | 3-4 | Triple Unders, Cross Double, Releases, Freestyle |
+
+Tier is derived purely from `SkillNode.tier` in `skill_tree_data.dart` — no DB schema change required.
+
+### User's tier
+A user's tier = the highest tier they've mastered any skill in. New users default to Beginner.
+
+### Tier selector
+When **2 or more active challenges exist this week** (one per tier), a segmented tab selector appears at the top of the Challenges tab:
+- All three tier tabs visible
+- Tabs without an active challenge are muted and unclickable
+- User's tier shows a small "FOR YOU" badge under the label
+- Default selection = user's tier (with fallback if no challenge for that tier)
+- Switching tabs changes which active challenge feeds the hero, recent activity, top 3, and live placement
+- When only 1 active challenge exists, the selector is hidden (single-card layout)
+
+### Tier-locked submissions (Option 1)
+Users can **only submit to challenges in their own tier**. An advanced user can spectate a Beginner challenge but cannot enter it — preventing high-skill users from dominating lower-tier leaderboards.
+
+- The CTA shows "🔒 [TIER] TIER ONLY" (gray) and is disabled
+- A "RESERVED FOR [TIER]" panel above the CTA explains why and points to the user's own tier
+- The submit video screen has a safety guard that blocks direct URL access ("RESERVED FOR [TIER] — submissions limited to your tier")
+- Spectating, fire reactions, and viewing leaderboards remain open across tiers
+
+### Persistence
+`selectedChallengeTierProvider` is invalidated on auth state change (login/logout/account switch) to prevent cross-account state bleed.
+
+---
+
 ## Two Types of Videos
 
 The app distinguishes between **personal recordings** and **challenge submissions**:

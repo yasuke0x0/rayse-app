@@ -9,6 +9,7 @@ import '../../skill_tree/models/skill.dart';
 import '../../skill_tree/providers/skill_provider.dart';
 import '../models/challenge.dart';
 import '../providers/challenge_provider.dart';
+import '../utils/tier_utils.dart';
 
 const _skillLabels = <String, String>{
   'basic_bounce': 'Basic Bounce',
@@ -96,7 +97,7 @@ class _ChallengesBody extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     if (challenges.isEmpty) return const _EmptyState();
 
-    final active = challenges.where((c) => c.isCurrentWeek).firstOrNull;
+    final activeAll = challenges.where((c) => c.isCurrentWeek).toList();
     final upcoming = challenges.where((c) => c.isUpcoming).toList()
       ..sort((a, b) {
         // Soonest first
@@ -107,11 +108,39 @@ class _ChallengesBody extends ConsumerWidget {
     final nextUp = upcoming.firstOrNull;
     final lastWinner = past.firstOrNull;
 
+    // Determine selected active challenge for multi-tier flow
+    final skills = ref.watch(skillsProvider);
+    final userTier = highestMasteredTier(skills);
+    final selectedTierState = ref.watch(selectedChallengeTierProvider);
+    final hasMultiTier = activeAll.length > 1;
+
+    Challenge? active;
+    if (activeAll.isNotEmpty) {
+      if (hasMultiTier) {
+        final effectiveTier = selectedTierState ?? userTier;
+        active = activeAll
+                .where((c) => tierForSkill(c.skillId) == effectiveTier)
+                .firstOrNull ??
+            activeAll.first;
+      } else {
+        active = activeAll.first;
+      }
+    }
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 28, 24, 32),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Tier selector (only when multiple active challenges exist)
+          if (hasMultiTier) ...[
+            _TierSelector(
+              activeChallenges: activeAll,
+              userTier: userTier,
+            ),
+            const SizedBox(height: 20),
+          ],
+
           // Active challenge
           if (active != null) ...[
             _ActiveChallengeCard(challenge: active),
@@ -157,6 +186,95 @@ class _ChallengesBody extends ConsumerWidget {
                 )),
           ],
         ],
+      ),
+    );
+  }
+}
+
+// ─── Tier selector (multi-tier weekly challenges) ────────────────────────────
+
+class _TierSelector extends ConsumerWidget {
+  final List<Challenge> activeChallenges;
+  final ChallengeTier userTier;
+
+  const _TierSelector({
+    required this.activeChallenges,
+    required this.userTier,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final selected = ref.watch(selectedChallengeTierProvider) ?? userTier;
+
+    // Build a set of tiers that have active challenges
+    final availableTiers = activeChallenges
+        .map((c) => tierForSkill(c.skillId))
+        .toSet();
+
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Row(
+        children: ChallengeTier.values.map((tier) {
+          final hasChallenge = availableTiers.contains(tier);
+          final isSelected = selected == tier;
+          final isUsersTier = tier == userTier;
+          return Expanded(
+            child: GestureDetector(
+              onTap: hasChallenge
+                  ? () => ref
+                      .read(selectedChallengeTierProvider.notifier)
+                      .state = tier
+                  : null,
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? AppColors.accent
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Column(
+                  children: [
+                    Text(
+                      tierLabels[tier]!,
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.inter(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: !hasChallenge
+                            ? AppColors.textMuted
+                            : isSelected
+                                ? Colors.white
+                                : AppColors.textSecondary,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    if (isUsersTier) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        'FOR YOU',
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.inter(
+                          fontSize: 8,
+                          fontWeight: FontWeight.w700,
+                          color: isSelected
+                              ? Colors.white.withValues(alpha: 0.8)
+                              : AppColors.accent,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+          );
+        }).toList(),
       ),
     );
   }
@@ -285,14 +403,19 @@ class _ActiveChallengeCard extends ConsumerWidget {
     final leaderboard =
         ref.watch(challengeLeaderboardProvider(challenge.id)).valueOrNull ??
             const <CommunityVideo>[];
-    final userTier = ref.watch(userTierProvider).valueOrNull ?? 'free';
+    final userPremiumTier = ref.watch(userTierProvider).valueOrNull ?? 'free';
     final skills = ref.watch(skillsProvider);
     final skill = skills.where((s) => s.id == challenge.skillId).firstOrNull;
     final isPremiumLocked =
-        skill != null && !skill.isFreeNode && userTier == 'free';
+        skill != null && !skill.isFreeNode && userPremiumTier == 'free';
     final isNotMastered =
         skill != null && skill.status != SkillStatus.mastered;
     final newToday = _countSubmittedToday(leaderboard);
+
+    // Tier gate: users can only submit to challenges in their own tier
+    final challengeTier = tierForSkill(challenge.skillId);
+    final myTier = highestMasteredTier(skills);
+    final isWrongTier = challengeTier != myTier;
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -432,8 +555,17 @@ class _ActiveChallengeCard extends ConsumerWidget {
           ),
           const SizedBox(height: 20),
 
-          // Mastery progress (only when skill not mastered, not premium-locked)
-          if (skill != null && isNotMastered && !isPremiumLocked) ...[
+          // Wrong tier panel (advanced viewing beginner, etc.)
+          if (isWrongTier && !isPremiumLocked) ...[
+            _WrongTierPanel(
+              challengeTier: challengeTier,
+              myTier: myTier,
+            ),
+            const SizedBox(height: 14),
+          ]
+          // Mastery progress (only when skill not mastered, not premium-locked,
+          // and the challenge IS in the user's tier)
+          else if (skill != null && isNotMastered && !isPremiumLocked) ...[
             _MasteryProgressPanel(skill: skill),
             const SizedBox(height: 14),
           ],
@@ -448,6 +580,8 @@ class _ActiveChallengeCard extends ConsumerWidget {
                 onTap: () {
                   if (isPremiumLocked) {
                     context.push('/paywall');
+                  } else if (isWrongTier) {
+                    // Disabled — wrong tier
                   } else if (isNotMastered) {
                     context.push('/skill-detail/${challenge.skillId}');
                   } else {
@@ -458,7 +592,7 @@ class _ActiveChallengeCard extends ConsumerWidget {
                 child: Container(
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   decoration: BoxDecoration(
-                    color: isPremiumLocked
+                    color: isPremiumLocked || isWrongTier
                         ? const Color(0xFF3F3F46)
                         : isNotMastered
                             ? AppColors.accent.withValues(alpha: 0.85)
@@ -469,13 +603,15 @@ class _ActiveChallengeCard extends ConsumerWidget {
                   child: Text(
                     isPremiumLocked
                         ? '🔒 PREMIUM — SUBMIT VIDEO'
-                        : isNotMastered
-                            ? 'GO PRACTICE →'
-                            : 'SUBMIT YOUR VIDEO',
+                        : isWrongTier
+                            ? '🔒 ${tierLabels[challengeTier]} TIER ONLY'
+                            : isNotMastered
+                                ? 'GO PRACTICE →'
+                                : 'SUBMIT YOUR VIDEO',
                     style: GoogleFonts.inter(
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
-                      color: Colors.white,
+                      color: isWrongTier ? AppColors.textSecondary : Colors.white,
                       letterSpacing: 0.8,
                     ),
                   ),
@@ -498,6 +634,74 @@ class _ActiveChallengeCard extends ConsumerWidget {
     return videos
         .where((v) => v.submittedAt.toLocal().isAfter(startOfDay))
         .length;
+  }
+}
+
+// ─── Wrong tier panel (shown when challenge is not in user's tier) ───────────
+
+class _WrongTierPanel extends StatelessWidget {
+  final ChallengeTier challengeTier;
+  final ChallengeTier myTier;
+
+  const _WrongTierPanel({
+    required this.challengeTier,
+    required this.myTier,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final challengeLabel = tierLabels[challengeTier]!;
+    final myLabel = tierLabels[myTier]!;
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.background,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              shape: BoxShape.circle,
+              border: Border.all(color: AppColors.border),
+            ),
+            child: const Icon(Icons.workspace_premium_outlined,
+                color: AppColors.textMuted, size: 18),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'RESERVED FOR $challengeLabel',
+                  style: GoogleFonts.inter(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textMuted,
+                    letterSpacing: 1,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'You can spectate, but submissions are limited to your tier ($myLabel).',
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    color: AppColors.textSecondary,
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 

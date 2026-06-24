@@ -83,6 +83,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
         ref.invalidate(challengeParticipantCountProvider);
         ref.invalidate(myChallengePlacementProvider);
         ref.invalidate(myChallengeStatsProvider);
+        ref.invalidate(selectedChallengeTierProvider);
         context.go('/home');
       }
     } catch (e) {

@@ -1,4 +1,39 @@
 
+## 2026-06-16 — Multi-tier weekly challenges with tier-locked submissions
+
+### What changed (A from the challenges tab enhancement plan)
+- Challenges now bucketed into Beginner / Intermediate / Advanced based on the linked skill's tier (no DB schema change — derived from `SkillNode.tier`)
+- New segmented tab selector at top of challenges tab when 2+ active challenges exist this week; "FOR YOU" badge marks user's tier
+- Default selection = user's tier (highest mastered tier across all skills)
+- Selecting a tab swaps the hero, recent activity, top 3, and live placement to that tier's challenge
+- **Option 1 strict tier matching:** users can only submit to challenges in their own tier — prevents advanced users from dominating beginner leaderboards
+- "RESERVED FOR [TIER]" panel + grayed-out CTA on out-of-tier challenges; spectating/voting still allowed
+- Submit video screen got a tier safety guard for direct URL access
+- New `tier_utils.dart` with `tierForSkill`, `highestMasteredTier`, `tierLabels` shared between challenges screen + submit screen
+- New `ChallengeTier` enum + `selectedChallengeTierProvider` in `challenge_provider.dart`, invalidated on auth state change
+
+### Files touched
+- `lib/features/challenges/utils/tier_utils.dart` — NEW: tier mapping and helpers
+- `lib/features/challenges/providers/challenge_provider.dart` — added `ChallengeTier` enum + `selectedChallengeTierProvider`
+- `lib/features/challenges/screens/challenges_screen.dart` — `_TierSelector`, `_WrongTierPanel` widgets; multi-tier body logic
+- `lib/features/community/screens/submit_video_screen.dart` — tier guard + extracted `_buildBlocker` helper
+- `lib/features/content/screens/home_screen.dart`, login_screen.dart, signup_screen.dart — invalidate `selectedChallengeTierProvider` on auth changes
+- `documentation/challenges.md` — new "Multi-tier Weekly Challenges" section
+
+### SQL needed to test
+```sql
+DELETE FROM public.challenges WHERE week_number = 26 AND week_year = 2026;
+
+INSERT INTO public.challenges (skill_id, title, description, week_number, week_year, xp_reward) VALUES
+  ('basic_bounce', 'Bounce Marathon', 'Show your cleanest basic bounce.', 26, 2026, 50),
+  ('double_unders', 'Double Under Showdown', 'Smooth, controlled double unders.', 26, 2026, 100),
+  ('freestyle', 'Freestyle Flow', 'Show your most creative freestyle.', 26, 2026, 200);
+```
+
+### Gotchas
+- Tier helpers live in `tier_utils.dart` (not in `_skillLabels`-style maps) so submit_video_screen and challenges_screen share the same logic
+- Without `selectedChallengeTierProvider` in auth invalidation lists, a user's selected tier persists across account switches
+
 ## 2026-06-16 — Challenges tab: live signals (recent activity strip + today badge)
 
 ### What changed (E from challenges tab enhancement plan)

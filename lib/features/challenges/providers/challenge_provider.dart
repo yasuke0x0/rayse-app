@@ -6,6 +6,14 @@ import '../../community/repository/community_video_repository.dart';
 import '../models/challenge.dart';
 import '../repository/challenge_repository.dart';
 
+// Tier of a weekly challenge (derived from the linked skill's tier).
+enum ChallengeTier { beginner, intermediate, advanced }
+
+// User-selected tier in the multi-tier challenges view. Null = use the user's
+// derived tier (highest mastered tier).
+final selectedChallengeTierProvider =
+    StateProvider<ChallengeTier?>((ref) => null);
+
 final challengeRepositoryProvider =
     Provider<ChallengeRepository>((_) => ChallengeRepository());
 
