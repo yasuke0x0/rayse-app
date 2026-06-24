@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../challenges/providers/challenge_provider.dart';
 import '../../community/providers/community_provider.dart';
 import '../../skill_tree/providers/skill_provider.dart';
 import '../providers/auth_provider.dart';
@@ -55,6 +56,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         ref.invalidate(myAllVideosProvider);
         ref.invalidate(myReactionsProvider);
         ref.invalidate(pendingVideosProvider);
+        ref.invalidate(challengesProvider);
+        ref.invalidate(hasSubmittedChallengeProvider);
+        ref.invalidate(challengeLeaderboardProvider);
+        ref.invalidate(challengeParticipantCountProvider);
+        ref.invalidate(myChallengePlacementProvider);
+        ref.invalidate(myChallengeStatsProvider);
         context.go('/home');
       }
     } catch (e) {

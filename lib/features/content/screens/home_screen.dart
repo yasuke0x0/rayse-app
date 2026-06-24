@@ -52,9 +52,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ref.invalidate(isCreatorProvider);
           ref.invalidate(unreadNotificationCountProvider);
           ref.invalidate(notificationsProvider);
+          ref.invalidate(challengesProvider);
           ref.invalidate(hasSubmittedChallengeProvider);
           ref.invalidate(challengeLeaderboardProvider);
           ref.invalidate(challengeParticipantCountProvider);
+          ref.invalidate(myChallengePlacementProvider);
+          ref.invalidate(myChallengeStatsProvider);
           context.go('/login');
         } else if (prev?.valueOrNull?.session == null &&
             authState.session != null) {
@@ -71,9 +74,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ref.invalidate(isCreatorProvider);
           ref.invalidate(unreadNotificationCountProvider);
           ref.invalidate(notificationsProvider);
+          ref.invalidate(challengesProvider);
           ref.invalidate(hasSubmittedChallengeProvider);
           ref.invalidate(challengeLeaderboardProvider);
           ref.invalidate(challengeParticipantCountProvider);
+          ref.invalidate(myChallengePlacementProvider);
+          ref.invalidate(myChallengeStatsProvider);
         }
       });
     });

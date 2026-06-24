@@ -1,4 +1,21 @@
 
+## 2026-06-16 — Fix: stale challenge state when switching accounts
+
+### What changed
+- Added `challengesProvider`, `myChallengePlacementProvider`, and `myChallengeStatsProvider` to the auth state invalidation lists in: home screen listener, login screen, signup screen
+- Without these, switching accounts (logout → other login → logout → original login) showed "SUBMIT YOUR VIDEO" on the active challenge even though the user had already submitted and appeared in the top 3
+
+### Root cause
+The challenge providers added in recent enhancements (placement/stats) and the upstream `challengesProvider` (StreamProvider) weren't part of the cross-account invalidation. The cached `false` from a previous account session leaked into the new session's hero card before the underlying data caught up.
+
+### Files touched
+- `lib/features/content/screens/home_screen.dart` — extended auth state listener invalidations
+- `lib/features/auth/screens/login_screen.dart` — added challenge provider invalidations
+- `lib/features/auth/screens/signup_screen.dart` — added challenge provider invalidations
+
+### Gotchas
+- Every time we add a new user-specific provider (anything that reads `currentUser?.id`), it MUST be added to all three invalidation sites: `home_screen.dart` listener, `login_screen.dart`, and `signup_screen.dart`. Forgetting one creates subtle cross-account bleed.
+
 ## 2026-06-16 — Challenges tab: my stats section + live placement card
 
 ### What changed (C + H from challenges tab enhancement plan)
