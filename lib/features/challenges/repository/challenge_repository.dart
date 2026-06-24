@@ -24,6 +24,7 @@ class ChallengeRepository {
     final data = await _client
         .from('community_videos')
         .select('id')
+        .eq('is_challenge', true)
         .eq('skill_id', skillId)
         .eq('week_number', weekNumber)
         .eq('week_year', weekYear);

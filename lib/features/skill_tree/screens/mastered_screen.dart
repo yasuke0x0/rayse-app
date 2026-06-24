@@ -264,6 +264,15 @@ class _MasteredScreenState extends ConsumerState<MasteredScreen>
                         ),
                         const SizedBox(height: 14),
                         _nextStepRow(
+                          icon: Icons.videocam_outlined,
+                          title: 'Record a personal video',
+                          subtitle:
+                              'Track your progress with private recordings',
+                          onTap: () =>
+                              context.push('/submit-video/${widget.skillId}'),
+                        ),
+                        const SizedBox(height: 10),
+                        _nextStepRow(
                           icon: Icons.emoji_events_outlined,
                           title: 'Join the weekly challenge',
                           subtitle:
@@ -272,15 +281,6 @@ class _MasteredScreenState extends ConsumerState<MasteredScreen>
                             context.go('/home');
                             ref.read(homeTabIndexProvider.notifier).state = 2;
                           },
-                        ),
-                        const SizedBox(height: 10),
-                        _nextStepRow(
-                          icon: Icons.videocam_outlined,
-                          title: 'Record a personal video',
-                          subtitle:
-                              'Track your progress with private recordings',
-                          onTap: () =>
-                              context.push('/submit-video/${widget.skillId}'),
                         ),
                       ],
                     ),

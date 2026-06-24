@@ -157,6 +157,7 @@ class CommunityVideoRepository {
         .from('community_videos')
         .select(_selectBasic)
         .eq('status', 'approved')
+        .eq('is_challenge', true)
         .eq('skill_id', skillId)
         .eq('week_number', weekNumber)
         .eq('week_year', weekYear)

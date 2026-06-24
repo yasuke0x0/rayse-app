@@ -128,12 +128,20 @@ If this skill is the **active weekly challenge**, a highlighted banner appears a
 
 ### Before Mastery (Locked State)
 
-For available/completed skills (not yet mastered), a locked teaser section shows:
-- "Complete X more session(s) to unlock video recording."
+For available/completed skills (not yet mastered), a locked teaser section "UNLOCKS AT MASTERY" shows:
+- "Complete X more session(s) to master this skill."
+- 🎥 Record personal videos for this skill
+- 🏆 Join weekly challenges for this skill
 - Progress bar (1/3, 2/3)
 - Session counter
 
-The result screen snackbar also reminds users: "X sessions to unlock video recording"
+The result screen snackbar also reminds users: "X sessions to unlock videos & weekly challenge"
+
+After mastery, the celebration screen "WHAT'S NEXT" section shows two options in order:
+1. **Record a personal video** (primary — for progress tracking)
+2. **Join the weekly challenge** (secondary — for community competition)
+
+This reinforces that personal practice comes first, then community competition once the user is confident.
 
 ### Record Video
 

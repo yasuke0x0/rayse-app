@@ -567,7 +567,7 @@ class _SkillDetailScreenState extends ConsumerState<SkillDetailScreen>
                 const Text('🎥', style: TextStyle(fontSize: 16)),
                 const SizedBox(width: 8),
                 Text(
-                  'MY VIDEOS',
+                  'UNLOCKS AT MASTERY',
                   style: GoogleFonts.inter(
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
@@ -582,7 +582,7 @@ class _SkillDetailScreenState extends ConsumerState<SkillDetailScreen>
             ),
             const SizedBox(height: 12),
             Text(
-              'Complete $sessionsLeft more session${sessionsLeft == 1 ? '' : 's'} to unlock video recording.',
+              'Complete $sessionsLeft more session${sessionsLeft == 1 ? '' : 's'} to master this skill.',
               style: GoogleFonts.inter(
                 fontSize: 12,
                 color: AppColors.textSecondary,
@@ -590,6 +590,17 @@ class _SkillDetailScreenState extends ConsumerState<SkillDetailScreen>
               ),
             ),
             const SizedBox(height: 12),
+            // Unlock list
+            _unlockRow(
+              icon: Icons.videocam_outlined,
+              label: 'Record personal videos for this skill',
+            ),
+            const SizedBox(height: 8),
+            _unlockRow(
+              icon: Icons.emoji_events_outlined,
+              label: 'Join weekly challenges for this skill',
+            ),
+            const SizedBox(height: 14),
             // Progress bar
             ClipRRect(
               borderRadius: BorderRadius.circular(999),
@@ -614,6 +625,24 @@ class _SkillDetailScreenState extends ConsumerState<SkillDetailScreen>
           ],
         ),
       ),
+    );
+  }
+
+  Widget _unlockRow({required IconData icon, required String label}) {
+    return Row(
+      children: [
+        Icon(icon, color: AppColors.accent, size: 14),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            label,
+            style: GoogleFonts.inter(
+              fontSize: 12,
+              color: AppColors.textSecondary,
+            ),
+          ),
+        ),
+      ],
     );
   }
 

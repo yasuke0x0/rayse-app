@@ -62,6 +62,7 @@ final hasSubmittedChallengeProvider =
       .read(communityVideoRepositoryProvider)
       .fetchMyVideos(userId, challenge.skillId);
   return myVideos.any((v) =>
+      v.isChallenge &&
       v.weekNumber == challenge.weekNumber &&
       v.weekYear == challenge.weekYear);
 });

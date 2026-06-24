@@ -1,4 +1,26 @@
 
+## 2026-06-16 — Personal vs challenge video isolation, mastery unlock messaging
+
+### What changed
+- Fixed personal videos leaking into challenge leaderboards: added `is_challenge=true` filter to `fetchTopVideosForSkill`, `fetchParticipantCount`, and `hasSubmittedChallengeProvider` (without it, an auto-approved personal video for the same skill+week made the challenge show "SUBMITTED ✓" and counted as a participant)
+- Skill detail locked teaser renamed "MY VIDEOS" → "UNLOCKS AT MASTERY" — now shows both unlocks explicitly (record videos + join weekly challenges) so users understand what mastery enables
+- Mastered "WHAT'S NEXT" reordered: record personal video first, join weekly challenge second (practice before competition)
+- Result screen snackbar mentions both unlocks: "X sessions to unlock videos & weekly challenge"
+
+### Files touched
+- `lib/features/community/repository/community_video_repository.dart` — is_challenge filter on leaderboard query
+- `lib/features/challenges/repository/challenge_repository.dart` — is_challenge filter on participant count
+- `lib/features/challenges/providers/challenge_provider.dart` — is_challenge filter on submission check
+- `lib/features/skill_tree/screens/skill_detail_screen.dart` — locked teaser with both unlock benefits
+- `lib/features/skill_tree/screens/mastered_screen.dart` — swap order in WHAT'S NEXT
+- `lib/features/skill_tree/screens/result_screen.dart` — updated snackbar copy
+- `documentation/challenges.md` — clarified is_challenge filter requirement
+- `documentation/skill-tree.md` — updated locked teaser and mastered flow docs
+
+### Gotchas
+- Personal videos and challenge videos share the same `community_videos` table — every challenge-side query MUST filter `is_challenge=true` or personal recordings will pollute the data
+- Realtime sync for new tables (e.g. `challenges`) requires adding the table to `supabase_realtime` publication: `ALTER PUBLICATION supabase_realtime ADD TABLE public.challenges;` or via Database → Replication in Supabase dashboard
+
 ## 2026-06-16 — Admin user search
 
 ### What changed

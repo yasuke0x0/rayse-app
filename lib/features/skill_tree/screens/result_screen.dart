@@ -55,8 +55,8 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
         final sessions = updatedSkill.sessionsCompleted;
         final sessionsLeft = 3 - sessions;
         final message = sessionsLeft == 1
-            ? 'Session $sessions/3 — one more to unlock video recording! 🎥'
-            : 'Session $sessions/3 complete — $sessionsLeft sessions to unlock video recording 🔥';
+            ? 'Session $sessions/3 — one more to unlock videos & weekly challenge! 🏆'
+            : 'Session $sessions/3 complete — $sessionsLeft sessions to unlock videos & challenge 🔥';
         final messenger = ScaffoldMessenger.of(context);
         context.pop();
         messenger.showSnackBar(

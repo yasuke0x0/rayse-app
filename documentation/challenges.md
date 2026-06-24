@@ -174,9 +174,11 @@ The home tab shows a **featured challenge card** that dynamically pulls from `ac
 
 | Data | Source | How It's Used |
 |------|--------|---------------|
-| Top 3 podium | `fetchTopVideosForSkill(skillId, week, year, limit: 10)` | Top 3 in challenges tab, full list in leaderboard screen |
-| Participant count | Count of `community_videos` rows for skill+week | Shown in hero card |
-| Submission check | `fetchMyVideos(userId, skillId)` filtered by week | Determines CTA button state |
+| Top 3 podium | `fetchTopVideosForSkill` filtered by `is_challenge=true` | Top 3 in challenges tab, full list in leaderboard screen |
+| Participant count | Count of `community_videos` rows for skill+week with `is_challenge=true` | Shown in hero card |
+| Submission check | `fetchMyVideos(userId, skillId)` filtered by week + `isChallenge` | Determines CTA button state |
+
+**Important:** All challenge-related queries must filter `is_challenge=true`. Personal videos and challenge videos live in the same `community_videos` table, both can have `status='approved'`. Without the filter, personal videos leak into challenge leaderboards, participant counts, and the "SUBMITTED ✓" state.
 | Video upload | `/submit-video/{skillId}?challenge=true` | 3-step flow with `is_challenge = true` |
 | Video detail | `/community-video` screen | Tap leaderboard row to watch + react |
 | Fire reactions | `toggle_reaction` RPC + `myReactionsProvider` | Voting mechanism = leaderboard ranking |
