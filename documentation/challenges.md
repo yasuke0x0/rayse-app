@@ -67,10 +67,11 @@ INSERT INTO public.challenges (skill_id, title, description, week_number, week_y
 VALUES ('cross_overs', 'Cross Over Kings', 'Show us your smoothest Cross Overs.', 25, 2026, 100);
 ```
 
-### Active vs Past
+### Active vs Past vs Upcoming
 
-- **Active:** `week_number` and `week_year` match the current ISO week
-- **Past:** any challenge where the week has already passed
+- **Active:** `week_number` and `week_year` match the current ISO week (`isCurrentWeek`)
+- **Upcoming:** challenge week is in the future (`isUpcoming`) — surfaced as a teaser card
+- **Past:** challenge week has already passed (`isPast`)
 - Only one challenge should be active per week (enforced by convention, not constraint)
 
 ### Days Left
@@ -133,7 +134,29 @@ Hidden entirely when the user has never joined a challenge.
 - **"SEE ALL"** link navigates to the dedicated challenge leaderboard screen (`/challenge-leaderboard`)
 - Empty state: "No approved videos yet — be the first!"
 
-### 5. Past Challenges
+### 5. Upcoming Challenge Teaser
+
+If a challenge exists with a future `week_number` (computed from `Challenge.isUpcoming`), a teaser card appears below the active challenge sections:
+- "⏳ COMING UP" blue badge + countdown ("starts today" / "in 1 day" / "in X days")
+- Challenge title
+- Skill pill (e.g. "CROSS OVERS")
+
+Sorted by soonest first if multiple upcoming challenges exist (only the closest is shown). Hidden when no upcoming challenges exist in the DB. Gives users a reason to push toward mastering the next skill in advance.
+
+### 6. Last Week's Winner Spotlight
+
+The most recent past challenge's winner is highlighted in a dedicated card above the past challenges list:
+- 🏆 "LAST WEEK'S WINNER" badge with orange accent
+- Avatar (username initial), @username
+- Skill + fire score (e.g. "CROSS OVERS · 42 🔥")
+- Play button on the right
+- Free users see a lock icon and tap → `/paywall`
+- Premium users tap → opens the winner's video detail screen
+- Hidden if there's no past challenge or no approved videos in its leaderboard
+
+Reuses the existing `challengeLeaderboardProvider` — no extra DB query.
+
+### 7. Past Challenges
 - List of previous week challenges
 - Each card shows: title, week number, skill name, **placement chip**
 - Placement chip surfaces the user's history with each challenge:

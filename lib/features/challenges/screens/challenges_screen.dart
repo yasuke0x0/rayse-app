@@ -97,7 +97,15 @@ class _ChallengesBody extends ConsumerWidget {
     if (challenges.isEmpty) return const _EmptyState();
 
     final active = challenges.where((c) => c.isCurrentWeek).firstOrNull;
-    final past = challenges.where((c) => !c.isCurrentWeek).toList();
+    final upcoming = challenges.where((c) => c.isUpcoming).toList()
+      ..sort((a, b) {
+        // Soonest first
+        final yearCmp = a.weekYear.compareTo(b.weekYear);
+        return yearCmp != 0 ? yearCmp : a.weekNumber.compareTo(b.weekNumber);
+      });
+    final past = challenges.where((c) => c.isPast).toList();
+    final nextUp = upcoming.firstOrNull;
+    final lastWinner = past.firstOrNull;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 28, 24, 32),
@@ -117,9 +125,21 @@ class _ChallengesBody extends ConsumerWidget {
             const _MyStatsSection(),
           ],
 
+          // Next week teaser
+          if (nextUp != null) ...[
+            const SizedBox(height: 28),
+            _UpcomingChallengeCard(challenge: nextUp),
+          ],
+
+          // Last week's winner spotlight
+          if (lastWinner != null) ...[
+            const SizedBox(height: 36),
+            _LastWinnerSpotlight(challenge: lastWinner),
+          ],
+
           // Past challenges
           if (past.isNotEmpty) ...[
-            const SizedBox(height: 36),
+            const SizedBox(height: 28),
             Text(
               'PAST CHALLENGES',
               style: GoogleFonts.poppins(
@@ -623,6 +643,238 @@ class _LivePlacementCTA extends ConsumerWidget {
     final above = leaderboard[placement - 2];
     final gap = above.score - me.score;
     return '${gap == 0 ? 'Tied' : '$gap 🔥'} from #${placement - 1} · See leaderboard';
+  }
+}
+
+// ─── Upcoming challenge teaser ───────────────────────────────────────────────
+
+class _UpcomingChallengeCard extends StatelessWidget {
+  final Challenge challenge;
+  const _UpcomingChallengeCard({required this.challenge});
+
+  @override
+  Widget build(BuildContext context) {
+    final days = challenge.daysUntilStart;
+    final skillLabel =
+        (_skillLabels[challenge.skillId] ?? challenge.skillId).toUpperCase();
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1E3A5F),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  '⏳ COMING UP',
+                  style: GoogleFonts.inter(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFF60A5FA),
+                    letterSpacing: 0.8,
+                  ),
+                ),
+              ),
+              const Spacer(),
+              Text(
+                days == 0
+                    ? 'starts today'
+                    : days == 1
+                        ? 'in 1 day'
+                        : 'in $days days',
+                style: GoogleFonts.inter(
+                  fontSize: 12,
+                  color: AppColors.textSecondary,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            challenge.title,
+            style: GoogleFonts.poppins(
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textPrimary,
+              height: 1.2,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Container(
+            padding:
+                const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: AppColors.accent.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(999),
+              border:
+                  Border.all(color: AppColors.accent.withValues(alpha: 0.3)),
+            ),
+            child: Text(
+              skillLabel,
+              style: GoogleFonts.inter(
+                fontSize: 10,
+                fontWeight: FontWeight.w700,
+                color: AppColors.accent,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Last week's winner spotlight ────────────────────────────────────────────
+
+class _LastWinnerSpotlight extends ConsumerWidget {
+  final Challenge challenge;
+  const _LastWinnerSpotlight({required this.challenge});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final userTier = ref.watch(userTierProvider).valueOrNull ?? 'free';
+    final isLocked = userTier == 'free';
+    final leaderboardAsync =
+        ref.watch(challengeLeaderboardProvider(challenge.id));
+    final leaderboard = leaderboardAsync.valueOrNull;
+
+    if (leaderboard == null || leaderboard.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    final winner = leaderboard.first;
+    final skillLabel =
+        (_skillLabels[challenge.skillId] ?? challenge.skillId).toUpperCase();
+
+    return GestureDetector(
+      onTap: isLocked
+          ? () => context.push('/paywall')
+          : () => context.push('/community-video', extra: winner),
+      child: Container(
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+              color: AppColors.accent.withValues(alpha: 0.5), width: 1.5),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: AppColors.accent,
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Text(
+                    '🏆 LAST WEEK\'S WINNER',
+                    style: GoogleFonts.inter(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                      letterSpacing: 0.8,
+                    ),
+                  ),
+                ),
+                const Spacer(),
+                Text(
+                  'WK ${challenge.weekNumber}',
+                  style: GoogleFonts.inter(
+                    fontSize: 11,
+                    color: AppColors.textMuted,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            Row(
+              children: [
+                // Avatar
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: AppColors.accent.withValues(alpha: 0.15),
+                    border: Border.all(color: AppColors.accent, width: 2),
+                  ),
+                  alignment: Alignment.center,
+                  child: Text(
+                    winner.username.isNotEmpty
+                        ? winner.username[0].toUpperCase()
+                        : '?',
+                    style: GoogleFonts.poppins(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.accent,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '@${winner.username}',
+                        style: GoogleFonts.poppins(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '$skillLabel · ${winner.score} 🔥',
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: AppColors.background,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: AppColors.border),
+                  ),
+                  child: Icon(
+                    isLocked
+                        ? Icons.lock_outline_rounded
+                        : Icons.play_arrow_rounded,
+                    color: isLocked ? AppColors.textMuted : AppColors.accent,
+                    size: 22,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 

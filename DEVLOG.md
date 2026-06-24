@@ -1,4 +1,18 @@
 
+## 2026-06-16 — Challenges tab: upcoming teaser + last week's winner spotlight
+
+### What changed (F + G from challenges tab enhancement plan)
+- **Upcoming challenge teaser (G):** New blue-accented card appearing below the active sections when a challenge exists with a future week. Shows title, skill pill, countdown ("in X days"). Sorted by soonest first when multiple exist.
+- **Last week's winner spotlight (F):** New orange-accented card above the past challenges list showing the #1 video from the most recent past challenge — avatar, @username, skill + fires, play button. Free users hit paywall, premium tap through to the video. Reuses existing leaderboard provider (no new query).
+- Added `Challenge.isUpcoming`, `Challenge.isPast`, `Challenge.daysUntilStart` getters
+- `_ChallengesBody` now splits challenges into three buckets: active, upcoming, past
+- Layout order: header → active hero → my stats → top 3 → **upcoming teaser** → **last winner spotlight** → past list
+
+### Files touched
+- `lib/features/challenges/models/challenge.dart` — isUpcoming/isPast/daysUntilStart getters
+- `lib/features/challenges/screens/challenges_screen.dart` — `_UpcomingChallengeCard`, `_LastWinnerSpotlight` widgets, updated body layout
+- `documentation/challenges.md` — added sections 5 and 6, updated lifecycle states
+
 ## 2026-06-16 — Fix: stale challenge state when switching accounts
 
 ### What changed

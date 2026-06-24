@@ -25,11 +25,33 @@ class Challenge {
         weekYear == now.year;
   }
 
+  bool get isUpcoming {
+    final now = DateTime.now().toUtc();
+    final currentWeek = CommunityVideoRepository.isoWeek(now);
+    if (weekYear > now.year) return true;
+    if (weekYear < now.year) return false;
+    return weekNumber > currentWeek;
+  }
+
+  bool get isPast => !isCurrentWeek && !isUpcoming;
+
   int get daysLeft {
     if (!isCurrentWeek) return 0;
     // Days until end of current ISO week (Sunday)
     final now = DateTime.now();
     return (7 - now.weekday).clamp(0, 7);
+  }
+
+  int get daysUntilStart {
+    if (!isUpcoming) return 0;
+    final now = DateTime.now().toUtc();
+    final currentWeek = CommunityVideoRepository.isoWeek(now);
+    // Approximate: weeks * 7 - days into current week
+    final weeksAhead = weekYear == now.year
+        ? weekNumber - currentWeek
+        : (weekNumber + 52 - currentWeek);
+    final daysIntoWeek = now.weekday;
+    return (weeksAhead * 7 - daysIntoWeek + 1).clamp(0, 365);
   }
 
   factory Challenge.fromJson(Map<String, dynamic> json) => Challenge(
