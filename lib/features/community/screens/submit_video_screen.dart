@@ -113,6 +113,10 @@ class _SubmitVideoScreenState extends ConsumerState<SubmitVideoScreen> {
       ref.invalidate(pendingVideosProvider);
       ref.invalidate(hasSubmittedChallengeProvider);
       ref.invalidate(challengeParticipantCountProvider);
+      // Award participation XP locally (DB trigger handles persistence)
+      if (widget.isChallenge) {
+        ref.read(xpProvider.notifier).addXP(25);
+      }
       setState(() {
         _submitted = true;
         _uploading = false;
@@ -537,6 +541,44 @@ class _SubmitVideoScreenState extends ConsumerState<SubmitVideoScreen> {
             ),
             textAlign: TextAlign.center,
           ),
+          if (widget.isChallenge) ...[
+            const SizedBox(height: 20),
+            Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              decoration: BoxDecoration(
+                color: AppColors.accent.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(999),
+                border: Border.all(
+                    color: AppColors.accent.withValues(alpha: 0.4)),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.bolt,
+                      color: AppColors.accent, size: 18),
+                  const SizedBox(width: 6),
+                  Text(
+                    '+25 XP earned',
+                    style: GoogleFonts.inter(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.accent,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    '· more if approved',
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
           const SizedBox(height: 32),
           SizedBox(
             width: double.infinity,

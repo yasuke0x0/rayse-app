@@ -365,11 +365,109 @@ Integration points:
 
 ---
 
+## XP Rewards
+
+Users earn XP for participating in challenges. Rewards are persisted via two Postgres triggers (`SECURITY DEFINER`) and reflected in `user_xp`.
+
+| Event | XP Awarded | Triggered by |
+|-------|-----------|--------------|
+| Submit challenge video | +25 (flat) | `community_videos` AFTER INSERT |
+| Admin approves video | +`challenge.xp_reward` (admin-configured per challenge, default 50) | `community_videos` BEFORE UPDATE OF status |
+| Top 3 placement at end of week | NOT YET WIRED | future cron job |
+
+### Idempotency
+- Submit trigger fires once per row insert (naturally idempotent).
+- Approval trigger checks `xp_awarded` boolean column on `community_videos` and skips if already awarded. Reverting a video to pending and re-approving will NOT double-pay.
+
+### Notification on approval
+A notification is inserted (`type = 'challenge_approved'`) with the video id + xp amount. The notifications screen renders an `emoji_events_outlined` icon for this type.
+
+### Client-side display
+The submit success screen shows "+25 XP earned · more if approved" so the user sees the immediate reward. The DB trigger persists; we also bump local `xpProvider` by 25 so the home/profile XP counter updates without a refetch.
+
+### SQL needed
+```sql
+ALTER TABLE public.community_videos
+  ADD COLUMN IF NOT EXISTS xp_awarded boolean NOT NULL DEFAULT false;
+
+CREATE OR REPLACE FUNCTION public.handle_challenge_video_submit()
+RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+BEGIN
+  IF NEW.is_challenge = true THEN
+    INSERT INTO public.user_xp (user_id, total_xp, updated_at)
+    VALUES (NEW.user_id, 25, now())
+    ON CONFLICT (user_id) DO UPDATE
+      SET total_xp = public.user_xp.total_xp + 25,
+          updated_at = now();
+  END IF;
+  RETURN NEW;
+END; $$;
+
+DROP TRIGGER IF EXISTS challenge_video_submit_trigger ON public.community_videos;
+CREATE TRIGGER challenge_video_submit_trigger
+  AFTER INSERT ON public.community_videos
+  FOR EACH ROW EXECUTE FUNCTION public.handle_challenge_video_submit();
+
+CREATE OR REPLACE FUNCTION public.handle_challenge_video_approval()
+RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE v_reward integer;
+BEGIN
+  IF NEW.is_challenge = true
+     AND NEW.status = 'approved'
+     AND (OLD.status IS NULL OR OLD.status != 'approved')
+     AND NEW.xp_awarded = false THEN
+    SELECT xp_reward INTO v_reward
+      FROM public.challenges
+      WHERE skill_id = NEW.skill_id
+        AND week_number = NEW.week_number
+        AND week_year = NEW.week_year
+      LIMIT 1;
+    IF v_reward IS NOT NULL THEN
+      INSERT INTO public.user_xp (user_id, total_xp, updated_at)
+      VALUES (NEW.user_id, v_reward, now())
+      ON CONFLICT (user_id) DO UPDATE
+        SET total_xp = public.user_xp.total_xp + v_reward,
+            updated_at = now();
+
+      INSERT INTO public.notifications (user_id, type, title, body, data)
+      VALUES (
+        NEW.user_id,
+        'challenge_approved',
+        'Challenge Approved! 🏆',
+        'Your video is live on the leaderboard. You earned +' || v_reward || ' XP',
+        jsonb_build_object('video_id', NEW.id, 'xp', v_reward)
+      );
+
+      NEW.xp_awarded := true;
+    END IF;
+  END IF;
+  RETURN NEW;
+END; $$;
+
+DROP TRIGGER IF EXISTS challenge_video_approval_trigger ON public.community_videos;
+CREATE TRIGGER challenge_video_approval_trigger
+  BEFORE UPDATE OF status ON public.community_videos
+  FOR EACH ROW EXECUTE FUNCTION public.handle_challenge_video_approval();
+```
+
+---
+
+## Admin Constraints
+
+### One challenge per tier per week
+The admin form validates that no other challenge already exists for the same `(tier, week, year)` before saving. Tier is derived from the linked skill. If a conflict exists, the form rejects with a message naming the existing challenge so the admin can decide to edit it or pick a different tier/week.
+
+This is an **app-side check** — not enforced by the DB. If you bypass the form (raw SQL), you can still create duplicates. The unique constraint at the DB level is `(skill_id, week_number, week_year)`.
+
+---
+
 ## Future Enhancements (Not Yet Built)
 
-- **XP rewards:** `xp_reward` column exists but isn't wired. Tiers: submit = 25 XP, approved = 75 XP, top 3 = 150 XP
+- **Top 3 end-of-week bonus:** Sunday cron job that finalizes the leaderboard and awards `+challenge.xp_reward` to top 3 placements
 - ~~**Admin UI for creating challenges**~~ — shipped 2026-06-16: see Creating a Challenge above
+- ~~**XP rewards on submit and approval**~~ — shipped 2026-06-16: see XP Rewards above
+- ~~**Notifications when video is approved**~~ — shipped 2026-06-16
 - **Auto-rotation:** automatically create next week's challenge from a pool
 - **Challenge history on profile:** show past challenge placements
-- **Notifications:** alert users when a new challenge drops
-- **Multiple challenges per week:** current design supports it but UI shows one hero
+- **Notifications when a new challenge drops** (separate from approval)
+- **Multiple challenges per week per tier:** current admin form prevents this; if needed, drop the tier uniqueness check

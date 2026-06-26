@@ -1,4 +1,36 @@
 
+## 2026-06-16 — One challenge per tier per week + XP rewards wiring
+
+### What changed
+- **Tier uniqueness on admin form:** before save, the form checks the existing challenges list (`adminChallengesProvider`) for any challenge matching the same `(tier, week, year)` and rejects with a friendly message naming the conflicting challenge. Excludes the current challenge in edit mode.
+- **XP rewards wired via Postgres triggers:**
+  - On `community_videos` INSERT where `is_challenge=true`: +25 XP awarded to the submitter
+  - On `community_videos` BEFORE UPDATE of status to `approved` (challenge, not previously approved): +`challenge.xp_reward` XP awarded to the video owner + notification inserted
+  - New `xp_awarded boolean` column on `community_videos` prevents double-pay on re-approval
+- **Submit success screen:** shows "+25 XP earned · more if approved" pill so users see immediate reward
+- **Local XP bump:** `xpProvider.addXP(25)` called client-side after challenge submit so home/profile counter updates without refetch
+- **Notification icon:** new `challenge_approved` type renders with `Icons.emoji_events_outlined` in the notifications screen
+
+### SQL needed
+Three statements: column add + two triggers. See challenges.md "XP Rewards" section for the full SQL block.
+
+### Files touched
+- `lib/features/challenges/screens/admin_challenges_screen.dart` — tier uniqueness check before save
+- `lib/features/community/screens/submit_video_screen.dart` — local XP bump + success pill
+- `lib/features/notifications/screens/notifications_screen.dart` — type-aware icon
+- `documentation/challenges.md` — XP Rewards section + Admin Constraints + updated future enhancements
+- DEVLOG.md
+
+### Why DB triggers (not client logic)?
+- Atomic: video INSERT/UPDATE and XP grant happen in one transaction
+- Bypasses RLS via SECURITY DEFINER — admins can award XP to other users without granting them write access to `user_xp`
+- Idempotent: `xp_awarded` flag prevents repeat awards on revert-then-approve
+- Less code in the client to maintain
+
+### Gotchas
+- The admin's own xpProvider does NOT update when they approve someone else's video — they're not the recipient. The recipient sees the update on next app load (via `_loadFromDatabase`) or immediately if they have the home/profile open and re-enter.
+- Tier uniqueness is enforced in the form, not the DB. Raw SQL inserts can still create duplicates per tier per week.
+
 ## 2026-06-16 — Admin UI for creating challenges
 
 ### What changed

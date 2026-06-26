@@ -138,7 +138,12 @@ class NotificationsScreen extends ConsumerWidget {
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: Icon(
-                                  Icons.comment_outlined,
+                                  switch (notif.type) {
+                                    'challenge_approved' =>
+                                      Icons.emoji_events_outlined,
+                                    'comment' => Icons.comment_outlined,
+                                    _ => Icons.notifications_outlined,
+                                  },
                                   color: notif.isRead
                                       ? AppColors.textMuted
                                       : AppColors.accent,

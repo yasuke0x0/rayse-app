@@ -319,6 +319,33 @@ class _ChallengeFormScreenState extends ConsumerState<ChallengeFormScreen> {
       return;
     }
 
+    // Tier uniqueness check: one challenge per tier per week
+    final chosenTier = tierForSkill(skillId);
+    final existing = ref.read(adminChallengesProvider).valueOrNull ?? [];
+    final conflict = existing.firstWhere(
+      (c) =>
+          c.weekNumber == week &&
+          c.weekYear == year &&
+          tierForSkill(c.skillId) == chosenTier &&
+          (widget.existing == null || c.id != widget.existing!.id),
+      orElse: () => Challenge(
+        id: '',
+        skillId: '',
+        title: '',
+        description: '',
+        weekNumber: 0,
+        weekYear: 0,
+        xpReward: 0,
+      ),
+    );
+    if (conflict.id.isNotEmpty) {
+      _showSnack(
+        'A ${tierLabels[chosenTier]} challenge already exists for week $week ("${conflict.title}"). Edit it or pick a different tier/week.',
+        isError: true,
+      );
+      return;
+    }
+
     setState(() => _saving = true);
     try {
       final repo = ref.read(challengeRepositoryProvider);
