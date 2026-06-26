@@ -100,40 +100,88 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(height: 1, color: AppColors.border),
-          BottomNavigationBar(
-            currentIndex: _currentIndex,
-            onTap: (i) => setState(() => _currentIndex = i),
-            backgroundColor: AppColors.surface,
-            selectedItemColor: AppColors.accent,
-            unselectedItemColor: AppColors.textMuted,
-            type: BottomNavigationBarType.fixed,
-            elevation: 0,
-            selectedLabelStyle:
-                GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600),
-            unselectedLabelStyle: GoogleFonts.inter(fontSize: 11),
-            items: const [
-              BottomNavigationBarItem(
-                icon: Icon(Icons.home_outlined),
-                activeIcon: Icon(Icons.home),
-                label: 'Home',
+          Builder(builder: (context) {
+            final unreadCount =
+                ref.watch(unreadNotificationCountProvider).valueOrNull ?? 0;
+            final hasUnread = unreadCount > 0;
+            return BottomNavigationBar(
+              currentIndex: _currentIndex,
+              onTap: (i) => setState(() => _currentIndex = i),
+              backgroundColor: AppColors.surface,
+              selectedItemColor: AppColors.accent,
+              unselectedItemColor: AppColors.textMuted,
+              type: BottomNavigationBarType.fixed,
+              elevation: 0,
+              selectedLabelStyle:
+                  GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600),
+              unselectedLabelStyle: GoogleFonts.inter(fontSize: 11),
+              items: [
+                const BottomNavigationBarItem(
+                  icon: Icon(Icons.home_outlined),
+                  activeIcon: Icon(Icons.home),
+                  label: 'Home',
+                ),
+                const BottomNavigationBarItem(
+                  icon: Icon(Icons.play_circle_outline),
+                  activeIcon: Icon(Icons.play_circle),
+                  label: 'Learn',
+                ),
+                const BottomNavigationBarItem(
+                  icon: Icon(Icons.emoji_events_outlined),
+                  activeIcon: Icon(Icons.emoji_events),
+                  label: 'Challenges',
+                ),
+                BottomNavigationBarItem(
+                  icon: _IconWithDot(
+                    icon: Icons.person_outline,
+                    showDot: hasUnread,
+                  ),
+                  activeIcon: _IconWithDot(
+                    icon: Icons.person,
+                    showDot: hasUnread,
+                  ),
+                  label: 'Profile',
+                ),
+              ],
+            );
+          }),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Bottom nav icon with unread dot ──────────────────────────────────────────
+
+class _IconWithDot extends StatelessWidget {
+  final IconData icon;
+  final bool showDot;
+
+  const _IconWithDot({required this.icon, required this.showDot});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 28,
+      height: 28,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Center(child: Icon(icon)),
+          if (showDot)
+            Positioned(
+              top: 0,
+              right: 2,
+              child: Container(
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  color: AppColors.accent,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: AppColors.surface, width: 1.5),
+                ),
               ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.play_circle_outline),
-                activeIcon: Icon(Icons.play_circle),
-                label: 'Learn',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.emoji_events_outlined),
-                activeIcon: Icon(Icons.emoji_events),
-                label: 'Challenges',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.person_outline),
-                activeIcon: Icon(Icons.person),
-                label: 'Profile',
-              ),
-            ],
-          ),
+            ),
         ],
       ),
     );
