@@ -636,6 +636,7 @@ class _ChallengeFormScreenState extends ConsumerState<ChallengeFormScreen> {
   @override
   Widget build(BuildContext context) {
     final isEdit = widget.existing != null;
+    final isFinalized = widget.existing?.isFinalized ?? false;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -673,12 +674,63 @@ class _ChallengeFormScreenState extends ConsumerState<ChallengeFormScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    if (isFinalized) ...[
+                      Container(
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF14532D)
+                              .withValues(alpha: 0.3),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                              color: const Color(0xFF4ADE80)
+                                  .withValues(alpha: 0.4)),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.lock_outline_rounded,
+                                color: Color(0xFF4ADE80), size: 18),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment:
+                                    CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'FINALIZED',
+                                    style: GoogleFonts.inter(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w700,
+                                      color: const Color(0xFF4ADE80),
+                                      letterSpacing: 1,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    'Top 3 already awarded. Only title and description can be edited.',
+                                    style: GoogleFonts.inter(
+                                      fontSize: 12,
+                                      color: AppColors.textSecondary,
+                                      height: 1.4,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                    ],
+
                     // Skill picker
                     _label('SKILL'),
                     const SizedBox(height: 6),
                     _SkillPicker(
                       selectedSkillId: _skillId,
-                      onSelected: (id) => setState(() => _skillId = id),
+                      onSelected: isFinalized
+                          ? null
+                          : (id) => setState(() => _skillId = id),
+                      disabled: isFinalized,
                     ),
                     const SizedBox(height: 20),
 
@@ -704,7 +756,7 @@ class _ChallengeFormScreenState extends ConsumerState<ChallengeFormScreen> {
                               _label('WEEK'),
                               const SizedBox(height: 6),
                               _field(_weekController, '26',
-                                  numeric: true),
+                                  numeric: true, disabled: isFinalized),
                             ],
                           ),
                         ),
@@ -716,7 +768,7 @@ class _ChallengeFormScreenState extends ConsumerState<ChallengeFormScreen> {
                               _label('YEAR'),
                               const SizedBox(height: 6),
                               _field(_yearController, '2026',
-                                  numeric: true),
+                                  numeric: true, disabled: isFinalized),
                             ],
                           ),
                         ),
@@ -728,7 +780,7 @@ class _ChallengeFormScreenState extends ConsumerState<ChallengeFormScreen> {
                               _label('XP'),
                               const SizedBox(height: 6),
                               _field(_xpController, '100',
-                                  numeric: true),
+                                  numeric: true, disabled: isFinalized),
                             ],
                           ),
                         ),
@@ -768,8 +820,8 @@ class _ChallengeFormScreenState extends ConsumerState<ChallengeFormScreen> {
                       ),
                     ),
 
-                    // Delete
-                    if (isEdit) ...[
+                    // Delete (hidden for finalized challenges)
+                    if (isEdit && !isFinalized) ...[
                       const SizedBox(height: 12),
                       SizedBox(
                         width: double.infinity,
@@ -821,24 +873,34 @@ class _ChallengeFormScreenState extends ConsumerState<ChallengeFormScreen> {
     int maxLines = 1,
     int? maxLength,
     bool numeric = false,
+    bool disabled = false,
   }) =>
       TextField(
         controller: controller,
         maxLines: maxLines,
         maxLength: maxLength,
+        enabled: !disabled,
         keyboardType: numeric
             ? const TextInputType.numberWithOptions(decimal: false)
             : TextInputType.text,
-        style: GoogleFonts.inter(color: AppColors.textPrimary, fontSize: 14),
+        style: GoogleFonts.inter(
+            color: disabled ? AppColors.textMuted : AppColors.textPrimary,
+            fontSize: 14),
         decoration: InputDecoration(
           hintText: hint,
           counterText: '',
           hintStyle: GoogleFonts.inter(color: AppColors.textMuted),
           filled: true,
-          fillColor: AppColors.surface,
+          fillColor: disabled
+              ? AppColors.background
+              : AppColors.surface,
           contentPadding:
               const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: AppColors.border),
+          ),
+          disabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
             borderSide: const BorderSide(color: AppColors.border),
           ),
@@ -853,11 +915,13 @@ class _ChallengeFormScreenState extends ConsumerState<ChallengeFormScreen> {
 
 class _SkillPicker extends StatelessWidget {
   final String? selectedSkillId;
-  final ValueChanged<String> onSelected;
+  final ValueChanged<String>? onSelected;
+  final bool disabled;
 
   const _SkillPicker({
     required this.selectedSkillId,
     required this.onSelected,
+    this.disabled = false,
   });
 
   @override
@@ -867,7 +931,7 @@ class _SkillPicker extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: disabled ? AppColors.background : AppColors.surface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppColors.border),
       ),
@@ -877,7 +941,7 @@ class _SkillPicker extends StatelessWidget {
           final tier = tierForSkill(skill.id);
           final tierLabel = tierLabels[tier]!;
           return GestureDetector(
-            onTap: () => onSelected(skill.id),
+            onTap: disabled ? null : () => onSelected?.call(skill.id),
             behavior: HitTestBehavior.opaque,
             child: Container(
               margin: const EdgeInsets.symmetric(vertical: 1),
