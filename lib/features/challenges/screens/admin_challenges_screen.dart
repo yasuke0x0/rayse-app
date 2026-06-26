@@ -477,31 +477,48 @@ class _ChallengeFormScreenState extends ConsumerState<ChallengeFormScreen> {
       return;
     }
 
-    // Tier uniqueness check: one challenge per tier per week
+    // Tier uniqueness check: only runs when creating a new challenge or
+    // when the admin is changing (tier, week, year) on an existing one.
+    // No-op edits (title/desc/xp only) skip the check so editing past
+    // challenges never collides with itself.
     final chosenTier = tierForSkill(skillId);
-    final existing = ref.read(adminChallengesProvider).valueOrNull ?? [];
-    final conflict = existing.firstWhere(
-      (c) =>
-          c.weekNumber == week &&
-          c.weekYear == year &&
-          tierForSkill(c.skillId) == chosenTier &&
-          (widget.existing == null || c.id != widget.existing!.id),
-      orElse: () => Challenge(
-        id: '',
-        skillId: '',
-        title: '',
-        description: '',
-        weekNumber: 0,
-        weekYear: 0,
-        xpReward: 0,
-      ),
-    );
-    if (conflict.id.isNotEmpty) {
-      _showSnack(
-        'A ${tierLabels[chosenTier]} challenge already exists for week $week ("${conflict.title}"). Edit it or pick a different tier/week.',
-        isError: true,
+    bool shouldCheckUniqueness = true;
+    if (widget.existing != null) {
+      final original = widget.existing!;
+      final originalTier = tierForSkill(original.skillId);
+      final tierUnchanged = originalTier == chosenTier;
+      final weekUnchanged = original.weekNumber == week;
+      final yearUnchanged = original.weekYear == year;
+      if (tierUnchanged && weekUnchanged && yearUnchanged) {
+        shouldCheckUniqueness = false;
+      }
+    }
+
+    if (shouldCheckUniqueness) {
+      final existing = ref.read(adminChallengesProvider).valueOrNull ?? [];
+      final conflict = existing.firstWhere(
+        (c) =>
+            c.weekNumber == week &&
+            c.weekYear == year &&
+            tierForSkill(c.skillId) == chosenTier &&
+            (widget.existing == null || c.id != widget.existing!.id),
+        orElse: () => Challenge(
+          id: '',
+          skillId: '',
+          title: '',
+          description: '',
+          weekNumber: 0,
+          weekYear: 0,
+          xpReward: 0,
+        ),
       );
-      return;
+      if (conflict.id.isNotEmpty) {
+        _showSnack(
+          'A ${tierLabels[chosenTier]} challenge already exists for week $week ("${conflict.title}"). Edit it or pick a different tier/week.',
+          isError: true,
+        );
+        return;
+      }
     }
 
     setState(() => _saving = true);
