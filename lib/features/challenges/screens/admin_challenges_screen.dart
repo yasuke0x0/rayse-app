@@ -348,30 +348,54 @@ class _ChallengeRowState extends ConsumerState<_ChallengeRow> {
             ),
           ),
           if (canFinalize) ...[
-            const Divider(
-                height: 1, thickness: 1, color: AppColors.border),
-            GestureDetector(
-              onTap: _finalizing ? null : _finalize,
-              behavior: HitTestBehavior.opaque,
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 10),
-                alignment: Alignment.center,
-                child: _finalizing
-                    ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(
-                            color: AppColors.accent, strokeWidth: 2),
-                      )
-                    : Text(
-                        '🏆 FINALIZE · AWARD TOP 3',
-                        style: GoogleFonts.inter(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.accent,
-                          letterSpacing: 0.8,
-                        ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+              child: GestureDetector(
+                onTap: _finalizing ? null : _finalize,
+                behavior: HitTestBehavior.opaque,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  decoration: BoxDecoration(
+                    color: AppColors.accent,
+                    borderRadius: BorderRadius.circular(10),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.accent.withValues(alpha: 0.4),
+                        blurRadius: 14,
+                        offset: const Offset(0, 4),
                       ),
+                    ],
+                  ),
+                  alignment: Alignment.center,
+                  child: _finalizing
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                              color: Colors.white, strokeWidth: 2.5),
+                        )
+                      : Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Text('🏆',
+                                style: TextStyle(fontSize: 16)),
+                            const SizedBox(width: 8),
+                            Text(
+                              'FINALIZE · AWARD TOP 3',
+                              style: GoogleFonts.inter(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w800,
+                                color: Colors.white,
+                                letterSpacing: 1,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            const Icon(Icons.bolt_rounded,
+                                color: Colors.white, size: 16),
+                          ],
+                        ),
+                ),
               ),
             ),
           ],
