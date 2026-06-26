@@ -385,6 +385,16 @@ The admin challenges screen shows a "🏆 FINALIZE · AWARD TOP 3" button on eve
 
 Finalizing is idempotent at the row level — the RPC checks `finalized_at IS NULL` before doing anything. Reverting requires a manual `UPDATE challenges SET finalized_at = NULL WHERE id = ?` (no UI for this).
 
+### Locking finalized challenges from edits
+
+Once finalized, the edit form goes into **locked mode**:
+- A green "FINALIZED" banner explains the state
+- Skill picker, week, year, XP fields are visually muted and uneditable
+- Delete button is hidden
+- Title and description remain editable (so admins can fix typos or wording without affecting placement / XP that was already paid out)
+
+This prevents accidentally rewriting the criteria of a challenge whose top 3 XP has already been awarded. Reverting `finalized_at` via SQL re-enables the full edit form.
+
 ### Idempotency
 - Submit trigger fires once per row insert (naturally idempotent).
 - Approval trigger checks `xp_awarded` boolean column on `community_videos` and skips if already awarded. Reverting a video to pending and re-approving will NOT double-pay.
@@ -520,6 +530,8 @@ CREATE TRIGGER challenge_video_approval_trigger
 The admin form validates that no other challenge already exists for the same `(tier, week, year)` before saving. Tier is derived from the linked skill. If a conflict exists, the form rejects with a message naming the existing challenge so the admin can decide to edit it or pick a different tier/week.
 
 This is an **app-side check** — not enforced by the DB. If you bypass the form (raw SQL), you can still create duplicates. The unique constraint at the DB level is `(skill_id, week_number, week_year)`.
+
+The check is **skipped for no-op edits**: if the admin is editing an existing challenge and doesn't change tier/week/year, the uniqueness check doesn't run. This lets admins freely tweak title/description/XP on past challenges (including ones that pre-date the constraint and may legitimately have tier siblings).
 
 ---
 

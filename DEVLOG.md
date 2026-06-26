@@ -1,4 +1,20 @@
 
+## 2026-06-27 — Finalize polish: real button, lock edits, skip uniqueness on no-op edits
+
+### What changed
+- **Finalize CTA looks like a button now (style):** flat orange (`#f97316`) fill with a soft accent glow shadow, full-width inside the card with 12px horizontal padding, trophy emoji + label + bolt icon. Stays within the brand's "no gradients on surfaces" rule.
+- **Finalized challenges lock most fields (feat):** the edit form goes into locked mode once a challenge is finalized. A green "FINALIZED" banner explains the state. Skill picker, week, year, XP are visually muted and uneditable. Delete button is hidden. Title and description remain editable so admins can still fix typos. Save still works for the editable fields.
+- **Tier uniqueness skips no-op edits (fix):** editing an existing challenge without changing tier/week/year no longer runs the uniqueness check. Lets admins freely tweak title/description/XP on past challenges, including pre-constraint duplicates.
+
+### Files touched
+- `lib/features/challenges/screens/admin_challenges_screen.dart` — button styling, `isFinalized` derivation, `_field`/`_SkillPicker` `disabled` props, banner widget, skip-uniqueness branch
+- `documentation/challenges.md` — Admin Constraints clarification, Finalizing section addition for the lock
+- DEVLOG.md
+
+### Gotchas
+- Title and description can still be edited on a finalized challenge — that's intentional. If a typo in either gets locked too, admins would have to revert `finalized_at` via SQL just to fix copy.
+- Locking is purely client-side. A motivated user with raw SQL access can still rewrite a finalized challenge's skill/week. If we ever expose finalized challenges to a wider admin pool, add a DB trigger that rejects updates to `skill_id`/`week_number`/`week_year`/`xp_reward` when `finalized_at IS NOT NULL`.
+
 ## 2026-06-27 — Top 3 finalization closes the XP loop
 
 ### What changed
