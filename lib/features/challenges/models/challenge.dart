@@ -8,6 +8,7 @@ class Challenge {
   final int weekNumber;
   final int weekYear;
   final int xpReward;
+  final DateTime? finalizedAt;
 
   const Challenge({
     required this.id,
@@ -17,7 +18,10 @@ class Challenge {
     required this.weekNumber,
     required this.weekYear,
     required this.xpReward,
+    this.finalizedAt,
   });
+
+  bool get isFinalized => finalizedAt != null;
 
   bool get isCurrentWeek {
     final now = DateTime.now().toUtc();
@@ -62,5 +66,8 @@ class Challenge {
         weekNumber: json['week_number'] as int,
         weekYear: json['week_year'] as int,
         xpReward: json['xp_reward'] as int? ?? 50,
+        finalizedAt: json['finalized_at'] != null
+            ? DateTime.parse(json['finalized_at'] as String)
+            : null,
       );
 }

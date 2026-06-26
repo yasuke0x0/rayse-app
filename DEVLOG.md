@@ -1,4 +1,37 @@
 
+## 2026-06-27 — Top 3 finalization closes the XP loop
+
+### What changed
+- Admin can now finalize past challenges via a "🏆 FINALIZE · AWARD TOP 3" button in the admin challenges list
+- Finalize calls a new `finalize_challenge(uuid)` RPC (`SECURITY DEFINER`) that:
+  - Awards +`challenge.xp_reward` XP to each of the top 3 approved video owners
+  - Sends each a `challenge_placed` notification (with rank-aware title: 🥇 / 🥈 / 🥉)
+  - Sets `challenges.finalized_at = now()` so the button hides and a green "FINALIZED" pill renders
+- Idempotent — RPC short-circuits if `finalized_at IS NOT NULL`
+- Confirmation dialog before finalizing so the admin can't fat-finger an irreversible action
+- Notifications screen recognises `challenge_placed` type and renders a `military_tech_outlined` icon for it
+- Challenge model gained `finalizedAt` field and `isFinalized` getter; parsed from `challenges.finalized_at`
+
+### Why manual finalize (no cron)
+- No Postgres cron in scope; manual finalize gives admins control over when the leaderboard freezes
+- Closes the documented XP loop: submit (+25) → approved (+xp_reward) → top 3 (+xp_reward bonus)
+- Future enhancement: a Sunday-night Edge Function / cron that auto-finalizes any past challenge with `finalized_at IS NULL`
+
+### SQL needed
+Two statements + one RPC. See `documentation/challenges.md` → XP Rewards → SQL needed for the full block.
+
+### Files touched
+- `lib/features/challenges/models/challenge.dart` — `finalizedAt` field, `isFinalized` getter, JSON parse
+- `lib/features/challenges/repository/challenge_repository.dart` — `finalizeChallenge(id)` calls RPC
+- `lib/features/challenges/screens/admin_challenges_screen.dart` — `_ChallengeRow` is now stateful with FINALIZE button, confirmation dialog, FINALIZED pill
+- `lib/features/notifications/screens/notifications_screen.dart` — `challenge_placed` icon mapping
+- `documentation/challenges.md` — XP Rewards table updated, finalize SQL added, future-enhancements item struck through
+- DEVLOG.md
+
+### Gotchas
+- The RPC must be `SECURITY DEFINER` because it awards XP across users and inserts notifications for them — those would fail under regular-user RLS. The function is gated by the existing admin button so client-side enforcement is enough, but if you ever expose it more broadly, add an explicit `is_creator` check at the top of the function body.
+- Ties at the boundary (e.g., 4 users tied for 3rd place at score 12): the RPC picks the 3 with earliest `submitted_at` to break the tie. Consider documenting that on the challenge end card.
+
 ## 2026-06-27 — Notification surface improvements: bell sync + profile tab dot
 
 ### What changed

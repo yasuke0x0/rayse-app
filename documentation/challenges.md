@@ -373,7 +373,17 @@ Users earn XP for participating in challenges. Rewards are persisted via two Pos
 |-------|-----------|--------------|
 | Submit challenge video | +25 (flat) | `community_videos` AFTER INSERT |
 | Admin approves video | +`challenge.xp_reward` (admin-configured per challenge, default 50) | `community_videos` BEFORE UPDATE OF status |
-| Top 3 placement at end of week | NOT YET WIRED | future cron job |
+| Top 3 placement on finalize | +`challenge.xp_reward` bonus | Admin clicks "FINALIZE" on a past challenge → RPC `finalize_challenge(uuid)` |
+
+### Finalizing a challenge
+
+The admin challenges screen shows a "🏆 FINALIZE · AWARD TOP 3" button on every past challenge that isn't yet finalized. Clicking it:
+1. Calls the `finalize_challenge(p_challenge_id)` RPC (SECURITY DEFINER)
+2. Awards `+challenge.xp_reward` XP to the user_ids of the top 3 approved challenge videos for that skill+week
+3. Sends each top-3 user a `challenge_placed` notification with their rank
+4. Sets `challenges.finalized_at = now()` so the button disappears and a green "FINALIZED" pill is shown instead
+
+Finalizing is idempotent at the row level — the RPC checks `finalized_at IS NULL` before doing anything. Reverting requires a manual `UPDATE challenges SET finalized_at = NULL WHERE id = ?` (no UI for this).
 
 ### Idempotency
 - Submit trigger fires once per row insert (naturally idempotent).
@@ -389,6 +399,58 @@ The submit success screen shows "+25 XP earned · more if approved" so the user 
 ```sql
 ALTER TABLE public.community_videos
   ADD COLUMN IF NOT EXISTS xp_awarded boolean NOT NULL DEFAULT false;
+
+ALTER TABLE public.challenges
+  ADD COLUMN IF NOT EXISTS finalized_at timestamptz;
+
+CREATE OR REPLACE FUNCTION public.finalize_challenge(p_challenge_id uuid)
+RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE
+  v_challenge record;
+  v_row record;
+  v_rank integer := 0;
+BEGIN
+  SELECT * INTO v_challenge FROM public.challenges WHERE id = p_challenge_id;
+  IF v_challenge IS NULL OR v_challenge.finalized_at IS NOT NULL THEN
+    RETURN;
+  END IF;
+
+  FOR v_row IN
+    SELECT user_id, score
+      FROM public.community_videos
+      WHERE is_challenge = true
+        AND status = 'approved'
+        AND skill_id = v_challenge.skill_id
+        AND week_number = v_challenge.week_number
+        AND week_year = v_challenge.week_year
+      ORDER BY score DESC, submitted_at ASC
+      LIMIT 3
+  LOOP
+    v_rank := v_rank + 1;
+    INSERT INTO public.user_xp (user_id, total_xp, updated_at)
+    VALUES (v_row.user_id, v_challenge.xp_reward, now())
+    ON CONFLICT (user_id) DO UPDATE
+      SET total_xp = public.user_xp.total_xp + v_challenge.xp_reward,
+          updated_at = now();
+
+    INSERT INTO public.notifications (user_id, type, title, body, data)
+    VALUES (
+      v_row.user_id,
+      'challenge_placed',
+      CASE v_rank
+        WHEN 1 THEN '🥇 You won the challenge!'
+        WHEN 2 THEN '🥈 You placed #2!'
+        ELSE '🥉 You placed #3!'
+      END,
+      'You earned a +' || v_challenge.xp_reward || ' XP bonus on "' || v_challenge.title || '"',
+      jsonb_build_object('challenge_id', p_challenge_id, 'rank', v_rank, 'xp', v_challenge.xp_reward)
+    );
+  END LOOP;
+
+  UPDATE public.challenges SET finalized_at = now() WHERE id = p_challenge_id;
+END; $$;
+
+GRANT EXECUTE ON FUNCTION public.finalize_challenge(uuid) TO authenticated;
 
 CREATE OR REPLACE FUNCTION public.handle_challenge_video_submit()
 RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
@@ -463,7 +525,7 @@ This is an **app-side check** — not enforced by the DB. If you bypass the form
 
 ## Future Enhancements (Not Yet Built)
 
-- **Top 3 end-of-week bonus:** Sunday cron job that finalizes the leaderboard and awards `+challenge.xp_reward` to top 3 placements
+- ~~**Top 3 end-of-week bonus**~~ — shipped 2026-06-27 via admin FINALIZE button (manual instead of cron, see XP Rewards)
 - ~~**Admin UI for creating challenges**~~ — shipped 2026-06-16: see Creating a Challenge above
 - ~~**XP rewards on submit and approval**~~ — shipped 2026-06-16: see XP Rewards above
 - ~~**Notifications when video is approved**~~ — shipped 2026-06-16

@@ -141,6 +141,8 @@ class NotificationsScreen extends ConsumerWidget {
                                   switch (notif.type) {
                                     'challenge_approved' =>
                                       Icons.emoji_events_outlined,
+                                    'challenge_placed' =>
+                                      Icons.military_tech_outlined,
                                     'comment' => Icons.comment_outlined,
                                     _ => Icons.notifications_outlined,
                                   },

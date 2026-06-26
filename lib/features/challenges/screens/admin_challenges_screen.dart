@@ -160,88 +160,222 @@ class AdminChallengesScreen extends ConsumerWidget {
       );
 }
 
-class _ChallengeRow extends ConsumerWidget {
+class _ChallengeRow extends ConsumerStatefulWidget {
   final Challenge challenge;
   const _ChallengeRow({required this.challenge});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_ChallengeRow> createState() => _ChallengeRowState();
+}
+
+class _ChallengeRowState extends ConsumerState<_ChallengeRow> {
+  bool _finalizing = false;
+
+  Future<void> _finalize() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        title: Text('Finalize challenge?',
+            style: GoogleFonts.poppins(
+                color: AppColors.textPrimary,
+                fontWeight: FontWeight.w700,
+                fontSize: 18)),
+        content: Text(
+          'Top 3 placements will be awarded +${widget.challenge.xpReward} XP and notified. This cannot be undone.',
+          style: GoogleFonts.inter(
+              color: AppColors.textSecondary, fontSize: 13),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text('CANCEL',
+                style: GoogleFonts.inter(color: AppColors.textMuted)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text('FINALIZE',
+                style: GoogleFonts.inter(
+                    color: AppColors.accent,
+                    fontWeight: FontWeight.w700)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    setState(() => _finalizing = true);
+    try {
+      await ref
+          .read(challengeRepositoryProvider)
+          .finalizeChallenge(widget.challenge.id);
+      ref.invalidate(adminChallengesProvider);
+      ref.invalidate(challengesProvider);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Challenge finalized · top 3 awarded',
+                style:
+                    GoogleFonts.inter(color: Colors.white, fontSize: 13)),
+            backgroundColor: AppColors.surface,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8)),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Finalize failed: $e',
+                style:
+                    GoogleFonts.inter(color: Colors.white, fontSize: 13)),
+            backgroundColor: const Color(0xFFEF4444),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _finalizing = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final challenge = widget.challenge;
     final tier = tierForSkill(challenge.skillId);
     final tierLabel = tierLabels[tier]!;
     final skillNode = kSkillTree
         .where((n) => n.id == challenge.skillId)
         .firstOrNull;
     final skillTitle = skillNode?.title ?? challenge.skillId;
+    final canFinalize = challenge.isPast && !challenge.isFinalized;
 
-    return GestureDetector(
-      onTap: () => context.push('/admin/challenges/edit', extra: challenge),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 8),
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.border),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 42,
-              height: 42,
-              decoration: BoxDecoration(
-                color: AppColors.background,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: AppColors.border),
-              ),
-              child: const Icon(Icons.emoji_events_outlined,
-                  color: AppColors.accent, size: 20),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        children: [
+          GestureDetector(
+            onTap: () => context.push('/admin/challenges/edit', extra: challenge),
+            behavior: HitTestBehavior.opaque,
+            child: Padding(
+              padding: const EdgeInsets.all(14),
+              child: Row(
                 children: [
-                  Text(
-                    challenge.title,
-                    style: GoogleFonts.poppins(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
+                  Container(
+                    width: 42,
+                    height: 42,
+                    decoration: BoxDecoration(
+                      color: AppColors.background,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: AppColors.border),
+                    ),
+                    child: const Icon(Icons.emoji_events_outlined,
+                        color: AppColors.accent, size: 20),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          challenge.title,
+                          style: GoogleFonts.poppins(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'WK ${challenge.weekNumber} ${challenge.weekYear} · $skillTitle · $tierLabel',
+                          style: GoogleFonts.inter(
+                            fontSize: 11,
+                            color: AppColors.textMuted,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    'WK ${challenge.weekNumber} ${challenge.weekYear} · $skillTitle · $tierLabel',
-                    style: GoogleFonts.inter(
-                      fontSize: 11,
-                      color: AppColors.textMuted,
+                  if (challenge.isFinalized) ...[
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF14532D),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Text(
+                        'FINALIZED',
+                        style: GoogleFonts.inter(
+                          fontSize: 9,
+                          fontWeight: FontWeight.w700,
+                          color: const Color(0xFF4ADE80),
+                          letterSpacing: 0.3,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                  ],
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF7C2D12),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Text(
+                      '+${challenge.xpReward} XP',
+                      style: GoogleFonts.inter(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.accent,
+                        letterSpacing: 0.3,
+                      ),
                     ),
                   ),
+                  const SizedBox(width: 6),
+                  const Icon(Icons.chevron_right_rounded,
+                      color: AppColors.textMuted, size: 18),
                 ],
               ),
             ),
-            Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-              decoration: BoxDecoration(
-                color: const Color(0xFF7C2D12),
-                borderRadius: BorderRadius.circular(999),
-              ),
-              child: Text(
-                '+${challenge.xpReward} XP',
-                style: GoogleFonts.inter(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.accent,
-                  letterSpacing: 0.3,
-                ),
+          ),
+          if (canFinalize) ...[
+            const Divider(
+                height: 1, thickness: 1, color: AppColors.border),
+            GestureDetector(
+              onTap: _finalizing ? null : _finalize,
+              behavior: HitTestBehavior.opaque,
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                alignment: Alignment.center,
+                child: _finalizing
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                            color: AppColors.accent, strokeWidth: 2),
+                      )
+                    : Text(
+                        '🏆 FINALIZE · AWARD TOP 3',
+                        style: GoogleFonts.inter(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.accent,
+                          letterSpacing: 0.8,
+                        ),
+                      ),
               ),
             ),
-            const SizedBox(width: 6),
-            const Icon(Icons.chevron_right_rounded,
-                color: AppColors.textMuted, size: 18),
           ],
-        ),
+        ],
       ),
     );
   }

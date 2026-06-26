@@ -83,4 +83,9 @@ class ChallengeRepository {
   Future<void> deleteChallenge(String id) async {
     await _client.from('challenges').delete().eq('id', id);
   }
+
+  // Admin-only: awards top 3 XP bonus + notifications, marks finalized
+  Future<void> finalizeChallenge(String id) async {
+    await _client.rpc('finalize_challenge', params: {'p_challenge_id': id});
+  }
 }
