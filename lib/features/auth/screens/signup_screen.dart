@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../challenges/providers/challenge_provider.dart';
 import '../../community/providers/community_provider.dart';
+import '../../notifications/providers/notification_provider.dart';
 import '../../skill_tree/providers/skill_provider.dart';
 import '../providers/auth_provider.dart';
 
@@ -84,6 +85,8 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
         ref.invalidate(myChallengePlacementProvider);
         ref.invalidate(myChallengeStatsProvider);
         ref.invalidate(selectedChallengeTierProvider);
+        ref.invalidate(unreadNotificationCountProvider);
+        ref.invalidate(notificationsProvider);
         context.go('/home');
       }
     } catch (e) {
