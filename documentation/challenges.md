@@ -60,7 +60,20 @@ No `challenge_participants` or `challenge_entries` tables needed. Participation 
 
 ### Creating a Challenge
 
-Challenges are created manually by inserting a row into the `challenges` table with the target `skill_id`, `week_number`, and `week_year`. There is no admin UI for this yet — use the Supabase SQL editor.
+Admins create and manage challenges from the admin panel: **Profile → Admin Panel → CHALLENGES**.
+
+The list screen groups challenges into THIS WEEK / UPCOMING / PAST. Tap **CREATE NEW CHALLENGE** for a fresh form, or tap any existing challenge to edit or delete it.
+
+The form has:
+- **Skill picker** with tier label (Beginner/Intermediate/Advanced) for each option
+- **Title** (60 chars) and **description** (240 chars)
+- **Week** (1–53), **year** (defaults to next ISO week), **XP** (defaults to 100)
+- **CREATE CHALLENGE** / **SAVE CHANGES** / **DELETE CHALLENGE** actions
+- Duplicate (skill+week+year) inserts are caught via Postgres `23505` and surfaced as "A challenge for this skill + week already exists."
+
+Routes: `/admin/challenges` (list), `/admin/challenges/new` (create), `/admin/challenges/edit` (with `Challenge` as `extra`).
+
+If you prefer SQL, the existing INSERT pattern still works:
 
 ```sql
 INSERT INTO public.challenges (skill_id, title, description, week_number, week_year, xp_reward)
@@ -355,7 +368,7 @@ Integration points:
 ## Future Enhancements (Not Yet Built)
 
 - **XP rewards:** `xp_reward` column exists but isn't wired. Tiers: submit = 25 XP, approved = 75 XP, top 3 = 150 XP
-- **Admin UI for creating challenges:** currently manual SQL inserts
+- ~~**Admin UI for creating challenges**~~ — shipped 2026-06-16: see Creating a Challenge above
 - **Auto-rotation:** automatically create next week's challenge from a pool
 - **Challenge history on profile:** show past challenge placements
 - **Notifications:** alert users when a new challenge drops

@@ -17,6 +17,11 @@ final selectedChallengeTierProvider =
 final challengeRepositoryProvider =
     Provider<ChallengeRepository>((_) => ChallengeRepository());
 
+// Admin: full challenge list (more than the user-facing limit)
+final adminChallengesProvider = FutureProvider<List<Challenge>>((ref) async {
+  return ref.read(challengeRepositoryProvider).fetchAllChallenges();
+});
+
 final challengesProvider = StreamProvider<List<Challenge>>((ref) {
   return Supabase.instance.client
       .from('challenges')

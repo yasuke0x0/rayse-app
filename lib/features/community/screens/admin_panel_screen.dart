@@ -106,39 +106,27 @@ class _AdminPanelBodyState extends ConsumerState<_AdminPanelBody>
                 ],
               ),
             ),
-            // Manage Users button
+            // Manage Users + Challenges buttons
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 0, 24, 12),
-              child: GestureDetector(
-                onTap: () => context.push('/admin/users'),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 12),
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppColors.border),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: _AdminQuickAction(
+                      icon: Icons.people_outline,
+                      label: 'USERS',
+                      onTap: () => context.push('/admin/users'),
+                    ),
                   ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.people_outline,
-                          color: AppColors.accent, size: 20),
-                      const SizedBox(width: 12),
-                      Text(
-                        'MANAGE USERS',
-                        style: GoogleFonts.inter(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.textPrimary,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                      const Spacer(),
-                      const Icon(Icons.arrow_forward_ios,
-                          color: AppColors.textMuted, size: 14),
-                    ],
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: _AdminQuickAction(
+                      icon: Icons.emoji_events_outlined,
+                      label: 'CHALLENGES',
+                      onTap: () => context.push('/admin/challenges'),
+                    ),
                   ),
-                ),
+                ],
               ),
             ),
             // Tab bar
@@ -863,6 +851,52 @@ class _SkillPill extends StatelessWidget {
           fontSize: 10,
           color: AppColors.textSecondary,
           fontWeight: FontWeight.w500,
+        ),
+      ),
+    );
+  }
+}
+
+class _AdminQuickAction extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  const _AdminQuickAction({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: AppColors.accent, size: 18),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                label,
+                style: GoogleFonts.inter(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimary,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ),
+            const Icon(Icons.arrow_forward_ios,
+                color: AppColors.textMuted, size: 12),
+          ],
         ),
       ),
     );

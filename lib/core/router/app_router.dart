@@ -17,6 +17,7 @@ import 'package:rayse/features/community/screens/submit_video_screen.dart';
 import 'package:rayse/features/community/screens/admin_panel_screen.dart';
 import 'package:rayse/features/community/screens/admin_users_screen.dart';
 import 'package:rayse/features/community/screens/admin_user_detail_screen.dart';
+import 'package:rayse/features/challenges/screens/admin_challenges_screen.dart';
 import 'package:rayse/features/challenges/screens/challenge_leaderboard_screen.dart';
 import 'package:rayse/features/challenges/models/challenge.dart' as challenge_model;
 import 'package:rayse/features/community/screens/community_video_detail_screen.dart';
@@ -117,6 +118,22 @@ final appRouter = GoRouter(
           builder: (context, state) => AdminUserDetailScreen(
             user: state.extra as Map<String, dynamic>,
           ),
+        ),
+        GoRoute(
+          path: 'challenges',
+          builder: (context, state) => const AdminChallengesScreen(),
+          routes: [
+            GoRoute(
+              path: 'new',
+              builder: (context, state) => const ChallengeFormScreen(),
+            ),
+            GoRoute(
+              path: 'edit',
+              builder: (context, state) => ChallengeFormScreen(
+                existing: state.extra as challenge_model.Challenge,
+              ),
+            ),
+          ],
         ),
       ],
     ),

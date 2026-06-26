@@ -1,4 +1,29 @@
 
+## 2026-06-16 — Admin UI for creating challenges
+
+### What changed
+- New "MANAGE CHALLENGES" entry point in the admin panel (alongside MANAGE USERS as a two-button row)
+- New list screen `/admin/challenges` groups challenges into THIS WEEK / UPCOMING / PAST with a prominent "CREATE NEW CHALLENGE" CTA at the top
+- New form screen at `/admin/challenges/new` and `/admin/challenges/edit` for create/edit/delete
+- Skill picker shows each skill with its tier (Beginner/Intermediate/Advanced) so admins see at a glance which tier they're filling
+- Form defaults: next week's ISO week, current year, 100 XP
+- Duplicate constraint violations caught from Postgres `23505` and rendered as "A challenge for this skill + week already exists."
+- Delete uses an AlertDialog confirmation; submitted videos for that skill+week are untouched
+- Repository gained `fetchAllChallenges`, `createChallenge`, `updateChallenge`, `deleteChallenge`
+- New `adminChallengesProvider` for the admin list (200 row limit vs 10 for the user-facing `challengesProvider`)
+
+### Files touched
+- `lib/features/challenges/repository/challenge_repository.dart` — CRUD methods
+- `lib/features/challenges/providers/challenge_provider.dart` — `adminChallengesProvider`
+- `lib/features/challenges/screens/admin_challenges_screen.dart` — NEW: list + form + skill picker
+- `lib/features/community/screens/admin_panel_screen.dart` — replaced "MANAGE USERS" row with two-button row including "CHALLENGES"
+- `lib/core/router/app_router.dart` — added `/admin/challenges`, `/new`, `/edit` routes
+- `documentation/challenges.md` — updated "Creating a Challenge" section, struck through admin-UI future enhancement
+
+### Gotchas
+- Edit/Create both invalidate `challengesProvider` AND `adminChallengesProvider` so the user-facing challenges tab reflects changes immediately
+- The skill picker is sorted by tier ascending so the form mirrors the natural progression order
+
 ## 2026-06-16 — Multi-tier weekly challenges with tier-locked submissions
 
 ### What changed (A from the challenges tab enhancement plan)
