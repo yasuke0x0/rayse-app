@@ -14,18 +14,25 @@ final unreadNotificationCountProvider = StreamProvider<int>((ref) async* {
     return;
   }
 
-  // Fetch initial count
-  yield await ref.read(notificationRepositoryProvider).unreadCount(userId);
+  final repo = ref.read(notificationRepositoryProvider);
 
-  // Listen for realtime changes on this user's notifications
+  // Fetch initial count via REST (authoritative)
+  yield await repo.unreadCount(userId);
+
+  // Use realtime stream as a "something changed" signal, but always
+  // refetch the actual count via REST. This avoids stale snapshots
+  // when the realtime channel reconnects after an auth state change.
   final stream = Supabase.instance.client
       .from('notifications')
       .stream(primaryKey: ['id'])
       .eq('user_id', userId);
 
-  await for (final rows in stream) {
-    final unread = rows.where((r) => r['is_read'] == false).length;
-    yield unread;
+  await for (final _ in stream) {
+    try {
+      yield await repo.unreadCount(userId);
+    } catch (_) {
+      // Ignore transient errors — keep last good value
+    }
   }
 });
 
