@@ -1,4 +1,21 @@
 
+## 2026-06-27 — Notification surface improvements: bell sync + profile tab dot
+
+### What changed
+- **Bell badge cleared on A→B→A switch (fix):** The realtime stream's first emission after auth re-subscribe could return stale/empty rows, which made the unread count yield 0 and clear the bell badge. Now the realtime stream is used only as a "something changed" signal — the actual count is always refetched via REST, which is authoritative regardless of channel state.
+- **Notification providers missing from login/signup invalidation (fix):** `login_screen.dart` and `signup_screen.dart` did not invalidate `unreadNotificationCountProvider` or `notificationsProvider`. Account A's cached count (0) persisted when account B logged in, so B's badge never appeared. Added both to the invalidation lists.
+- **Profile tab dot (feat):** Small orange dot (with a tiny zinc-surface border) appears on the profile bottom-nav icon when unread count > 0. Renders on both outlined (inactive) and filled (active) icon variants via a new `_IconWithDot` widget. Reuses `unreadNotificationCountProvider`, so it follows account switches correctly.
+
+### Files touched
+- `lib/features/notifications/providers/notification_provider.dart` — REST refetch on each stream tick, try/catch on transient errors
+- `lib/features/auth/screens/login_screen.dart` — invalidate notification providers + import added
+- `lib/features/auth/screens/signup_screen.dart` — invalidate notification providers + import added
+- `lib/features/content/screens/home_screen.dart` — bottom nav wrapped in `Builder` watching unread count; `_IconWithDot` widget added
+
+### Gotchas
+- New user-specific providers MUST be added to ALL THREE invalidation sites: `home_screen.dart` auth listener, `login_screen.dart`, and `signup_screen.dart`. Missing any one leaves a cross-account bleed. Now confirmed missing on login/signup for notifications — same risk applies to any future user-specific provider.
+- Supabase `.stream()` first emission after a channel re-subscribe (which happens implicitly on auth changes) is not reliable for derived counts. Treat the stream as a tick signal and refetch via REST for accuracy.
+
 ## 2026-06-16 — One challenge per tier per week + XP rewards wiring
 
 ### What changed
