@@ -910,23 +910,6 @@ class _SkillDetailScreenState extends ConsumerState<SkillDetailScreen>
                 ),
               ),
             ),
-            const SizedBox(height: 8),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.lock_outline_rounded,
-                    color: AppColors.textMuted, size: 12),
-                const SizedBox(width: 4),
-                Text(
-                  'Personal videos are private — only you can see them',
-                  style: GoogleFonts.inter(
-                    fontSize: 10,
-                    color: AppColors.textMuted,
-                    fontStyle: FontStyle.italic,
-                  ),
-                ),
-              ],
-            ),
           ],
         ),
       ),

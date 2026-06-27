@@ -152,9 +152,11 @@ This reinforces that personal practice comes first, then community competition o
 
 ### Record Video
 
-The "RECORD VIDEO" button has a small italic line beneath it: *"🔒 Personal videos are private — only you can see them"* — so users understand the upload from this screen is for their own diary, not for the community.
+Tap "RECORD VIDEO" → navigates to the 3-step upload flow. The first step (PICK YOUR VIDEO) renders a privacy banner that tells the user exactly what's happening:
+- For personal recordings: *🔒 PRIVATE RECORDING — Only you can see this. To submit to the weekly challenge, go to the Challenges tab.*
+- For challenge submissions (when launched from the Challenges tab): *🌐 CHALLENGE SUBMISSION — Your video will be reviewed and shown publicly on the leaderboard.*
 
-Tap → navigates to the 3-step upload flow:
+The 3-step flow itself:
 1. Pick video from gallery (max 60 seconds)
 2. Add **title** (60 chars) + **notes** (500 chars) — for progress tracking
 3. Review and submit

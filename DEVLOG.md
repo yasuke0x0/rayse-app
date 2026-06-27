@@ -1,4 +1,21 @@
 
+## 2026-06-27 — Privacy banner moved inside the upload flow
+
+### What changed
+- Reverted the italic privacy hint that was below the RECORD VIDEO button on the skill detail screen — felt cluttery and could be missed
+- Moved the messaging inside the upload flow itself: step 1 (PICK YOUR VIDEO) now renders a clear banner just under the title:
+  - 🔒 **PRIVATE RECORDING** — "Only you can see this. To submit to the weekly challenge, go to the Challenges tab." (zinc surface, muted)
+  - 🌐 **CHALLENGE SUBMISSION** — "Your video will be reviewed and shown publicly on the leaderboard." (green surface, accent)
+- The banner is visible during the entire pick step, so users see it before they tap "TAP TO SELECT FROM GALLERY"
+
+### Why
+The user wanted the privacy message at the moment the user is about to upload, not next to a button they may breeze past. Inside the upload flow it's impossible to miss and answers "what am I about to do?" right where the question lives.
+
+### Files touched
+- `lib/features/skill_tree/screens/skill_detail_screen.dart` — removed the italic hint under RECORD VIDEO
+- `lib/features/community/screens/submit_video_screen.dart` — added a contextual banner at the top of step 1, branching on `widget.isChallenge`
+- `documentation/skill-tree.md` — updated Record Video subsection to describe the in-flow banner
+
 ## 2026-06-27 — Privacy hints: RECORD VIDEO subtext + owner privacy badge
 
 ### What changed
