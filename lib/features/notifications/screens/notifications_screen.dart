@@ -139,6 +139,8 @@ class NotificationsScreen extends ConsumerWidget {
                                 ),
                                 child: Icon(
                                   switch (notif.type) {
+                                    'challenge_new' =>
+                                      Icons.celebration_outlined,
                                     'challenge_approved' =>
                                       Icons.emoji_events_outlined,
                                     'challenge_placed' =>

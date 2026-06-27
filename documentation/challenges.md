@@ -535,13 +535,62 @@ The check is **skipped for no-op edits**: if the admin is editing an existing ch
 
 ---
 
+## New Challenge Notifications
+
+When an admin creates a new challenge, every non-banned user receives a notification ("🏆 New challenge dropped!" with the challenge title in the body). The notification renders with a `celebration_outlined` icon and counts toward the unread bell badge + profile tab dot we already wired.
+
+### Why
+Without this, the entire participation funnel only works for users who happen to open the app. The notification pulls them back in the moment a new challenge goes live.
+
+### How
+A Postgres AFTER INSERT trigger on `challenges` fans out one notification per non-banned user via a SECURITY DEFINER function. The reuse of the existing notifications table means no new tables, no new providers — the bell badge and profile tab dot update via the realtime stream we already hardened.
+
+### SQL needed
+```sql
+CREATE OR REPLACE FUNCTION public.handle_new_challenge()
+RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+BEGIN
+  INSERT INTO public.notifications (user_id, type, title, body, data)
+  SELECT
+    p.id,
+    'challenge_new',
+    '🏆 New challenge dropped!',
+    NEW.title || ' is live this week — submit your video!',
+    jsonb_build_object(
+      'challenge_id', NEW.id,
+      'skill_id', NEW.skill_id,
+      'week_number', NEW.week_number,
+      'week_year', NEW.week_year
+    )
+  FROM public.profiles p
+  WHERE p.is_banned IS DISTINCT FROM true;
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS challenge_new_trigger ON public.challenges;
+CREATE TRIGGER challenge_new_trigger
+  AFTER INSERT ON public.challenges
+  FOR EACH ROW
+  EXECUTE FUNCTION public.handle_new_challenge();
+```
+
+### Caveats
+- The admin who created the challenge **also** gets the notification (the `challenges` row doesn't track the creator). Minor annoyance, no real consequence.
+- Banned users (`is_banned = true`) are excluded; users with `is_banned IS NULL` are included.
+- Push notifications (OS-level banner) are not wired — this only inserts a row that drives the in-app bell + tab dot + notifications screen. If/when we add APNs / FCM, the row insert is the natural trigger.
+
+---
+
 ## Future Enhancements (Not Yet Built)
 
 - ~~**Top 3 end-of-week bonus**~~ — shipped 2026-06-27 via admin FINALIZE button (manual instead of cron, see XP Rewards)
 - ~~**Admin UI for creating challenges**~~ — shipped 2026-06-16: see Creating a Challenge above
 - ~~**XP rewards on submit and approval**~~ — shipped 2026-06-16: see XP Rewards above
 - ~~**Notifications when video is approved**~~ — shipped 2026-06-16
+- ~~**Notifications when a new challenge drops**~~ — shipped 2026-06-27: see New Challenge Notifications above
 - **Auto-rotation:** automatically create next week's challenge from a pool
 - **Challenge history on profile:** show past challenge placements
-- **Notifications when a new challenge drops** (separate from approval)
 - **Multiple challenges per week per tier:** current admin form prevents this; if needed, drop the tier uniqueness check
+- **Push notifications (OS-level):** wire APNs/FCM so users get notified even with the app closed; the in-app notification rows are already in place
+- **pg_cron auto-finalize:** Sunday-night job to finalize any past unfinalized challenges (closes the manual-FINALIZE operational gap)

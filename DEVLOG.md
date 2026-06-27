@@ -1,4 +1,29 @@
 
+## 2026-06-27 — New-challenge-drop notification (engagement loop closer)
+
+### What changed
+- New Postgres AFTER INSERT trigger on `challenges` fans out a "🏆 New challenge dropped!" notification to every non-banned user the moment an admin creates a challenge
+- Body includes the challenge title and a CTA hint ("submit your video!")
+- Notification data includes `challenge_id`, `skill_id`, `week_number`, `week_year` for future deep-linking
+- Notifications screen now renders `Icons.celebration_outlined` for the new `challenge_new` type
+- Reuses the entire existing notifications surface (bell badge, profile tab dot, screen rendering) — zero new providers or UI
+
+### Why
+Without this, the participation funnel we built (challenges tab → submit → XP → finalize) only worked for users who happened to open the app. The notification pulls every user back in the moment a new challenge goes live.
+
+### SQL needed
+See `documentation/challenges.md` → "New Challenge Notifications" → SQL needed for the trigger function and binding.
+
+### Files touched
+- `lib/features/notifications/screens/notifications_screen.dart` — added `challenge_new` icon mapping
+- `documentation/challenges.md` — new "New Challenge Notifications" section + struck-through future enhancement
+- DEVLOG.md
+
+### Gotchas
+- The admin who creates the challenge also receives the notification (the `challenges` row doesn't track creator). Minor annoyance; ignored for now.
+- This is **in-app only** — no OS-level push notifications. The row insert is the right hook when APNs/FCM are wired later.
+- Banned users (`is_banned = true`) are filtered out; `NULL` is treated as not-banned.
+
 ## 2026-06-27 — Finalize polish: real button, lock edits, skip uniqueness on no-op edits
 
 ### What changed
