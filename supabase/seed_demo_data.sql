@@ -143,8 +143,7 @@ BEGIN
   VALUES
     ('forward_jump',  'Forward Flow',       'Clean forward jumps — how long can you stay on rhythm?', cur_wk, cur_yr,  75),
     ('double_unders', 'Double Under Showdown', 'Smooth, controlled double unders.',                     cur_wk, cur_yr, 100),
-    ('freestyle',     'Freestyle Friday',   'Show your most creative freestyle combo.',                cur_wk, cur_yr, 200)
-  RETURNING id INTO v_ch_beg_now;  -- only catches the first; resolve explicitly below
+    ('freestyle',     'Freestyle Friday',   'Show your most creative freestyle combo.',                cur_wk, cur_yr, 200);
 
   SELECT id INTO v_ch_beg_now FROM public.challenges WHERE skill_id='forward_jump'  AND week_number=cur_wk AND week_year=cur_yr;
   SELECT id INTO v_ch_int_now FROM public.challenges WHERE skill_id='double_unders' AND week_number=cur_wk AND week_year=cur_yr;
@@ -177,8 +176,7 @@ BEGIN
     (v_j2,       'forward_jump', c_demo_video, 'Found my rhythm 🔥',    'approved', true, cur_wk, cur_yr, 24, now() - interval '36 hours', now() - interval '36 hours', v_admin, true),
     (v_j3,       'forward_jump', c_demo_video, 'Smooth as butter',     'approved', true, cur_wk, cur_yr, 18, now() - interval '20 hours', now() - interval '18 hours', v_admin, true),
     (v_j4,       'forward_jump', c_demo_video, 'Long set this week',   'approved', true, cur_wk, cur_yr,  9, now() - interval '12 hours', now() - interval '8 hours',  v_admin, true),
-    (v_beginner, 'forward_jump', c_demo_video, 'My entry — clean form','approved', true, cur_wk, cur_yr,  6, now() - interval '6 hours',  now() - interval '4 hours',  v_admin, true)
-  RETURNING id INTO v_v_j1_beg;
+    (v_beginner, 'forward_jump', c_demo_video, 'My entry — clean form','approved', true, cur_wk, cur_yr,  6, now() - interval '6 hours',  now() - interval '4 hours',  v_admin, true);
   SELECT id INTO v_v_beth_beg FROM public.community_videos WHERE user_id = v_beginner AND week_number = cur_wk AND skill_id = 'forward_jump';
   SELECT id INTO v_v_j1_beg   FROM public.community_videos WHERE user_id = v_j1       AND week_number = cur_wk AND skill_id = 'forward_jump';
 
