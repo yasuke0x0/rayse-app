@@ -1,4 +1,36 @@
 
+## 2026-06-27 — Demo seed scripts (personas + dynamic-week data)
+
+### What changed
+- `supabase/seed_personas.sql` — creates 5 named demo accounts (admin / advanced / intermediate / beginner / free) + 10 fake community jumpers, all using `@rayse.demo` emails and password `212324`. Idempotent (deletes by email pattern then recreates).
+- `supabase/seed_demo_data.sql` — wipes prior demo data and seeds challenges/videos/reactions/comments/notifications **anchored to today's ISO week** via `rayse_seed_week(offset)` helper. Re-run before every demo and "this week" really is this week.
+- `supabase/SETUP.md` — added "Preparing a demo" section explaining the workflow.
+- `CLAUDE.md` — added a "Demo seed (mandatory)" rule: any new visible feature surface must update the seed scripts so future demos pick it up.
+
+### What the seed produces
+- 3 active-week challenges (one per tier)
+- 1 next-week challenge (upcoming teaser)
+- 3 past finalized challenges with advanced placing 1/2/3
+- ~25 approved challenge videos, 2 pending (for admin queue demo)
+- ~5 personal videos, ~80 reactions, ~7 comments
+- ~25 notifications across all 4 types, mix of read/unread
+
+### Implementation notes
+- User creation goes through a `SECURITY DEFINER` function that writes directly to `auth.users` with a bcrypt-hashed password. The existing `handle_new_user` trigger then auto-creates the profile row, which the seed updates with the persona's name + username.
+- Triggers `challenge_new_trigger`, `challenge_video_submit_trigger`, and `challenge_video_approval_trigger` are temporarily disabled during the data seed so we control what XP and notifications get inserted (and avoid notification-fanout spam to real users).
+- Cleanup uses the email-domain pattern `'%@rayse.demo'` — no schema change required, real accounts untouched.
+
+### Files touched
+- `supabase/seed_personas.sql` — NEW
+- `supabase/seed_demo_data.sql` — NEW
+- `supabase/SETUP.md` — Preparing a demo section
+- `CLAUDE.md` — demo seed mandate
+- DEVLOG.md
+
+### Gotchas
+- The seed assumes `setup.sql` is the current schema. If `setup.sql` drifts from production (which it shouldn't anymore), seeds may reference columns or constraints that aren't there.
+- The `auth.users` insert uses Supabase's expected required columns. If Supabase changes its auth schema in a major update, the persona seed may need adjustment.
+
 ## 2026-06-27 — Mandatory: keep supabase/ folder in sync with production
 
 ### What changed

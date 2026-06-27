@@ -138,6 +138,59 @@ SELECT * FROM cron.job_run_details
 
 ---
 
+## Preparing a demo
+
+Two scripts populate the database with realistic, story-driven data so you can demo every feature without setting anything up manually:
+
+- [`seed_personas.sql`](./seed_personas.sql) — creates 5 named demo accounts + 10 fake community jumpers. **Run once** (or any time you want to wipe & recreate all demo users).
+- [`seed_demo_data.sql`](./seed_demo_data.sql) — wipes any prior demo data and reseeds challenges, videos, reactions, comments, and notifications, **anchored to today's ISO week**. **Re-run before every demo** so this week's challenges are always "this week".
+
+### Demo accounts
+All use password `212324` (matches the dev password prefilled in `login_screen.dart`).
+
+| Email | Premium | Creator | Mastery | What to demo |
+|-------|---------|---------|---------|--------------|
+| `admin@rayse.demo`        | yes | **yes** | all 11      | Admin panel: approve pending videos, manage users, create/finalize challenges |
+| `advanced@rayse.demo`     | yes | no  | all 11      | Top-tier user: 🥇/🥈/🥉 placements on profile history, big XP, all features unlocked |
+| `intermediate@rayse.demo` | yes | no  | tier 0–2    | "FOR YOU" Intermediate tier, eligible to submit double_unders |
+| `beginner@rayse.demo`     | yes | no  | tier 0–1    | Eligibility-aware hero, "GO PRACTICE →" for higher tiers |
+| `free@rayse.demo`         | no  | no  | basic_bounce | Paywall flows and premium gating |
+| `jumper1…jumper10@rayse.demo` | yes | no | mixed | Populates leaderboards and notification fanout |
+
+### What `seed_demo_data.sql` creates
+- 3 active-week challenges (Beginner / Intermediate / Advanced), with `week_number` = today's ISO week
+- 1 next-week challenge (the upcoming teaser)
+- 3 past finalized challenges with realistic placements (advanced placed 1/2/3 in them, populating their profile history)
+- ~25 approved challenge videos with varied scores
+- **2 pending videos** sitting in the admin queue so you can demo the approval flow
+- ~5 personal videos (so the "PERSONAL" pill appears in MY VIDEOS)
+- ~80 fire reactions across top videos
+- ~7 comments from premium personas
+- ~25 notifications mixing read and unread states across all 4 notification types
+
+### Running the demo seed
+```
+1. Open Supabase SQL editor
+2. Paste contents of seed_personas.sql (one time) → Run
+3. Paste contents of seed_demo_data.sql → Run
+4. Demo
+```
+
+Both scripts are idempotent — safe to re-run.
+
+### Resetting between demos
+If you used the app to add real data and want to wipe it before a fresh demo:
+```sql
+-- Wipe everything from the @rayse.demo accounts (cascades cleanly)
+DELETE FROM auth.users WHERE email LIKE '%@rayse.demo';
+```
+Then re-run both seed scripts.
+
+### When to update the seed scripts
+Per [`CLAUDE.md`](../CLAUDE.md): if you ship a new feature that needs data to be visible (e.g., a new notification type, a new admin view, a new on-profile widget), update `seed_demo_data.sql` so the demo always shows the latest feature surface.
+
+---
+
 ## Verifying an existing project matches `setup.sql`
 
 If you already have a live Supabase project and want to confirm it matches the schema in `setup.sql` (e.g. after months of ad-hoc dashboard tweaks), run [`audit.sql`](./audit.sql) in the SQL editor. It returns one big table covering every schema-level object: tables, columns, constraints, indexes, RLS state and policies, functions, triggers, extensions, storage buckets, realtime publication, and pg_cron jobs.

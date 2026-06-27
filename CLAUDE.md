@@ -98,6 +98,9 @@ If the user runs SQL directly without going through you, re-run `supabase/audit.
 
 NEVER deliver a SQL block to the user without first updating `supabase/setup.sql`. Drift between live and `setup.sql` defeats the whole point of having a setup file.
 
+## Demo seed (mandatory)
+The `supabase/seed_demo_data.sql` script is what the user runs to populate a clean demo before showing the app. If you ship a feature whose UX requires data to be visible (a new notification type, a new admin view, a new on-profile widget, a new piece of seedable state), update `seed_demo_data.sql` so demos always reflect the latest surface. If you add a new persona-level capability (e.g., a new role flag, a new mastery state), update `seed_personas.sql` too.
+
 ## What's built
 - [x] Project scaffolded
 - [x] Git + GitHub configured (yasuke0x0/rayse-app)
