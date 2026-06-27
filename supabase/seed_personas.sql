@@ -17,6 +17,12 @@
 -- Wipe every existing demo account (cascades to profile + everything tied to it).
 DELETE FROM auth.users WHERE email LIKE '%@rayse.ch';
 
+-- Belt-and-suspenders: also wipe orphan profile rows (FK cascade may not be
+-- installed on the live DB, or older @rayse.demo accounts may have left
+-- orphans). Anything in public.profiles without a matching auth.users row
+-- has no rightful owner.
+DELETE FROM public.profiles WHERE id NOT IN (SELECT id FROM auth.users);
+
 
 -- ─── Helper: create a demo auth user + return its UUID ─────────────────────
 CREATE OR REPLACE FUNCTION public.rayse_seed_user(
