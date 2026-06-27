@@ -1,4 +1,10 @@
 
+## 2026-06-27 — Skill detail: "Watch the video first" now scrolls + plays
+
+Previously the dim CTA was inert (`onTap: null`) — users had no idea why it wouldn't react. Now tapping it animates the scroll view back to the top (450 ms easeOutCubic) and starts the video so the user immediately sees what they need to watch. Once they pass 80% of the runtime, `_hasWatchedEnough` flips and the CTA upgrades to "START PRACTICE →" as before.
+
+- `lib/features/skill_tree/screens/skill_detail_screen.dart` — added `_scrollController`, wired it on the `SingleChildScrollView`, new `_scrollToVideoAndPlay()` helper, replaced the disabled `onTap` with that helper, added a small ▶ glyph to the button label.
+
 ## 2026-06-27 — Home tab redesign: status dashboard
 
 ### What changed

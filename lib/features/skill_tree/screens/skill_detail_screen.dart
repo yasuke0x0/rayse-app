@@ -26,6 +26,8 @@ class _SkillDetailScreenState extends ConsumerState<SkillDetailScreen>
   bool _videoInitialized = false;
   bool _hasWatchedEnough = false;
 
+  final ScrollController _scrollController = ScrollController();
+
   late List<AnimationController> _tipControllers;
   late List<Animation<double>> _tipAnimations;
   bool _tipsInitialized = false;
@@ -102,12 +104,24 @@ class _SkillDetailScreenState extends ConsumerState<SkillDetailScreen>
     _videoController?.removeListener(_onVideoUpdate);
     _chewieController?.dispose();
     _videoController?.dispose();
+    _scrollController.dispose();
     if (_tipsInitialized) {
       for (final c in _tipControllers) {
         c.dispose();
       }
     }
     super.dispose();
+  }
+
+  void _scrollToVideoAndPlay() {
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(
+        0,
+        duration: const Duration(milliseconds: 450),
+        curve: Curves.easeOutCubic,
+      );
+    }
+    _videoController?.play();
   }
 
   @override
@@ -129,6 +143,7 @@ class _SkillDetailScreenState extends ConsumerState<SkillDetailScreen>
         child: Stack(
           children: [
             SingleChildScrollView(
+              controller: _scrollController,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -960,12 +975,12 @@ class _SkillDetailScreenState extends ConsumerState<SkillDetailScreen>
           child: _ctaButton(
             label: _hasWatchedEnough
                 ? 'START PRACTICE →'
-                : 'WATCH THE VIDEO FIRST',
+                : '▶ WATCH THE VIDEO FIRST',
             color:
                 _hasWatchedEnough ? AppColors.accent : const Color(0xFF3F3F46),
             onTap: _hasWatchedEnough
                 ? () => ctx.push('/skill-practice/${widget.skillId}')
-                : null,
+                : _scrollToVideoAndPlay,
           ),
         );
       }),
