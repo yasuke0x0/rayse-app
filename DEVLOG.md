@@ -1,4 +1,34 @@
 
+## 2026-06-27 — setup.sql reconciled with live DB (zero drift)
+
+### What changed
+- After running the audit + applying production fixes (avatars bucket, missing profile columns, RLS leak fix, duplicate policy cleanup, judgment-call items), `setup.sql` was rewritten to mirror the live schema byte-for-byte.
+- Tables: column nullability and defaults adjusted to match live (profiles.email, profiles.username, profiles.is_premium, profiles.created_at, user_skill_progress.updated_at, user_xp.updated_at, notifications.data, community_videos.submitted_at all nullable per live).
+- `user_skill_progress` now uses surrogate `id` PK + UNIQUE on (user_id, skill_id) — matches live; status default is `'locked'`.
+- `video_comments` declares the named FK `video_comments_user_id_profiles_fkey` explicitly (PostgREST `profiles!fkey` join syntax depends on it) + `video_comments_body_check` non-empty constraint.
+- Indexes: match live exactly (idx_notifications_user_id, idx_notifications_unread partial, idx_video_comments_*, plus the 4 perf indexes).
+- Policies: every policy is named exactly as in live, including quirks (e.g. `"Authenticated users can insert notificatio"` with the trailing word truncated, redundant `"Admins update videos"` UPDATE policy that's effectively a subset of `"Creators can update any video"`).
+- Extensions: added `uuid-ossp` (installed in live).
+- Storage policies: `Anyone can view community videos` (live name) for community-videos read.
+
+### Production fixes applied this session
+- Created `avatars` storage bucket (dashboard).
+- Added `profiles.email` + backfilled from auth.users.
+- Added `profiles.is_banned`.
+- Replaced 3 duplicate / leaky SELECT policies on community_videos with a single `community_videos_read`.
+- Dropped duplicate `"Read profiles"` policy.
+- Added avatars bucket policies (public read, scoped write).
+- Tightened community-videos write to `<user_id>/...` folder.
+- Added `skill_progress_creator_read` and `user_xp_creator_read` for admin visibility.
+- Added 4 performance indexes.
+
+### Files touched
+- `supabase/setup.sql` — full rewrite to mirror live state
+- DEVLOG.md
+
+### Next step
+Run `audit.sql` on the live DB one more time; diff against an audit of a fresh project that ran the new `setup.sql`. The two should be byte-for-byte identical (modulo timestamps and oid-like internal IDs).
+
 ## 2026-06-27 — Audit script for verifying live DB matches setup.sql
 
 ### What changed

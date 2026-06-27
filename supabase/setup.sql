@@ -3,12 +3,14 @@
 -- ════════════════════════════════════════════════════════════════════════════
 -- Setup instructions and verification queries: see ./SETUP.md
 -- Runnable top-to-bottom on a fresh project. Idempotent (safe to re-run).
+-- Reflects live production schema as of 2026-06-27.
 -- ════════════════════════════════════════════════════════════════════════════
 
 
 -- ─── EXTENSIONS ─────────────────────────────────────────────────────────────
 -- pg_cron must be enabled separately from the dashboard (see SETUP.md).
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 
 -- ════════════════════════════════════════════════════════════════════════════
@@ -20,17 +22,16 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto;
 CREATE TABLE IF NOT EXISTS public.profiles (
   id          uuid PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   email       text,
-  username    text NOT NULL DEFAULT '',
+  username    text,
   first_name  text NOT NULL DEFAULT '',
   last_name   text NOT NULL DEFAULT '',
   avatar_url  text,
-  is_premium  boolean NOT NULL DEFAULT false,
+  is_premium  boolean DEFAULT false,
   is_creator  boolean NOT NULL DEFAULT false,
   is_banned   boolean NOT NULL DEFAULT false,
-  created_at  timestamptz NOT NULL DEFAULT now()
+  created_at  timestamptz DEFAULT now()
 );
 
--- Unique constraint on username (skipped via SET CONSTRAINTS during signup)
 DO $$
 BEGIN
   IF NOT EXISTS (
@@ -44,15 +45,27 @@ END $$;
 
 -- ─── user_skill_progress ───────────────────────────────────────────────────
 -- One row per (user, skill) pair tracking practice sessions and mastery.
+-- Has its own surrogate id PK, with a UNIQUE constraint on (user_id, skill_id).
 CREATE TABLE IF NOT EXISTS public.user_skill_progress (
-  user_id            uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
-  skill_id           text NOT NULL,
-  sessions_completed integer NOT NULL DEFAULT 0,
-  status             text NOT NULL DEFAULT 'available'
-                     CHECK (status IN ('locked', 'available', 'completed', 'mastered')),
-  updated_at         timestamptz NOT NULL DEFAULT now(),
-  PRIMARY KEY (user_id, skill_id)
+  id                  uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id             uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  skill_id            text NOT NULL,
+  sessions_completed  integer NOT NULL DEFAULT 0,
+  status              text NOT NULL DEFAULT 'locked',
+  updated_at          timestamptz DEFAULT now()
 );
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+      WHERE conname = 'user_skill_progress_user_id_skill_id_key'
+  ) THEN
+    ALTER TABLE public.user_skill_progress
+      ADD CONSTRAINT user_skill_progress_user_id_skill_id_key
+        UNIQUE (user_id, skill_id);
+  END IF;
+END $$;
 
 
 -- ─── user_xp ───────────────────────────────────────────────────────────────
@@ -60,7 +73,7 @@ CREATE TABLE IF NOT EXISTS public.user_skill_progress (
 CREATE TABLE IF NOT EXISTS public.user_xp (
   user_id    uuid PRIMARY KEY REFERENCES public.profiles(id) ON DELETE CASCADE,
   total_xp   integer NOT NULL DEFAULT 0,
-  updated_at timestamptz NOT NULL DEFAULT now()
+  updated_at timestamptz DEFAULT now()
 );
 
 
@@ -75,7 +88,7 @@ CREATE TABLE IF NOT EXISTS public.challenges (
   week_year     integer NOT NULL,
   xp_reward     integer NOT NULL DEFAULT 50,
   finalized_at  timestamptz,
-  created_at    timestamptz NOT NULL DEFAULT now(),
+  created_at    timestamptz DEFAULT now(),
   CONSTRAINT challenges_skill_id_week UNIQUE (skill_id, week_number, week_year)
 );
 
@@ -92,8 +105,7 @@ CREATE TABLE IF NOT EXISTS public.community_videos (
   title         text NOT NULL DEFAULT '',
   caption       text NOT NULL DEFAULT '',
   notes         text NOT NULL DEFAULT '',
-  status        text NOT NULL DEFAULT 'pending'
-                CHECK (status IN ('pending', 'approved', 'rejected')),
+  status        text NOT NULL DEFAULT 'pending',
   is_challenge  boolean NOT NULL DEFAULT false,
   week_number   integer NOT NULL,
   week_year     integer NOT NULL,
@@ -101,7 +113,7 @@ CREATE TABLE IF NOT EXISTS public.community_videos (
   xp_awarded    boolean NOT NULL DEFAULT false,
   reviewed_by   uuid REFERENCES public.profiles(id) ON DELETE SET NULL,
   reviewed_at   timestamptz,
-  submitted_at  timestamptz NOT NULL DEFAULT now()
+  submitted_at  timestamptz DEFAULT now()
 );
 
 
@@ -111,13 +123,15 @@ CREATE TABLE IF NOT EXISTS public.community_videos (
 CREATE TABLE IF NOT EXISTS public.community_reactions (
   user_id    uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
   video_id   uuid NOT NULL REFERENCES public.community_videos(id) ON DELETE CASCADE,
-  created_at timestamptz NOT NULL DEFAULT now(),
+  created_at timestamptz DEFAULT now(),
   PRIMARY KEY (user_id, video_id)
 );
 
 
 -- ─── video_comments ────────────────────────────────────────────────────────
--- Comments on challenge videos (personal videos don't show comments in UI).
+-- Comments on challenge videos. The extra named FK
+-- (video_comments_user_id_profiles_fkey) is what PostgREST uses in the
+-- `profiles!video_comments_user_id_profiles_fkey(username)` join syntax.
 CREATE TABLE IF NOT EXISTS public.video_comments (
   id         uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   video_id   uuid NOT NULL REFERENCES public.community_videos(id) ON DELETE CASCADE,
@@ -125,6 +139,26 @@ CREATE TABLE IF NOT EXISTS public.video_comments (
   body       text NOT NULL,
   created_at timestamptz NOT NULL DEFAULT now()
 );
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+      WHERE conname = 'video_comments_user_id_profiles_fkey'
+  ) THEN
+    ALTER TABLE public.video_comments
+      ADD CONSTRAINT video_comments_user_id_profiles_fkey
+        FOREIGN KEY (user_id) REFERENCES public.profiles(id) ON DELETE CASCADE;
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+      WHERE conname = 'video_comments_body_check'
+  ) THEN
+    ALTER TABLE public.video_comments
+      ADD CONSTRAINT video_comments_body_check
+        CHECK (length(body) > 0);
+  END IF;
+END $$;
 
 
 -- ─── notifications ─────────────────────────────────────────────────────────
@@ -136,7 +170,7 @@ CREATE TABLE IF NOT EXISTS public.notifications (
   type       text NOT NULL DEFAULT 'comment',
   title      text NOT NULL,
   body       text NOT NULL,
-  data       jsonb NOT NULL DEFAULT '{}'::jsonb,
+  data       jsonb DEFAULT '{}'::jsonb,
   is_read    boolean NOT NULL DEFAULT false,
   created_at timestamptz NOT NULL DEFAULT now()
 );
@@ -146,7 +180,16 @@ CREATE TABLE IF NOT EXISTS public.notifications (
 -- INDEXES
 -- ════════════════════════════════════════════════════════════════════════════
 
--- Speed up the most common filter combinations.
+CREATE INDEX IF NOT EXISTS idx_notifications_user_id
+  ON public.notifications (user_id);
+CREATE INDEX IF NOT EXISTS idx_notifications_unread
+  ON public.notifications (user_id, is_read) WHERE is_read = false;
+
+CREATE INDEX IF NOT EXISTS idx_video_comments_video_id
+  ON public.video_comments (video_id);
+CREATE INDEX IF NOT EXISTS idx_video_comments_created_at
+  ON public.video_comments (created_at);
+
 CREATE INDEX IF NOT EXISTS community_videos_user_idx
   ON public.community_videos (user_id, submitted_at DESC);
 CREATE INDEX IF NOT EXISTS community_videos_status_idx
@@ -156,12 +199,6 @@ CREATE INDEX IF NOT EXISTS community_videos_challenge_week_idx
 
 CREATE INDEX IF NOT EXISTS challenges_week_idx
   ON public.challenges (week_year DESC, week_number DESC);
-
-CREATE INDEX IF NOT EXISTS notifications_user_unread_idx
-  ON public.notifications (user_id, is_read, created_at DESC);
-
-CREATE INDEX IF NOT EXISTS video_comments_video_idx
-  ON public.video_comments (video_id, created_at);
 
 
 -- ════════════════════════════════════════════════════════════════════════════
@@ -179,32 +216,33 @@ ALTER TABLE public.notifications       ENABLE ROW LEVEL SECURITY;
 
 
 -- ─── profiles policies ─────────────────────────────────────────────────────
--- Read: any authenticated user can see any profile (needed for username joins
--- in leaderboards, comments, etc.). If you want to hide banned users from
--- search, drop this and replace with a NOT is_banned policy.
-DROP POLICY IF EXISTS "profiles_read_all" ON public.profiles;
-CREATE POLICY "profiles_read_all" ON public.profiles
-  FOR SELECT TO authenticated USING (true);
+DROP POLICY IF EXISTS "Profiles viewable by everyone" ON public.profiles;
+CREATE POLICY "Profiles viewable by everyone" ON public.profiles
+  FOR SELECT USING (true);
 
--- Update: users can update their own row.
-DROP POLICY IF EXISTS "profiles_update_self" ON public.profiles;
-CREATE POLICY "profiles_update_self" ON public.profiles
-  FOR UPDATE TO authenticated
-  USING (id = auth.uid())
-  WITH CHECK (id = auth.uid());
+DROP POLICY IF EXISTS "Users can update own profile" ON public.profiles;
+CREATE POLICY "Users can update own profile" ON public.profiles
+  FOR UPDATE
+  USING (auth.uid() = id)
+  WITH CHECK (auth.uid() = id);
 
--- Insert: only via the handle_new_user trigger (SECURITY DEFINER). No direct
--- policy needed because trigger bypasses RLS.
+DROP POLICY IF EXISTS "Admins update profiles" ON public.profiles;
+CREATE POLICY "Admins update profiles" ON public.profiles
+  FOR UPDATE USING (
+    EXISTS (
+      SELECT 1 FROM public.profiles p
+        WHERE p.id = auth.uid() AND p.is_creator = true
+    )
+  );
 
 
 -- ─── user_skill_progress policies ──────────────────────────────────────────
-DROP POLICY IF EXISTS "skill_progress_self_all" ON public.user_skill_progress;
-CREATE POLICY "skill_progress_self_all" ON public.user_skill_progress
-  FOR ALL TO authenticated
-  USING (user_id = auth.uid())
-  WITH CHECK (user_id = auth.uid());
+DROP POLICY IF EXISTS "Users can manage own skill progress" ON public.user_skill_progress;
+CREATE POLICY "Users can manage own skill progress" ON public.user_skill_progress
+  FOR ALL
+  USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);
 
--- Creators can read everyone's progress (for the admin user detail screen).
 DROP POLICY IF EXISTS "skill_progress_creator_read" ON public.user_skill_progress;
 CREATE POLICY "skill_progress_creator_read" ON public.user_skill_progress
   FOR SELECT TO authenticated USING (
@@ -216,11 +254,11 @@ CREATE POLICY "skill_progress_creator_read" ON public.user_skill_progress
 
 
 -- ─── user_xp policies ──────────────────────────────────────────────────────
-DROP POLICY IF EXISTS "user_xp_self_read_update" ON public.user_xp;
-CREATE POLICY "user_xp_self_read_update" ON public.user_xp
-  FOR ALL TO authenticated
-  USING (user_id = auth.uid())
-  WITH CHECK (user_id = auth.uid());
+DROP POLICY IF EXISTS "Users can manage own xp" ON public.user_xp;
+CREATE POLICY "Users can manage own xp" ON public.user_xp
+  FOR ALL
+  USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);
 
 DROP POLICY IF EXISTS "user_xp_creator_read" ON public.user_xp;
 CREATE POLICY "user_xp_creator_read" ON public.user_xp
@@ -230,35 +268,34 @@ CREATE POLICY "user_xp_creator_read" ON public.user_xp
         WHERE id = auth.uid() AND is_creator = true
     )
   );
--- XP awards from triggers are SECURITY DEFINER so they bypass these policies.
 
 
 -- ─── challenges policies ───────────────────────────────────────────────────
-DROP POLICY IF EXISTS "challenges_read_all" ON public.challenges;
-CREATE POLICY "challenges_read_all" ON public.challenges
-  FOR SELECT TO authenticated USING (true);
+DROP POLICY IF EXISTS "Challenges are viewable by everyone" ON public.challenges;
+CREATE POLICY "Challenges are viewable by everyone" ON public.challenges
+  FOR SELECT USING (true);
 
-DROP POLICY IF EXISTS "challenges_creator_insert" ON public.challenges;
-CREATE POLICY "challenges_creator_insert" ON public.challenges
-  FOR INSERT TO authenticated WITH CHECK (
+DROP POLICY IF EXISTS "Creators can insert challenges" ON public.challenges;
+CREATE POLICY "Creators can insert challenges" ON public.challenges
+  FOR INSERT WITH CHECK (
     EXISTS (
       SELECT 1 FROM public.profiles
         WHERE id = auth.uid() AND is_creator = true
     )
   );
 
-DROP POLICY IF EXISTS "challenges_creator_update" ON public.challenges;
-CREATE POLICY "challenges_creator_update" ON public.challenges
-  FOR UPDATE TO authenticated USING (
+DROP POLICY IF EXISTS "Creators can update challenges" ON public.challenges;
+CREATE POLICY "Creators can update challenges" ON public.challenges
+  FOR UPDATE USING (
     EXISTS (
       SELECT 1 FROM public.profiles
         WHERE id = auth.uid() AND is_creator = true
     )
   );
 
-DROP POLICY IF EXISTS "challenges_creator_delete" ON public.challenges;
-CREATE POLICY "challenges_creator_delete" ON public.challenges
-  FOR DELETE TO authenticated USING (
+DROP POLICY IF EXISTS "Creators can delete challenges" ON public.challenges;
+CREATE POLICY "Creators can delete challenges" ON public.challenges
+  FOR DELETE USING (
     EXISTS (
       SELECT 1 FROM public.profiles
         WHERE id = auth.uid() AND is_creator = true
@@ -267,8 +304,7 @@ CREATE POLICY "challenges_creator_delete" ON public.challenges
 
 
 -- ─── community_videos policies ─────────────────────────────────────────────
--- Read: own videos always; approved challenge videos to everyone; creators see
--- all. Personal videos by other users are not visible.
+-- SELECT: own videos, approved challenge videos, or admin.
 DROP POLICY IF EXISTS "community_videos_read" ON public.community_videos;
 CREATE POLICY "community_videos_read" ON public.community_videos
   FOR SELECT TO authenticated USING (
@@ -280,31 +316,33 @@ CREATE POLICY "community_videos_read" ON public.community_videos
     )
   );
 
--- Insert: only your own video.
-DROP POLICY IF EXISTS "community_videos_self_insert" ON public.community_videos;
-CREATE POLICY "community_videos_self_insert" ON public.community_videos
-  FOR INSERT TO authenticated WITH CHECK (user_id = auth.uid());
+DROP POLICY IF EXISTS "Users can insert own videos" ON public.community_videos;
+CREATE POLICY "Users can insert own videos" ON public.community_videos
+  FOR INSERT WITH CHECK (auth.uid() = user_id);
 
--- Update: owner can edit title/notes; creators can change any column.
-DROP POLICY IF EXISTS "community_videos_self_update" ON public.community_videos;
-CREATE POLICY "community_videos_self_update" ON public.community_videos
-  FOR UPDATE TO authenticated
-  USING (user_id = auth.uid())
-  WITH CHECK (user_id = auth.uid());
-
-DROP POLICY IF EXISTS "community_videos_creator_update" ON public.community_videos;
-CREATE POLICY "community_videos_creator_update" ON public.community_videos
-  FOR UPDATE TO authenticated USING (
-    EXISTS (
+-- UPDATE: owner OR admin (combined policy).
+DROP POLICY IF EXISTS "Creators can update any video" ON public.community_videos;
+CREATE POLICY "Creators can update any video" ON public.community_videos
+  FOR UPDATE
+  USING (
+    auth.uid() = user_id
+    OR EXISTS (
+      SELECT 1 FROM public.profiles
+        WHERE id = auth.uid() AND is_creator = true
+    )
+  )
+  WITH CHECK (
+    auth.uid() = user_id
+    OR EXISTS (
       SELECT 1 FROM public.profiles
         WHERE id = auth.uid() AND is_creator = true
     )
   );
 
--- Delete: creator only (admins moderate).
-DROP POLICY IF EXISTS "community_videos_creator_delete" ON public.community_videos;
-CREATE POLICY "community_videos_creator_delete" ON public.community_videos
-  FOR DELETE TO authenticated USING (
+-- Redundant secondary UPDATE policy that exists in live (kept for parity).
+DROP POLICY IF EXISTS "Admins update videos" ON public.community_videos;
+CREATE POLICY "Admins update videos" ON public.community_videos
+  FOR UPDATE USING (
     EXISTS (
       SELECT 1 FROM public.profiles
         WHERE id = auth.uid() AND is_creator = true
@@ -313,29 +351,39 @@ CREATE POLICY "community_videos_creator_delete" ON public.community_videos
 
 
 -- ─── community_reactions policies ──────────────────────────────────────────
--- Read: own reactions (used to derive "did I fire this video"). All writes go
--- through the toggle_reaction RPC (SECURITY DEFINER), so no insert/delete
--- policy is needed for direct client writes.
-DROP POLICY IF EXISTS "community_reactions_self_read" ON public.community_reactions;
-CREATE POLICY "community_reactions_self_read" ON public.community_reactions
-  FOR SELECT TO authenticated USING (user_id = auth.uid());
+DROP POLICY IF EXISTS "Read reactions" ON public.community_reactions;
+CREATE POLICY "Read reactions" ON public.community_reactions
+  FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Manage own reactions" ON public.community_reactions;
+CREATE POLICY "Manage own reactions" ON public.community_reactions
+  FOR ALL USING (auth.uid() = user_id);
 
 
 -- ─── video_comments policies ───────────────────────────────────────────────
-DROP POLICY IF EXISTS "video_comments_read_all" ON public.video_comments;
-CREATE POLICY "video_comments_read_all" ON public.video_comments
-  FOR SELECT TO authenticated USING (true);
+DROP POLICY IF EXISTS "Anyone can read comments" ON public.video_comments;
+CREATE POLICY "Anyone can read comments" ON public.video_comments
+  FOR SELECT USING (true);
 
-DROP POLICY IF EXISTS "video_comments_self_insert" ON public.video_comments;
-CREATE POLICY "video_comments_self_insert" ON public.video_comments
-  FOR INSERT TO authenticated WITH CHECK (user_id = auth.uid());
+DROP POLICY IF EXISTS "Premium users can insert comments" ON public.video_comments;
+CREATE POLICY "Premium users can insert comments" ON public.video_comments
+  FOR INSERT WITH CHECK (
+    auth.uid() = user_id
+    AND EXISTS (
+      SELECT 1 FROM public.profiles
+        WHERE id = auth.uid()
+          AND (is_premium = true OR is_creator = true)
+    )
+  );
 
--- Delete: own comment or creator.
-DROP POLICY IF EXISTS "video_comments_delete" ON public.video_comments;
-CREATE POLICY "video_comments_delete" ON public.video_comments
-  FOR DELETE TO authenticated USING (
-    user_id = auth.uid()
-    OR EXISTS (
+DROP POLICY IF EXISTS "Users can delete own comments" ON public.video_comments;
+CREATE POLICY "Users can delete own comments" ON public.video_comments
+  FOR DELETE USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Admins can delete any comment" ON public.video_comments;
+CREATE POLICY "Admins can delete any comment" ON public.video_comments
+  FOR DELETE USING (
+    EXISTS (
       SELECT 1 FROM public.profiles
         WHERE id = auth.uid() AND is_creator = true
     )
@@ -343,26 +391,20 @@ CREATE POLICY "video_comments_delete" ON public.video_comments
 
 
 -- ─── notifications policies ────────────────────────────────────────────────
--- Read: only your own notifications.
-DROP POLICY IF EXISTS "notifications_self_read" ON public.notifications;
-CREATE POLICY "notifications_self_read" ON public.notifications
-  FOR SELECT TO authenticated USING (user_id = auth.uid());
+DROP POLICY IF EXISTS "Users can read own notifications" ON public.notifications;
+CREATE POLICY "Users can read own notifications" ON public.notifications
+  FOR SELECT USING (auth.uid() = user_id);
 
--- Update: only your own notifications (for mark-as-read).
-DROP POLICY IF EXISTS "notifications_self_update" ON public.notifications;
-CREATE POLICY "notifications_self_update" ON public.notifications
-  FOR UPDATE TO authenticated
-  USING (user_id = auth.uid())
-  WITH CHECK (user_id = auth.uid());
+DROP POLICY IF EXISTS "Users can update own notifications" ON public.notifications;
+CREATE POLICY "Users can update own notifications" ON public.notifications
+  FOR UPDATE USING (auth.uid() = user_id);
 
--- Insert: open to any authenticated user. Required because the comment flow
--- inserts a notification for the video owner (different user). All other
--- inserts happen via SECURITY DEFINER triggers. If this is too permissive for
--- you, move the comment notification into a SECURITY DEFINER RPC and remove
--- this policy.
-DROP POLICY IF EXISTS "notifications_authenticated_insert" ON public.notifications;
-CREATE POLICY "notifications_authenticated_insert" ON public.notifications
-  FOR INSERT TO authenticated WITH CHECK (true);
+-- Open INSERT policy: needed because the comment flow inserts a notification
+-- for the video owner (a different user). All other inserts come from
+-- SECURITY DEFINER triggers.
+DROP POLICY IF EXISTS "Authenticated users can insert notificatio" ON public.notifications;
+CREATE POLICY "Authenticated users can insert notificatio" ON public.notifications
+  FOR INSERT WITH CHECK (true);
 
 
 -- ════════════════════════════════════════════════════════════════════════════
@@ -636,8 +678,8 @@ CREATE POLICY "avatars_self_update" ON storage.objects
 
 -- ─── community-videos bucket ───────────────────────────────────────────────
 -- Path convention: <user_id>/<skill_id>/<timestamp>.<ext>
-DROP POLICY IF EXISTS "community_videos_public_read" ON storage.objects;
-CREATE POLICY "community_videos_public_read" ON storage.objects
+DROP POLICY IF EXISTS "Anyone can view community videos" ON storage.objects;
+CREATE POLICY "Anyone can view community videos" ON storage.objects
   FOR SELECT USING (bucket_id = 'community-videos');
 
 DROP POLICY IF EXISTS "community_videos_self_write" ON storage.objects;
@@ -687,7 +729,6 @@ BEGIN
   IF EXISTS (
     SELECT 1 FROM pg_extension WHERE extname = 'pg_cron'
   ) THEN
-    -- Unschedule any previous version, then re-add.
     PERFORM cron.unschedule(jobid)
       FROM cron.job WHERE jobname = 'finalize-past-challenges-weekly';
     PERFORM cron.schedule(
