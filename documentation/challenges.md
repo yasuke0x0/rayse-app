@@ -535,6 +535,26 @@ The check is **skipped for no-op edits**: if the admin is editing an existing ch
 
 ---
 
+## Notification Deep-Linking
+
+Tapping a notification row in the notifications screen now routes the user to the most relevant destination based on `notification.type`:
+
+| Type | Destination | Lookup |
+|------|-------------|--------|
+| `challenge_new` | Challenges tab on home | `homeTabIndexProvider.state = 2` |
+| `challenge_approved` | Video detail | `fetchVideoById(data['video_id'])` → `/community-video` |
+| `challenge_placed` | Challenge leaderboard | `fetchChallengeById(data['challenge_id'])` → `/challenge-leaderboard` |
+| `comment` | Video detail | `fetchVideoById(data['video_id'])` → `/community-video` |
+| unknown | (no nav, just marks read) | — |
+
+Tap also marks the row as read first (before navigation) so the bell badge / profile tab dot update without waiting for the lookup. If the lookup returns `null` (e.g., the video was deleted), a snack bar reports it and no navigation happens.
+
+Repository methods used:
+- `CommunityVideoRepository.fetchVideoById(String id)` — single-row select on `community_videos`
+- `ChallengeRepository.fetchChallengeById(String id)` — single-row select on `challenges`
+
+---
+
 ## New Challenge Notifications
 
 When an admin creates a new challenge, every non-banned user receives a notification ("🏆 New challenge dropped!" with the challenge title in the body). The notification renders with a `celebration_outlined` icon and counts toward the unread bell badge + profile tab dot we already wired.

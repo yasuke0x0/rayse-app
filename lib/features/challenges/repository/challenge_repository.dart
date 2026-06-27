@@ -88,4 +88,15 @@ class ChallengeRepository {
   Future<void> finalizeChallenge(String id) async {
     await _client.rpc('finalize_challenge', params: {'p_challenge_id': id});
   }
+
+  // Fetch a single challenge by id (for deep-linking from notifications)
+  Future<Challenge?> fetchChallengeById(String id) async {
+    final data = await _client
+        .from('challenges')
+        .select()
+        .eq('id', id)
+        .maybeSingle();
+    if (data == null) return null;
+    return Challenge.fromJson(Map<String, dynamic>.from(data));
+  }
 }

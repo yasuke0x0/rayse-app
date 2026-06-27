@@ -3,6 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../challenges/providers/challenge_provider.dart';
+import '../../community/providers/community_provider.dart';
+import '../models/app_notification.dart';
 import '../providers/notification_provider.dart';
 
 class NotificationsScreen extends ConsumerWidget {
@@ -14,6 +17,75 @@ class NotificationsScreen extends ConsumerWidget {
     if (diff.inHours > 0) return '${diff.inHours}h ago';
     if (diff.inMinutes > 0) return '${diff.inMinutes}m ago';
     return 'just now';
+  }
+
+  Future<void> _handleTap(
+    BuildContext context,
+    WidgetRef ref,
+    AppNotification notif,
+  ) async {
+    // Mark read first so the badge updates instantly
+    if (!notif.isRead) {
+      ref.read(notificationsProvider.notifier).markAsRead(notif.id);
+    }
+
+    final data = notif.data;
+
+    switch (notif.type) {
+      case 'challenge_new':
+        // Land on the challenges tab
+        context.go('/home');
+        ref.read(homeTabIndexProvider.notifier).state = 2;
+        return;
+
+      case 'challenge_placed':
+        // Land on the leaderboard for the challenge
+        final challengeId = data['challenge_id'] as String?;
+        if (challengeId == null) return;
+        final challenge = await ref
+            .read(challengeRepositoryProvider)
+            .fetchChallengeById(challengeId);
+        if (!context.mounted) return;
+        if (challenge == null) {
+          _showSnack(context, 'Challenge not found');
+          return;
+        }
+        context.push('/challenge-leaderboard', extra: challenge);
+        return;
+
+      case 'challenge_approved':
+      case 'comment':
+        // Land on the video detail
+        final videoId = data['video_id'] as String?;
+        if (videoId == null) return;
+        final video = await ref
+            .read(communityVideoRepositoryProvider)
+            .fetchVideoById(videoId);
+        if (!context.mounted) return;
+        if (video == null) {
+          _showSnack(context, 'Video not found');
+          return;
+        }
+        context.push('/community-video', extra: video);
+        return;
+
+      default:
+        // Unknown type — just mark read, no navigation
+        return;
+    }
+  }
+
+  void _showSnack(BuildContext context, String msg) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg,
+            style: GoogleFonts.inter(color: Colors.white, fontSize: 13)),
+        backgroundColor: AppColors.surface,
+        behavior: SnackBarBehavior.floating,
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      ),
+    );
   }
 
   @override
@@ -103,13 +175,7 @@ class NotificationsScreen extends ConsumerWidget {
                     itemBuilder: (_, i) {
                       final notif = notifications[i];
                       return GestureDetector(
-                        onTap: () {
-                          if (!notif.isRead) {
-                            ref
-                                .read(notificationsProvider.notifier)
-                                .markAsRead(notif.id);
-                          }
-                        },
+                        onTap: () => _handleTap(context, ref, notif),
                         child: Container(
                           margin: const EdgeInsets.only(bottom: 8),
                           padding: const EdgeInsets.all(14),

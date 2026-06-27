@@ -1,4 +1,32 @@
 
+## 2026-06-27 — Notification deep-linking (close the UX hole)
+
+### What changed
+- Tapping a notification row now routes to the relevant destination:
+  - `challenge_new` → Challenges tab (`homeTabIndexProvider.state = 2`)
+  - `challenge_approved` / `comment` → video detail (`/community-video`) after fetching the video by id
+  - `challenge_placed` → challenge leaderboard (`/challenge-leaderboard`) after fetching the challenge by id
+  - Unknown types still mark read but don't navigate
+- Mark-as-read happens BEFORE the async fetch so the bell badge / profile tab dot update instantly
+- Missing target (deleted video/challenge) surfaces a snack bar instead of silently failing
+- Added two new repository methods:
+  - `CommunityVideoRepository.fetchVideoById(String id)`
+  - `ChallengeRepository.fetchChallengeById(String id)`
+
+### Why
+We just shipped four notification types but tapping any of them only marked them as read. Without deep-linking, the system informed users of changes but forced them to navigate to the relevant content manually. This closes that hole.
+
+### Files touched
+- `lib/features/community/repository/community_video_repository.dart` — `fetchVideoById`
+- `lib/features/challenges/repository/challenge_repository.dart` — `fetchChallengeById`
+- `lib/features/notifications/screens/notifications_screen.dart` — `_handleTap` dispatcher with type-based routing, snack bar for missing targets
+- `documentation/challenges.md` — new "Notification Deep-Linking" section
+- DEVLOG.md
+
+### Gotchas
+- Async work in a `GestureDetector` means we have to `if (!context.mounted) return;` after each await. Easy to forget; lints will catch it.
+- The `comment` notification routing is best-effort — if the video was deleted, the snack bar fires. That's an existing UX state the comment notification could already hit via the bell counter, not a regression.
+
 ## 2026-06-27 — New-challenge-drop notification (engagement loop closer)
 
 ### What changed

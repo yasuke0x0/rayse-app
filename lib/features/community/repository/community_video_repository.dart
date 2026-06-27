@@ -220,6 +220,17 @@ class CommunityVideoRepository {
     return _parseList(data);
   }
 
+  // Fetch a single video by id (for deep-linking from notifications etc.)
+  Future<CommunityVideo?> fetchVideoById(String id) async {
+    final data = await _client
+        .from('community_videos')
+        .select(_selectBasic)
+        .eq('id', id)
+        .maybeSingle();
+    if (data == null) return null;
+    return CommunityVideo.fromMap(Map<String, dynamic>.from(data));
+  }
+
   // Total number of videos submitted by the current user
   Future<int> fetchMyTotalSubmissions(String userId) async {
     final data = await _client
