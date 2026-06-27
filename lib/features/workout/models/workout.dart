@@ -10,6 +10,10 @@ class Workout {
   final String focusArea;
   final List<Exercise> exercises;
 
+  /// Skills the workout assumes the user has mastered. If the user hasn't
+  /// mastered all of them, an advisory is shown (the workout still starts).
+  final List<String> prerequisiteSkillIds;
+
   const Workout({
     required this.id,
     required this.title,
@@ -19,5 +23,6 @@ class Workout {
     required this.difficulty,
     required this.focusArea,
     required this.exercises,
+    this.prerequisiteSkillIds = const [],
   });
 }

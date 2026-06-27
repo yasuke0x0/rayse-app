@@ -1,4 +1,22 @@
 
+## 2026-06-27 — Programs polish: skill prereqs, drop challenge link, fix player
+
+### What changed
+- **Removed all linking between Programs and Challenges.** Dropped the Challenge Prep group entirely (5 groups remain: 2 free + 3 premium). Removed `challenge_prep_builder.dart`, the dynamic provider, and all imports of `challengesProvider` from the workouts feature. Workouts only relate to skills now.
+- **Added skill prerequisites to workouts.** New `prerequisiteSkillIds: List<String>` field on `Workout`. Populated across all 16 workouts (e.g. `skill_du → ['double_unders']`, `free_show → ['cross_overs','double_unders','side_swing']`, foundational workouts → `['basic_bounce']` or `[]`).
+- **Advisory display in the group detail screen.** Each workout row shows an italic "💡 Master X first" line when the user hasn't mastered all prereqs. **Tapping still starts the workout** — the advisory is informational, never a block.
+- **Fixed two workout player bugs:**
+  - Rest timer didn't count down. Added a `Timer.periodic` that decrements `_restRemaining` each second; rest view renders the live count.
+  - Set counter never advanced past the rest break. After rest ends (either auto-expire or user taps "SKIP REST"), `_currentSet` is now incremented so the next set displays correctly.
+
+### Files touched
+- DELETED: `lib/features/workout/data/challenge_prep_builder.dart`
+- `lib/features/workout/models/workout.dart` — new `prerequisiteSkillIds` field
+- `lib/features/workout/data/mock_workout_groups.dart` — prereqs populated, comments refreshed
+- `lib/features/workout/providers/workout_provider.dart` — removed challenge-prep wiring, back to plain repo-fed providers
+- `lib/features/workout/screens/workout_group_detail_screen.dart` — `_WorkoutRow` is now a `ConsumerWidget` watching `skillsProvider`; computes unmet prereqs; renders advisory line
+- `lib/features/workout/screens/workout_player_screen.dart` — `Timer.periodic` for rest countdown, `_endRest()` increments set, restRemaining surfaced in `_RestView`
+
 ## 2026-06-27 — Workouts → Programs (Pattern A: group grid + premium gating)
 
 ### What changed

@@ -3,11 +3,17 @@ import '../models/exercise.dart';
 import '../models/workout.dart';
 import '../models/workout_group.dart';
 
-/// 6 program groups (2 free + 4 premium). Each group holds 3-5 workouts.
+/// 5 program groups (2 free + 3 premium). Each group holds 3-4 workouts.
 ///
 /// One workout per group is tagged with a `weekday` (1-7) so the home tab's
 /// "Today's Workout" banner can pick a daily recommendation from across the
 /// whole catalog.
+///
+/// Each workout declares `prerequisiteSkillIds` — skills the workout assumes
+/// the user has mastered. When the user opens the group detail screen, an
+/// advisory pill ("Master X first") appears on workouts whose prereqs aren't
+/// fully met. The workout still starts on tap — the advisory is informational,
+/// not a hard gate.
 final mockWorkoutGroups = <WorkoutGroup>[
   // ═══════════════════════════════════════════════════════════════════════
   // FREE — Foundations
@@ -22,6 +28,7 @@ final mockWorkoutGroups = <WorkoutGroup>[
     workouts: [
       const Workout(
         id: 'foundations_rhythm',
+        prerequisiteSkillIds: [],
         title: 'Rhythm & Posture',
         description: 'Lock in clean form. Small movements, big consistency.',
         weekday: 1,
@@ -60,6 +67,7 @@ final mockWorkoutGroups = <WorkoutGroup>[
       ),
       const Workout(
         id: 'foundations_first_minute',
+        prerequisiteSkillIds: ['basic_bounce'],
         title: 'First 1 Minute',
         description: 'Build the stamina to jump for one full minute unbroken.',
         weekday: 2,
@@ -96,6 +104,7 @@ final mockWorkoutGroups = <WorkoutGroup>[
       ),
       const Workout(
         id: 'foundations_footwork',
+        prerequisiteSkillIds: ['basic_bounce'],
         title: 'Footwork Basics',
         description: 'Develop coordination with alternating steps and shifts.',
         weekday: 3,
@@ -125,6 +134,7 @@ final mockWorkoutGroups = <WorkoutGroup>[
       ),
       const Workout(
         id: 'foundations_tune_up',
+        prerequisiteSkillIds: ['basic_bounce'],
         title: 'Form Tune-up',
         description: 'Refresh your fundamentals across all the basics.',
         durationMinutes: 15,
@@ -176,6 +186,7 @@ final mockWorkoutGroups = <WorkoutGroup>[
     workouts: [
       const Workout(
         id: 'quick_burner',
+        prerequisiteSkillIds: ['basic_bounce'],
         title: '5-Minute Burner',
         description: 'Fast, intense, in and out. Perfect for busy days.',
         weekday: 4,
@@ -195,6 +206,7 @@ final mockWorkoutGroups = <WorkoutGroup>[
       ),
       const Workout(
         id: 'quick_warmup',
+        prerequisiteSkillIds: [],
         title: 'Pre-Game Warmup',
         description: 'Wake up the legs before practice or a workout.',
         durationMinutes: 7,
@@ -222,6 +234,7 @@ final mockWorkoutGroups = <WorkoutGroup>[
       ),
       const Workout(
         id: 'quick_lunch',
+        prerequisiteSkillIds: ['basic_bounce'],
         title: 'Lunch Break Set',
         description: 'Energizing midday session. No equipment changes.',
         durationMinutes: 10,
@@ -254,6 +267,7 @@ final mockWorkoutGroups = <WorkoutGroup>[
     workouts: [
       const Workout(
         id: 'cardio_hiit',
+        prerequisiteSkillIds: ['basic_bounce', 'forward_jump'],
         title: 'HIIT Intervals',
         description: '15 minutes of high-intensity intervals.',
         weekday: 5,
@@ -281,6 +295,7 @@ final mockWorkoutGroups = <WorkoutGroup>[
       ),
       const Workout(
         id: 'cardio_sweat',
+        prerequisiteSkillIds: ['basic_bounce'],
         title: '20-Min Sweat',
         description: 'Sustained moderate pace. Builds the engine.',
         durationMinutes: 20,
@@ -300,6 +315,7 @@ final mockWorkoutGroups = <WorkoutGroup>[
       ),
       const Workout(
         id: 'cardio_marathon',
+        prerequisiteSkillIds: ['basic_bounce', 'forward_jump'],
         title: 'Endurance Marathon',
         description: '30 minutes. Pure stamina test.',
         durationMinutes: 30,
@@ -332,6 +348,7 @@ final mockWorkoutGroups = <WorkoutGroup>[
     workouts: [
       const Workout(
         id: 'skill_du',
+        prerequisiteSkillIds: ['double_unders'],
         title: 'Double Under Drill',
         description: 'Build the timing and wrist speed for clean DUs.',
         weekday: 6,
@@ -361,6 +378,7 @@ final mockWorkoutGroups = <WorkoutGroup>[
       ),
       const Workout(
         id: 'skill_co',
+        prerequisiteSkillIds: ['cross_overs'],
         title: 'Cross Over Lab',
         description: 'Lock in smooth, controlled cross overs.',
         durationMinutes: 15,
@@ -380,6 +398,7 @@ final mockWorkoutGroups = <WorkoutGroup>[
       ),
       const Workout(
         id: 'skill_tu',
+        prerequisiteSkillIds: ['triple_unders'],
         title: 'Triple Speed Work',
         description: 'Wrist speed and explosive jumps for triple unders.',
         durationMinutes: 18,
@@ -408,6 +427,7 @@ final mockWorkoutGroups = <WorkoutGroup>[
       ),
       const Workout(
         id: 'skill_release',
+        prerequisiteSkillIds: ['releases'],
         title: 'Release Practice',
         description: 'Letting the rope go and catching it. Trick foundation.',
         durationMinutes: 15,
@@ -440,6 +460,7 @@ final mockWorkoutGroups = <WorkoutGroup>[
     workouts: [
       const Workout(
         id: 'free_combo',
+        prerequisiteSkillIds: ['cross_overs', 'double_unders'],
         title: 'Combo Architect',
         description: 'Sequence cross + double + release into a flow.',
         durationMinutes: 20,
@@ -458,6 +479,7 @@ final mockWorkoutGroups = <WorkoutGroup>[
       ),
       const Workout(
         id: 'free_release',
+        prerequisiteSkillIds: ['releases'],
         title: 'Release Flow',
         description: 'String multiple releases without losing tempo.',
         durationMinutes: 18,
@@ -476,6 +498,7 @@ final mockWorkoutGroups = <WorkoutGroup>[
       ),
       const Workout(
         id: 'free_show',
+        prerequisiteSkillIds: ['cross_overs', 'double_unders', 'side_swing'],
         title: 'Show-Style Practice',
         description: 'Perform a full 30-second flow for camera-ready content.',
         weekday: 7,
@@ -497,11 +520,6 @@ final mockWorkoutGroups = <WorkoutGroup>[
     ],
   ),
 
-  // ═══════════════════════════════════════════════════════════════════════
-  // PREMIUM — Challenge Prep is built dynamically in challenge_prep_builder.dart
-  // (uses the user's tier's active challenge to inject the skill name).
-  // The workoutGroupsProvider stitches it in at runtime.
-  // ═══════════════════════════════════════════════════════════════════════
 ];
 
 /// All workouts, flattened across groups (for player lookup, etc.)

@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../skill_tree/models/skill.dart';
+import '../../skill_tree/providers/skill_provider.dart';
 import '../models/workout.dart';
 import '../providers/workout_provider.dart';
 
@@ -12,13 +14,22 @@ class WorkoutGroupDetailScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final group = ref.watch(workoutGroupByIdProvider(groupId));
+    final groupAsync = ref.watch(workoutGroupByIdProvider(groupId));
 
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
-        child: Builder(
-          builder: (context) {
+        child: groupAsync.when(
+          loading: () => const Center(
+            child: CircularProgressIndicator(color: AppColors.accent),
+          ),
+          error: (e, _) => Center(
+            child: Text(
+              'Could not load this program.',
+              style: GoogleFonts.inter(color: AppColors.textMuted),
+            ),
+          ),
+          data: (group) {
             if (group == null) {
               return Center(
                 child: Text(
@@ -157,13 +168,27 @@ class WorkoutGroupDetailScreen extends ConsumerWidget {
   }
 }
 
-class _WorkoutRow extends StatelessWidget {
+const _skillLabels = <String, String>{
+  'basic_bounce': 'Basic Bounce',
+  'forward_jump': 'Forward Jump',
+  'backward_jump': 'Backward Jump',
+  'alt_steps': 'Alternating Steps',
+  'double_unders': 'Double Unders',
+  'cross_overs': 'Cross Overs',
+  'side_swing': 'Side Swing',
+  'triple_unders': 'Triple Unders',
+  'cross_double': 'Cross Double',
+  'releases': 'Releases',
+  'freestyle': 'Freestyle',
+};
+
+class _WorkoutRow extends ConsumerWidget {
   final Workout workout;
   final Color accent;
   const _WorkoutRow({required this.workout, required this.accent});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final (diffLabel, diffBg, diffFg) = switch (workout.difficulty) {
       'beginner' => (
           'BEGINNER',
@@ -186,6 +211,21 @@ class _WorkoutRow extends StatelessWidget {
           AppColors.textSecondary
         ),
     };
+
+    // Compute unmet prereqs (skills the user hasn't mastered yet).
+    final allSkills = ref.watch(skillsProvider);
+    final masteredIds = allSkills
+        .where((s) => s.status == SkillStatus.mastered)
+        .map((s) => s.id)
+        .toSet();
+    final unmetPrereqs = workout.prerequisiteSkillIds
+        .where((id) => !masteredIds.contains(id))
+        .toList();
+    final unmetLabel = unmetPrereqs.isEmpty
+        ? null
+        : unmetPrereqs.length == 1
+            ? 'Master ${_skillLabels[unmetPrereqs.first] ?? unmetPrereqs.first} first'
+            : 'Master ${unmetPrereqs.length} skills first';
 
     return GestureDetector(
       onTap: () => context.push('/workout/play/${workout.id}'),
@@ -252,16 +292,39 @@ class _WorkoutRow extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: 8),
-                      Text(
-                        '· ${workout.focusArea}',
-                        style: GoogleFonts.inter(
-                          fontSize: 11,
-                          color: AppColors.textMuted,
+                      Flexible(
+                        child: Text(
+                          '· ${workout.focusArea}',
+                          style: GoogleFonts.inter(
+                            fontSize: 11,
+                            color: AppColors.textMuted,
+                          ),
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ),
+                  if (unmetLabel != null) ...[
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        const Icon(Icons.lightbulb_outline_rounded,
+                            color: AppColors.textMuted, size: 11),
+                        const SizedBox(width: 4),
+                        Flexible(
+                          child: Text(
+                            unmetLabel,
+                            style: GoogleFonts.inter(
+                              fontSize: 10,
+                              color: AppColors.textMuted,
+                              fontStyle: FontStyle.italic,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ],
               ),
             ),

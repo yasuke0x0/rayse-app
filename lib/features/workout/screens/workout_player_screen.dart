@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -21,18 +23,56 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen> {
   int _exerciseIndex = 0;
   int _currentSet = 1;
   bool _isResting = false;
+  int _restRemaining = 0;
+  Timer? _restTimer;
+
+  @override
+  void dispose() {
+    _restTimer?.cancel();
+    super.dispose();
+  }
+
+  void _startRest(int seconds) {
+    _restTimer?.cancel();
+    setState(() {
+      _isResting = true;
+      _restRemaining = seconds;
+    });
+    _restTimer = Timer.periodic(const Duration(seconds: 1), (t) {
+      if (!mounted) {
+        t.cancel();
+        return;
+      }
+      if (_restRemaining > 1) {
+        setState(() => _restRemaining--);
+      } else {
+        t.cancel();
+        _restTimer = null;
+        _endRest();
+      }
+    });
+  }
+
+  void _endRest() {
+    setState(() {
+      _isResting = false;
+      _currentSet++;
+    });
+  }
 
   void _advance(Workout workout) {
     final exercise = workout.exercises[_exerciseIndex];
 
     if (_isResting) {
-      setState(() => _isResting = false);
+      _restTimer?.cancel();
+      _restTimer = null;
+      _endRest();
       return;
     }
 
     if (_currentSet < exercise.sets) {
       if (exercise.restSeconds > 0) {
-        setState(() => _isResting = true);
+        _startRest(exercise.restSeconds);
       } else {
         setState(() => _currentSet++);
       }
@@ -41,13 +81,15 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen> {
 
     // Move to next exercise
     if (_exerciseIndex < workout.exercises.length - 1) {
+      _restTimer?.cancel();
+      _restTimer = null;
       setState(() {
         _exerciseIndex++;
         _currentSet = 1;
         _isResting = false;
+        _restRemaining = 0;
       });
     } else {
-      // Workout done
       ref
           .read(completedWorkoutsProvider.notifier)
           .markComplete(workout.id);
@@ -156,6 +198,7 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen> {
           exerciseIndex: _exerciseIndex,
           currentSet: _currentSet,
           isResting: _isResting,
+          restRemaining: _restRemaining,
           onAdvance: () => _advance(workout),
           onExit: () => context.pop(),
         );
@@ -171,6 +214,7 @@ class _PlayerView extends StatelessWidget {
   final int exerciseIndex;
   final int currentSet;
   final bool isResting;
+  final int restRemaining;
   final VoidCallback onAdvance;
   final VoidCallback onExit;
 
@@ -179,6 +223,7 @@ class _PlayerView extends StatelessWidget {
     required this.exerciseIndex,
     required this.currentSet,
     required this.isResting,
+    required this.restRemaining,
     required this.onAdvance,
     required this.onExit,
   });
@@ -264,7 +309,11 @@ class _PlayerView extends StatelessWidget {
               const SizedBox(height: 48),
 
               if (isResting)
-                _RestView(exercise: exercise, currentSet: currentSet)
+                _RestView(
+                  exercise: exercise,
+                  currentSet: currentSet,
+                  remaining: restRemaining,
+                )
               else
                 _ExerciseView(exercise: exercise, currentSet: currentSet),
 
@@ -404,8 +453,13 @@ class _ExerciseView extends StatelessWidget {
 class _RestView extends StatelessWidget {
   final Exercise exercise;
   final int currentSet;
+  final int remaining;
 
-  const _RestView({required this.exercise, required this.currentSet});
+  const _RestView({
+    required this.exercise,
+    required this.currentSet,
+    required this.remaining,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -431,11 +485,11 @@ class _RestView extends StatelessWidget {
         ),
         const SizedBox(height: 20),
         Text(
-          '${exercise.restSeconds}s',
+          '${remaining}s',
           style: GoogleFonts.poppins(
             fontSize: 64,
             fontWeight: FontWeight.w700,
-            color: AppColors.textPrimary,
+            color: AppColors.accent,
             height: 1.0,
           ),
         ),
