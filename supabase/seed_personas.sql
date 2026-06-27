@@ -26,6 +26,21 @@ DELETE FROM auth.users WHERE email LIKE '%@rayse.demo';
 -- somehow (FK cascade may not be installed on the live DB).
 DELETE FROM public.profiles WHERE id NOT IN (SELECT id FROM auth.users);
 
+-- The community_videos.reviewed_by FK on the live DB may be RESTRICT
+-- instead of SET NULL. NULL out any reference that points at a profile
+-- we're about to delete so the DELETE doesn't trip the FK.
+UPDATE public.community_videos
+   SET reviewed_by = NULL
+ WHERE reviewed_by IN (
+   SELECT id FROM public.profiles
+    WHERE id NOT IN (SELECT id FROM auth.users)
+       OR username IN (
+         'demo_admin','ava_pro','ian_mid','beth_beg','finn_free',
+         'sam1','jordan2','riley3','casey4','morgan5',
+         'taylor6','pat7','quinn8','cameron9','drew10'
+       )
+ );
+
 -- Final safety: free up any profile row still holding one of the demo
 -- usernames so the rayse_seed_user UPDATE can claim it.
 DELETE FROM public.profiles WHERE username IN (
