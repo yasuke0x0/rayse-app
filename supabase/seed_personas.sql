@@ -25,7 +25,8 @@ CREATE OR REPLACE FUNCTION public.rayse_seed_user(
   p_first      text,
   p_last       text,
   p_username   text
-) RETURNS uuid LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, auth
+) RETURNS uuid LANGUAGE plpgsql SECURITY DEFINER
+SET search_path = public, auth, extensions
 AS $$
 DECLARE
   v_user_id uuid := gen_random_uuid();
@@ -39,7 +40,9 @@ BEGIN
     email_change_token_new, email_change, email_change_token_current
   ) VALUES (
     '00000000-0000-0000-0000-000000000000', v_user_id, 'authenticated', 'authenticated',
-    p_email, crypt(p_password, gen_salt('bf')), now(),
+    p_email,
+    extensions.crypt(p_password, extensions.gen_salt('bf')),
+    now(),
     '{"provider":"email","providers":["email"]}'::jsonb, '{}'::jsonb,
     false, now(), now(),
     '', '', '', '', ''

@@ -9,8 +9,10 @@
 
 -- ─── EXTENSIONS ─────────────────────────────────────────────────────────────
 -- pg_cron must be enabled separately from the dashboard (see SETUP.md).
-CREATE EXTENSION IF NOT EXISTS pgcrypto;
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+-- Supabase convention: extensions live in the `extensions` schema, not public.
+CREATE SCHEMA IF NOT EXISTS extensions;
+CREATE EXTENSION IF NOT EXISTS pgcrypto    WITH SCHEMA extensions;
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA extensions;
 
 
 -- ════════════════════════════════════════════════════════════════════════════
