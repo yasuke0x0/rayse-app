@@ -578,6 +578,29 @@ The check is **skipped for no-op edits**: if the admin is editing an existing ch
 
 ---
 
+## Profile Challenge History
+
+The profile screen has a "CHALLENGE HISTORY" section beneath "MY VIDEOS" that lists every challenge the user has submitted to, sorted by most recent week first. Each row shows:
+- Trophy icon (orange tint for top-3 placements)
+- Challenge title + week + skill
+- Status / placement pill on the right:
+  - 🥇 #1 (orange) / 🥈 #2 / 🥉 #3 — top-3 placements, also gets an accent border on the card
+  - `#X` for ranks 4+
+  - LIVE (green) — approved but not visible in the fetched leaderboard
+  - PENDING (gray) / REJECTED (red) — admin hasn't approved yet
+- Header pill shows total entered count
+
+Tapping a row opens the full challenge leaderboard (`/challenge-leaderboard`).
+
+### Provider
+`myChallengeHistoryProvider` joins `myAllVideosProvider` (the user's challenge videos) with `challengesProvider` (active + recent), then fans out `challengeLeaderboardProvider(id)` for approved videos to derive placements. Cached for the session; invalidated on auth state change.
+
+### Limitations
+- A user's video for a week+skill that has no matching challenge row (e.g., the admin deleted the challenge after the video was submitted) is silently excluded.
+- "LIVE" without a placement means the leaderboard fetch didn't include them — usually because they're outside the top 50 (the leaderboard limit). Not a bug, just a UI honesty signal.
+
+---
+
 ## Notification Deep-Linking
 
 Tapping a notification row in the notifications screen now routes the user to the most relevant destination based on `notification.type`:
@@ -653,7 +676,7 @@ CREATE TRIGGER challenge_new_trigger
 - ~~**Notifications when video is approved**~~ — shipped 2026-06-16
 - ~~**Notifications when a new challenge drops**~~ — shipped 2026-06-27: see New Challenge Notifications above
 - **Auto-rotation:** automatically create next week's challenge from a pool
-- **Challenge history on profile:** show past challenge placements
+- ~~**Challenge history on profile**~~ — shipped 2026-06-27: see Profile Challenge History below
 - **Multiple challenges per week per tier:** current admin form prevents this; if needed, drop the tier uniqueness check
 - **Push notifications (OS-level):** wire APNs/FCM so users get notified even with the app closed; the in-app notification rows are already in place
 - ~~**pg_cron auto-finalize**~~ — shipped 2026-06-27 (Monday 00:30 UTC; see Finalizing a challenge → Auto-finalize via pg_cron)

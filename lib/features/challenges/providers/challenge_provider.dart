@@ -172,3 +172,70 @@ final myChallengeStatsProvider =
     bestPlacement: bestPlacement,
   );
 });
+
+// Per-challenge history entry for the profile screen
+class MyChallengeHistoryEntry {
+  final Challenge challenge;
+  final CommunityVideo video;
+  final int? placement; // null if not approved or not in fetched leaderboard
+
+  const MyChallengeHistoryEntry({
+    required this.challenge,
+    required this.video,
+    required this.placement,
+  });
+}
+
+// List of all challenges the current user has submitted to, sorted by week desc.
+// Placement is null unless the user's video is approved AND visible in the
+// fetched leaderboard.
+final myChallengeHistoryProvider =
+    FutureProvider<List<MyChallengeHistoryEntry>>((ref) async {
+  final userId = Supabase.instance.client.auth.currentUser?.id;
+  if (userId == null) return [];
+
+  final allVideos = await ref.watch(myAllVideosProvider.future);
+  final challenges = ref.watch(challengesProvider).valueOrNull ?? [];
+
+  final challengeVideos = allVideos.where((v) => v.isChallenge).toList();
+
+  // Pair each video with its matching challenge (if any).
+  final pairs = <({CommunityVideo video, Challenge challenge})>[];
+  for (final video in challengeVideos) {
+    final match = challenges
+        .where((c) =>
+            c.skillId == video.skillId &&
+            c.weekNumber == video.weekNumber &&
+            c.weekYear == video.weekYear)
+        .firstOrNull;
+    if (match == null) continue;
+    pairs.add((video: video, challenge: match));
+  }
+
+  // Compute placements in parallel for approved videos
+  final futures = pairs.map<Future<MyChallengeHistoryEntry>>((p) async {
+    int? placement;
+    if (p.video.status == VideoStatus.approved) {
+      final leaderboard = await ref
+          .watch(challengeLeaderboardProvider(p.challenge.id).future);
+      final idx = leaderboard.indexWhere((v) => v.userId == userId);
+      if (idx != -1) placement = idx + 1;
+    }
+    return MyChallengeHistoryEntry(
+      challenge: p.challenge,
+      video: p.video,
+      placement: placement,
+    );
+  }).toList();
+
+  final entries = await Future.wait(futures);
+
+  // Sort: most recent week first
+  entries.sort((a, b) {
+    final yearCmp = b.challenge.weekYear.compareTo(a.challenge.weekYear);
+    if (yearCmp != 0) return yearCmp;
+    return b.challenge.weekNumber.compareTo(a.challenge.weekNumber);
+  });
+
+  return entries;
+});

@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../core/services/supabase_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../auth/providers/auth_provider.dart';
+import '../../challenges/providers/challenge_provider.dart';
 import '../../community/models/community_video.dart';
 import '../../community/providers/community_provider.dart';
 import '../../notifications/providers/notification_provider.dart';
@@ -212,6 +213,9 @@ class ProfileScreen extends ConsumerWidget {
 
                     // ── My videos ───────────────────────────────────────
                     _buildMyVideosSection(ref, context),
+
+                    // ── Challenge history ───────────────────────────────
+                    _ChallengeHistorySection(),
 
                     // ── Admin panel button (creators only) ──────────────
                     if (isCreator) ...[
@@ -474,6 +478,177 @@ class ProfileScreen extends ConsumerWidget {
       },
     );
   }
+}
+
+// ─── Challenge history section ──────────────────────────────────────────────
+
+class _ChallengeHistorySection extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final historyAsync = ref.watch(myChallengeHistoryProvider);
+    final history = historyAsync.valueOrNull;
+    if (history == null || history.isEmpty) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(
+                'CHALLENGE HISTORY',
+                style: GoogleFonts.inter(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.accent,
+                  letterSpacing: 1.5,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF27272A),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  '${history.length} ENTERED',
+                  style: GoogleFonts.inter(
+                    fontSize: 9,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textMuted,
+                    letterSpacing: 0.3,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          ...history.map((entry) => Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: _HistoryRow(entry: entry),
+              )),
+        ],
+      ),
+    );
+  }
+}
+
+class _HistoryRow extends StatelessWidget {
+  final MyChallengeHistoryEntry entry;
+  const _HistoryRow({required this.entry});
+
+  @override
+  Widget build(BuildContext context) {
+    final skillName =
+        _skillLabels[entry.challenge.skillId] ?? entry.challenge.skillId;
+    final placement = entry.placement;
+    final status = entry.video.status;
+    final isTop3 = placement != null && placement <= 3;
+
+    return GestureDetector(
+      onTap: () =>
+          context.push('/challenge-leaderboard', extra: entry.challenge),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isTop3
+                ? AppColors.accent.withValues(alpha: 0.4)
+                : AppColors.border,
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: AppColors.background,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: AppColors.border),
+              ),
+              child: Icon(
+                Icons.emoji_events_outlined,
+                color: isTop3 ? AppColors.accent : AppColors.textMuted,
+                size: 18,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    entry.challenge.title,
+                    style: GoogleFonts.poppins(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'WK ${entry.challenge.weekNumber} · $skillName',
+                    style: GoogleFonts.inter(
+                      fontSize: 11,
+                      color: AppColors.textMuted,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            _statusChip(status, placement),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _statusChip(VideoStatus status, int? placement) {
+    if (status == VideoStatus.pending) {
+      return _pill(
+          'PENDING', const Color(0xFF3F3F46), AppColors.textSecondary);
+    }
+    if (status == VideoStatus.rejected) {
+      return _pill('REJECTED', const Color(0xFF450A0A),
+          const Color(0xFFF87171));
+    }
+    // approved
+    if (placement == null) {
+      return _pill('LIVE', const Color(0xFF14532D), const Color(0xFF4ADE80));
+    }
+    final (label, bg, fg) = switch (placement) {
+      1 => ('🥇 #1', const Color(0xFF7C2D12), AppColors.accent),
+      2 => ('🥈 #2', const Color(0xFF334155), const Color(0xFF94A3B8)),
+      3 => ('🥉 #3', const Color(0xFF7C2D12), const Color(0xFFD97706)),
+      _ => ('#$placement', const Color(0xFF27272A), AppColors.textSecondary),
+    };
+    return _pill(label, bg, fg);
+  }
+
+  Widget _pill(String text, Color bg, Color fg) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius: BorderRadius.circular(999),
+        ),
+        child: Text(
+          text,
+          style: GoogleFonts.inter(
+            fontSize: 10,
+            fontWeight: FontWeight.w700,
+            color: fg,
+            letterSpacing: 0.3,
+          ),
+        ),
+      );
 }
 
 // ─── Mini status pill (for section header) ──────────────────────────────────────

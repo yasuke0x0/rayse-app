@@ -1,4 +1,28 @@
 
+## 2026-06-27 — Profile challenge history section
+
+### What changed
+- New `CHALLENGE HISTORY` section on the profile screen, beneath `MY VIDEOS`, sorted by most recent week first
+- Each row: trophy icon, title, week + skill, status/placement chip — taps through to the full challenge leaderboard
+- Chip semantics: 🥇/🥈/🥉 (with accent border) for top-3, `#X` for ranks 4+, LIVE for approved-but-not-fetched, PENDING/REJECTED for unapproved
+- Hidden entirely if the user has no challenge history (no zero-state placeholder)
+- Header pill shows total entered count
+
+### Provider
+New `myChallengeHistoryProvider` joins the user's challenge videos with the loaded challenges list, then fans out `challengeLeaderboardProvider` calls in parallel to derive placements. Output is a sorted `List<MyChallengeHistoryEntry>` (most recent week first). Cached for the session; invalidated on auth changes.
+
+### Files touched
+- `lib/features/challenges/providers/challenge_provider.dart` — `MyChallengeHistoryEntry` model + `myChallengeHistoryProvider`
+- `lib/features/profile/screens/profile_screen.dart` — `_ChallengeHistorySection`, `_HistoryRow` widgets + import
+- `lib/features/content/screens/home_screen.dart`, login_screen.dart, signup_screen.dart — invalidate new provider on auth changes (3 sites)
+- `documentation/challenges.md` — new "Profile Challenge History" section + struck-through future enhancement
+- DEVLOG.md
+
+### Gotchas
+- Yet another reminder: new user-specific provider MUST be added to all three auth invalidation sites. Forgetting any one creates cross-account state bleed.
+- "LIVE" placement chip means the user's approved video isn't in the fetched top 50 — could be a long tail or a fresh approval not yet ranked. We surface this honestly instead of guessing or showing nothing.
+- A video whose matching challenge row was deleted is silently dropped from history.
+
 ## 2026-06-27 — pg_cron auto-finalize (closes manual ops gap)
 
 ### What changed

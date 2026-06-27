@@ -63,6 +63,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         ref.invalidate(challengeParticipantCountProvider);
         ref.invalidate(myChallengePlacementProvider);
         ref.invalidate(myChallengeStatsProvider);
+        ref.invalidate(myChallengeHistoryProvider);
         ref.invalidate(selectedChallengeTierProvider);
         ref.invalidate(unreadNotificationCountProvider);
         ref.invalidate(notificationsProvider);

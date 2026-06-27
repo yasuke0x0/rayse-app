@@ -58,6 +58,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ref.invalidate(challengeParticipantCountProvider);
           ref.invalidate(myChallengePlacementProvider);
           ref.invalidate(myChallengeStatsProvider);
+          ref.invalidate(myChallengeHistoryProvider);
           ref.invalidate(selectedChallengeTierProvider);
           context.go('/login');
         } else if (prev?.valueOrNull?.session == null &&
@@ -81,6 +82,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ref.invalidate(challengeParticipantCountProvider);
           ref.invalidate(myChallengePlacementProvider);
           ref.invalidate(myChallengeStatsProvider);
+          ref.invalidate(myChallengeHistoryProvider);
           ref.invalidate(selectedChallengeTierProvider);
         }
       });
