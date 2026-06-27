@@ -111,16 +111,23 @@ XP values range from 50 (Basic Bounce) to 500 (Freestyle). Full mastery of all 1
 
 ---
 
-## My Videos (Personal Recordings)
+## My Videos (Personal + Challenge)
 
-Each mastered skill has a **"MY VIDEOS"** section in its detail screen — a personal library of all practice recordings for that skill.
+Each mastered skill has a **"MY VIDEOS"** section in its detail screen — a complete library of every video the user has made for that skill, **including both personal practice recordings and challenge submissions**.
 
 ### How It Works
 
-- Videos are **private** — only visible to the user who recorded them
-- Videos are **auto-approved** — no admin review needed
-- Videos are **all-time** — every recording ever made for that skill, not weekly
-- No premium gate — any user with a mastered skill can record videos
+- All-time view: every recording for this skill, not filtered by week
+- Each row gets a status pill on the right:
+  - **PERSONAL** (muted) — private practice recording, auto-approved
+  - **LIVE** (green) — challenge submission that's been approved
+  - **PENDING** (gray) — challenge submission awaiting admin review
+  - **REJECTED** (red) — challenge submission rejected by admin
+- Header has small count pills summarising state (`3 PERSONAL · 1 LIVE · 1 PENDING`) so the user sees at a glance what they have
+- Tapping any row opens the community video detail screen, which adapts based on type:
+  - Personal → title + notes + edit button
+  - Challenge → caption + fires + comments
+- No premium gate for personal videos; challenge submissions follow the challenges-feature gating (tier-locked, mastery required)
 
 ### Challenge Banner
 

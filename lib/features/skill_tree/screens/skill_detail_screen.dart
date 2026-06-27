@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:video_player/video_player.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../challenges/providers/challenge_provider.dart';
+import '../../community/models/community_video.dart';
 import '../../community/providers/community_provider.dart';
 import '../models/skill.dart';
 import '../providers/skill_provider.dart';
@@ -721,13 +722,29 @@ class _SkillDetailScreenState extends ConsumerState<SkillDetailScreen>
               const SizedBox(height: 14),
             ],
 
-            // ── Header ──
-            Row(
-              children: [
-                const Text('🎥', style: TextStyle(fontSize: 16)),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
+            // ── Header (with count pills) ──
+            Builder(builder: (context) {
+              final personalCount =
+                  allMyVideos.where((v) => !v.isChallenge).length;
+              final challengeVideos =
+                  allMyVideos.where((v) => v.isChallenge);
+              final liveCount = challengeVideos
+                  .where((v) => v.status == VideoStatus.approved)
+                  .length;
+              final pendingCount = challengeVideos
+                  .where((v) => v.status == VideoStatus.pending)
+                  .length;
+              final rejectedCount = challengeVideos
+                  .where((v) => v.status == VideoStatus.rejected)
+                  .length;
+
+              return Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  const Text('🎥', style: TextStyle(fontSize: 16)),
+                  Text(
                     'MY VIDEOS',
                     style: GoogleFonts.inter(
                       fontSize: 11,
@@ -736,9 +753,33 @@ class _SkillDetailScreenState extends ConsumerState<SkillDetailScreen>
                       letterSpacing: 1.5,
                     ),
                   ),
-                ),
-              ],
-            ),
+                  if (personalCount > 0)
+                    _MyVideosCountPill(
+                      label: '$personalCount PERSONAL',
+                      bg: const Color(0xFF27272A),
+                      fg: AppColors.textMuted,
+                    ),
+                  if (liveCount > 0)
+                    _MyVideosCountPill(
+                      label: '$liveCount LIVE',
+                      bg: const Color(0xFF14532D),
+                      fg: const Color(0xFF4ADE80),
+                    ),
+                  if (pendingCount > 0)
+                    _MyVideosCountPill(
+                      label: '$pendingCount PENDING',
+                      bg: const Color(0xFF3F3F46),
+                      fg: AppColors.textSecondary,
+                    ),
+                  if (rejectedCount > 0)
+                    _MyVideosCountPill(
+                      label: '$rejectedCount REJECTED',
+                      bg: const Color(0xFF450A0A),
+                      fg: const Color(0xFFF87171),
+                    ),
+                ],
+              );
+            }),
             const SizedBox(height: 6),
             Text(
               'Record your ${skill.title} practice to track your progress.',
@@ -752,59 +793,97 @@ class _SkillDetailScreenState extends ConsumerState<SkillDetailScreen>
             // ── Videos list ──
             if (allMyVideos.isNotEmpty) ...[
               const SizedBox(height: 12),
-              ...allMyVideos.map((v) => GestureDetector(
-                    onTap: () =>
-                        context.push('/community-video', extra: v),
-                    child: Container(
-                      margin: const EdgeInsets.only(bottom: 6),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: AppColors.background,
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: AppColors.border),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(Icons.play_circle_outline_rounded,
-                              color:
-                                  AppColors.accent.withValues(alpha: 0.6),
-                              size: 22),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  v.title.isNotEmpty
-                                      ? v.title
-                                      : v.caption.isNotEmpty
-                                          ? v.caption
-                                          : 'Untitled',
-                                  style: GoogleFonts.inter(
-                                    fontSize: 12,
-                                    color: v.title.isNotEmpty ||
-                                            v.caption.isNotEmpty
-                                        ? AppColors.textPrimary
-                                        : AppColors.textMuted,
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
+              ...allMyVideos.map((v) {
+                final (statusLabel, statusBg, statusFg) = !v.isChallenge
+                    ? ('PERSONAL', const Color(0xFF27272A), AppColors.textMuted)
+                    : switch (v.status) {
+                  VideoStatus.pending => (
+                      'PENDING',
+                      const Color(0xFF3F3F46),
+                      AppColors.textSecondary
+                    ),
+                  VideoStatus.approved => (
+                      'LIVE',
+                      const Color(0xFF14532D),
+                      const Color(0xFF4ADE80)
+                    ),
+                  VideoStatus.rejected => (
+                      'REJECTED',
+                      const Color(0xFF450A0A),
+                      const Color(0xFFF87171)
+                    ),
+                };
+                return GestureDetector(
+                  onTap: () => context.push('/community-video', extra: v),
+                  child: Container(
+                    margin: const EdgeInsets.only(bottom: 6),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: AppColors.background,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: AppColors.border),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.play_circle_outline_rounded,
+                            color:
+                                AppColors.accent.withValues(alpha: 0.6),
+                            size: 22),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                v.title.isNotEmpty
+                                    ? v.title
+                                    : v.caption.isNotEmpty
+                                        ? v.caption
+                                        : 'Untitled',
+                                style: GoogleFonts.inter(
+                                  fontSize: 12,
+                                  color: v.title.isNotEmpty ||
+                                          v.caption.isNotEmpty
+                                      ? AppColors.textPrimary
+                                      : AppColors.textMuted,
                                 ),
-                                Text(
-                                  _timeAgo(v.submittedAt),
-                                  style: GoogleFonts.inter(
-                                    fontSize: 10,
-                                    color: AppColors.textMuted,
-                                  ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              Text(
+                                _timeAgo(v.submittedAt),
+                                style: GoogleFonts.inter(
+                                  fontSize: 10,
+                                  color: AppColors.textMuted,
                                 ),
-                              ],
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 7, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: statusBg,
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                          child: Text(
+                            statusLabel,
+                            style: GoogleFonts.inter(
+                              fontSize: 9,
+                              fontWeight: FontWeight.w700,
+                              color: statusFg,
+                              letterSpacing: 0.3,
                             ),
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
-                  )),
+                  ),
+                );
+              }),
             ],
 
             // ── Record CTA ──
@@ -916,4 +995,36 @@ class _SkillDetailScreenState extends ConsumerState<SkillDetailScreen>
                   ))),
         ),
       );
+}
+
+class _MyVideosCountPill extends StatelessWidget {
+  final String label;
+  final Color bg;
+  final Color fg;
+
+  const _MyVideosCountPill({
+    required this.label,
+    required this.bg,
+    required this.fg,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        label,
+        style: GoogleFonts.inter(
+          fontSize: 9,
+          fontWeight: FontWeight.w700,
+          color: fg,
+          letterSpacing: 0.3,
+        ),
+      ),
+    );
+  }
 }

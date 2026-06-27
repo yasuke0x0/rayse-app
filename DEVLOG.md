@@ -1,4 +1,22 @@
 
+## 2026-06-27 — Skill detail MY VIDEOS now distinguishes personal vs challenge
+
+### What changed
+- The MY VIDEOS section on the skill detail screen previously showed both personal and challenge videos with no visual difference. Users had to remember which was which.
+- Now each row has a status pill on the right: PERSONAL (muted) / LIVE (green) / PENDING (gray) / REJECTED (red).
+- Header gained count pills mirroring the profile screen pattern (`3 PERSONAL · 1 LIVE · 1 PENDING`), wrapping cleanly when there are many.
+- Same data source (`mySkillVideosProvider`) — no new queries; just visual differentiation.
+- Tap behavior unchanged: both types open `/community-video` detail, which already adapts to personal vs challenge.
+
+### Files touched
+- `lib/features/skill_tree/screens/skill_detail_screen.dart` — updated header to a `Wrap` with count pills; each row gets an inline status pill; new `_MyVideosCountPill` widget; import `community_video.dart` for `VideoStatus`
+- `documentation/skill-tree.md` — renamed section ("My Videos" now describes both types), updated How It Works
+- DEVLOG.md
+
+### Gotchas
+- The pills use the same colors as the profile screen `_VideoCard` and profile `_MiniPill` — keep them in sync if either palette changes.
+- The header description text still reads "Record your X practice to track your progress" which now slightly under-sells the section. Left as-is for now since the primary use case is still personal recordings.
+
 ## 2026-06-27 — Profile challenge history section
 
 ### What changed
