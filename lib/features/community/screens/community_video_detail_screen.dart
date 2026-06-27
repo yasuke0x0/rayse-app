@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:video_player/video_player.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../challenges/providers/challenge_provider.dart';
 import '../models/community_video.dart';
 import '../providers/community_provider.dart';
 import '../widgets/comments_section_widget.dart';
@@ -195,6 +196,16 @@ class _CommunityVideoDetailScreenState
   Widget build(BuildContext context) {
     final video = widget.video;
     final myReactions = ref.watch(myReactionsProvider).valueOrNull ?? {};
+    // Lock fires once the matching challenge is finalized.
+    final allChallenges =
+        ref.watch(challengesProvider).valueOrNull ?? const [];
+    final matchingChallenge = allChallenges
+        .where((c) =>
+            c.skillId == video.skillId &&
+            c.weekNumber == video.weekNumber &&
+            c.weekYear == video.weekYear)
+        .firstOrNull;
+    final isFinalized = matchingChallenge?.isFinalized ?? false;
     final hasReacted = myReactions.contains(video.id);
     final weekKey = (video.weekNumber, video.weekYear);
 
@@ -401,44 +412,73 @@ class _CommunityVideoDetailScreenState
                           ),
                           const Spacer(),
                           GestureDetector(
-                            onTap: () {
-                              final adding =
-                                  !myReactions.contains(video.id);
-                              setState(() {
-                                _localScore += adding ? 1 : -1;
-                                if (_localScore < 0) _localScore = 0;
-                              });
-                              ref
-                                  .read(myReactionsProvider.notifier)
-                                  .toggle(video.id, weekKey);
-                            },
+                            onTap: isFinalized
+                                ? () {
+                                    ScaffoldMessenger.of(context)
+                                        .showSnackBar(SnackBar(
+                                      content: Text(
+                                        'Challenge ended — reactions are locked',
+                                        style: GoogleFonts.inter(
+                                            color: Colors.white,
+                                            fontSize: 13),
+                                      ),
+                                      backgroundColor: AppColors.surface,
+                                      behavior: SnackBarBehavior.floating,
+                                      shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(8)),
+                                    ));
+                                  }
+                                : () {
+                                    final adding =
+                                        !myReactions.contains(video.id);
+                                    setState(() {
+                                      _localScore += adding ? 1 : -1;
+                                      if (_localScore < 0) _localScore = 0;
+                                    });
+                                    ref
+                                        .read(myReactionsProvider.notifier)
+                                        .toggle(video.id, weekKey);
+                                  },
                             child: Container(
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 24, vertical: 14),
                               decoration: BoxDecoration(
-                                color: hasReacted
-                                    ? AppColors.accent
-                                    : AppColors.surface,
+                                color: isFinalized
+                                    ? const Color(0xFF27272A)
+                                    : hasReacted
+                                        ? AppColors.accent
+                                        : AppColors.surface,
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(
-                                  color: hasReacted
-                                      ? AppColors.accent
-                                      : AppColors.border,
+                                  color: isFinalized
+                                      ? AppColors.border
+                                      : hasReacted
+                                          ? AppColors.accent
+                                          : AppColors.border,
                                 ),
                               ),
                               child: Row(
                                 children: [
-                                  const Text('🔥',
-                                      style: TextStyle(fontSize: 20)),
+                                  Text(
+                                    isFinalized ? '🔒' : '🔥',
+                                    style: const TextStyle(fontSize: 20),
+                                  ),
                                   const SizedBox(width: 10),
                                   Text(
-                                    hasReacted ? 'FIRED!' : 'FIRE IT',
+                                    isFinalized
+                                        ? 'LOCKED'
+                                        : hasReacted
+                                            ? 'FIRED!'
+                                            : 'FIRE IT',
                                     style: GoogleFonts.inter(
                                       fontSize: 15,
                                       fontWeight: FontWeight.w700,
-                                      color: hasReacted
-                                          ? Colors.white
-                                          : AppColors.textSecondary,
+                                      color: isFinalized
+                                          ? AppColors.textMuted
+                                          : hasReacted
+                                              ? Colors.white
+                                              : AppColors.textSecondary,
                                       letterSpacing: 0.8,
                                     ),
                                   ),

@@ -441,14 +441,40 @@ CREATE TRIGGER on_auth_user_created
 -- ─── toggle_reaction RPC ───────────────────────────────────────────────────
 -- Atomically toggle a 🔥 reaction on a video AND adjust the cached score.
 -- Returns true if the reaction was added, false if removed.
+-- Locked once the matching challenge is finalized (so leaderboard ranks
+-- match the XP/badges that were awarded at finalize time).
 CREATE OR REPLACE FUNCTION public.toggle_reaction(p_video_id uuid)
 RETURNS boolean LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
 DECLARE
-  v_user_id uuid := auth.uid();
-  v_found   boolean;
+  v_user_id      uuid := auth.uid();
+  v_found        boolean;
+  v_is_challenge boolean;
+  v_skill_id     text;
+  v_wk           integer;
+  v_yr           integer;
+  v_finalized    timestamptz;
 BEGIN
   IF v_user_id IS NULL THEN
     RAISE EXCEPTION 'Not authenticated';
+  END IF;
+
+  -- Look up the video's challenge identity and reject if the challenge is finalized.
+  SELECT is_challenge, skill_id, week_number, week_year
+    INTO v_is_challenge, v_skill_id, v_wk, v_yr
+    FROM public.community_videos
+   WHERE id = p_video_id;
+
+  IF v_is_challenge THEN
+    SELECT finalized_at INTO v_finalized
+      FROM public.challenges
+     WHERE skill_id = v_skill_id
+       AND week_number = v_wk
+       AND week_year   = v_yr
+     LIMIT 1;
+    IF v_finalized IS NOT NULL THEN
+      RAISE EXCEPTION 'Challenge finalized — reactions are locked'
+        USING ERRCODE = 'P0001';
+    END IF;
   END IF;
 
   SELECT EXISTS (

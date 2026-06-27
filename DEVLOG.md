@@ -1,4 +1,24 @@
 
+## 2026-06-27 — Lock fires on finalized challenges + fix seed unlock cascade
+
+### What changed
+- **Lock fires on finalized challenges (Option C):**
+  - `toggle_reaction` RPC now refuses if the matching challenge's `finalized_at` is set, raising `Challenge finalized — reactions are locked` (errcode P0001). Comments remain open everywhere.
+  - Video detail screen now watches `challengesProvider`, matches the video to its challenge by (skill, week, year), and reads `isFinalized`. If finalized, the FIRE IT button renders as `🔒 LOCKED` (muted, no toggle). Tapping shows a snack bar instead of a state change.
+  - Keeps leaderboard ranks frozen at the moment XP / 🥇 badges are awarded — no post-facto drift.
+
+- **Fix seed unlock cascade:** `rayse_seed_progress` previously only marked the listed skills as `mastered`. Skills with all prereqs satisfied but not explicitly listed were left at the `mock_skills.dart` default of `locked`. Result: the intermediate persona had both Cross Overs and Double Unders mastered but Cross Double was still `locked`. Function now walks the prereq graph (encoded as jsonb, mirroring `skill_tree_data.dart`) and writes `available` for any skill whose prereqs are all satisfied.
+
+### Files touched
+- `supabase/setup.sql` — `toggle_reaction` finalized-check
+- `supabase/seed_personas.sql` — `rayse_seed_progress` cascade
+- `lib/features/community/screens/community_video_detail_screen.dart` — `isFinalized` + locked CTA + snack bar
+- DEVLOG.md
+
+### Gotchas
+- The prereq graph is duplicated between Dart (`skill_tree_data.dart`) and SQL (`rayse_seed_progress`). Keep them in sync.
+- A user holding a stale `FIRED!` state for a video on a freshly-finalized challenge will get an RPC error if they try to un-fire after finalize. Frontend hides the button so this rarely surfaces, but the RPC error is the safety net.
+
 ## 2026-06-27 — Tier-aware upcoming / last winner / past challenges
 
 ### What changed

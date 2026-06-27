@@ -111,7 +111,11 @@ BEGIN
 END $$;
 
 
--- ─── Helper: master a list of skills and set total XP ──────────────────────
+-- ─── Helper: master a list of skills, cascade-unlock dependents, set XP ───
+-- The cascade mirrors the in-app unlock chain: for every skill whose ALL
+-- prerequisites are in the mastered set, mark it `available`. Without this,
+-- a seeded persona who mastered both Cross Overs and Double Unders would
+-- still see Cross Double as `locked` (the default in mock_skills.dart).
 CREATE OR REPLACE FUNCTION public.rayse_seed_progress(
   p_user_id   uuid,
   p_skill_ids text[],
@@ -119,8 +123,32 @@ CREATE OR REPLACE FUNCTION public.rayse_seed_progress(
 ) RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path = public
 AS $$
 DECLARE
-  v_skill text;
+  v_skill        text;
+  v_target       text;
+  v_prereq       text;
+  v_prereq_arr   jsonb;
+  v_all_met      boolean;
+  -- Prerequisite graph — mirrors lib/features/skill_tree/data/skill_tree_data.dart.
+  -- Keep in sync if the in-app tree changes.
+  v_prereqs jsonb := jsonb_build_object(
+    'forward_jump',  jsonb_build_array('basic_bounce'),
+    'backward_jump', jsonb_build_array('basic_bounce'),
+    'alt_steps',     jsonb_build_array('basic_bounce'),
+    'double_unders', jsonb_build_array('forward_jump'),
+    'cross_overs',   jsonb_build_array('forward_jump', 'alt_steps'),
+    'side_swing',    jsonb_build_array('backward_jump'),
+    'triple_unders', jsonb_build_array('double_unders'),
+    'cross_double',  jsonb_build_array('cross_overs', 'double_unders'),
+    'releases',      jsonb_build_array('side_swing'),
+    'freestyle',     jsonb_build_array('triple_unders', 'cross_double', 'releases')
+  );
+  v_all_skills text[] := ARRAY[
+    'basic_bounce','forward_jump','backward_jump','alt_steps',
+    'double_unders','cross_overs','side_swing',
+    'triple_unders','cross_double','releases','freestyle'
+  ];
 BEGIN
+  -- Step 1: explicitly mastered skills
   FOREACH v_skill IN ARRAY p_skill_ids LOOP
     INSERT INTO public.user_skill_progress
       (user_id, skill_id, sessions_completed, status, updated_at)
@@ -132,6 +160,42 @@ BEGIN
           updated_at         = EXCLUDED.updated_at;
   END LOOP;
 
+  -- Step 2: basic_bounce is the starting skill — always at least available
+  INSERT INTO public.user_skill_progress
+    (user_id, skill_id, sessions_completed, status, updated_at)
+  VALUES (p_user_id, 'basic_bounce', 0, 'available', now())
+  ON CONFLICT (user_id, skill_id) DO NOTHING;
+
+  -- Step 3: cascade-unlock — any skill whose ALL prereqs are mastered
+  -- becomes `available` (without downgrading if already mastered).
+  FOREACH v_target IN ARRAY v_all_skills LOOP
+    IF v_target = 'basic_bounce' THEN CONTINUE; END IF;
+    IF v_target = ANY(p_skill_ids) THEN CONTINUE; END IF;
+
+    v_prereq_arr := v_prereqs->v_target;
+    IF v_prereq_arr IS NULL THEN CONTINUE; END IF;
+
+    v_all_met := true;
+    FOR v_prereq IN SELECT jsonb_array_elements_text(v_prereq_arr) LOOP
+      IF NOT (v_prereq = ANY(p_skill_ids)) THEN
+        v_all_met := false;
+        EXIT;
+      END IF;
+    END LOOP;
+
+    IF v_all_met THEN
+      INSERT INTO public.user_skill_progress
+        (user_id, skill_id, sessions_completed, status, updated_at)
+      VALUES (p_user_id, v_target, 0, 'available', now())
+      ON CONFLICT (user_id, skill_id) DO UPDATE
+        SET status     = CASE WHEN public.user_skill_progress.status = 'mastered'
+                              THEN 'mastered'
+                              ELSE 'available' END,
+            updated_at = EXCLUDED.updated_at;
+    END IF;
+  END LOOP;
+
+  -- Step 4: XP
   INSERT INTO public.user_xp (user_id, total_xp, updated_at)
   VALUES (p_user_id, p_total_xp, now())
   ON CONFLICT (user_id) DO UPDATE
