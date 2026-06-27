@@ -17,11 +17,22 @@
 -- Wipe every existing demo account (cascades to profile + everything tied to it).
 DELETE FROM auth.users WHERE email LIKE '%@rayse.ch';
 
--- Belt-and-suspenders: also wipe orphan profile rows (FK cascade may not be
--- installed on the live DB, or older @rayse.demo accounts may have left
--- orphans). Anything in public.profiles without a matching auth.users row
--- has no rightful owner.
+-- Wipe legacy @rayse.demo accounts (this domain was used earlier in the
+-- project; their profile rows still hold the demo usernames and would
+-- collide with the username unique constraint on a fresh seed run).
+DELETE FROM auth.users WHERE email LIKE '%@rayse.demo';
+
+-- Belt-and-suspenders: wipe any profile rows that lost their auth user
+-- somehow (FK cascade may not be installed on the live DB).
 DELETE FROM public.profiles WHERE id NOT IN (SELECT id FROM auth.users);
+
+-- Final safety: free up any profile row still holding one of the demo
+-- usernames so the rayse_seed_user UPDATE can claim it.
+DELETE FROM public.profiles WHERE username IN (
+  'demo_admin','ava_pro','ian_mid','beth_beg','finn_free',
+  'sam1','jordan2','riley3','casey4','morgan5',
+  'taylor6','pat7','quinn8','cameron9','drew10'
+);
 
 
 -- ─── Helper: create a demo auth user + return its UUID ─────────────────────
