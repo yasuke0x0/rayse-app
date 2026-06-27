@@ -85,6 +85,19 @@ profile/
 
 Commit types: feat / fix / chore / style / refactor
 
+## Supabase changes (mandatory)
+The `supabase/` folder must always reflect what's actually in production.
+
+Whenever you propose SQL — `CREATE/ALTER/DROP TABLE`, `CREATE FUNCTION`, `CREATE/DROP POLICY`, `CREATE TRIGGER`, new index, RPC, storage policy, realtime subscription, cron job, anything schema-level — you MUST:
+
+1. **Update `supabase/setup.sql`** so a fresh project produces the post-change state. Use idempotent forms (`IF NOT EXISTS`, `CREATE OR REPLACE`, `DROP POLICY IF EXISTS … CREATE POLICY`).
+2. Mention this in the same response. The user runs the SQL once on production; `setup.sql` already reflects the new shape so future fresh setups stay in sync.
+3. For documentation-worthy changes (new feature, new RPC, new trigger), also update `supabase/SETUP.md` if it explains a new operation, and the relevant doc in `documentation/`.
+
+If the user runs SQL directly without going through you, re-run `supabase/audit.sql` and reconcile `setup.sql` against the live state.
+
+NEVER deliver a SQL block to the user without first updating `supabase/setup.sql`. Drift between live and `setup.sql` defeats the whole point of having a setup file.
+
 ## What's built
 - [x] Project scaffolded
 - [x] Git + GitHub configured (yasuke0x0/rayse-app)

@@ -1,4 +1,18 @@
 
+## 2026-06-27 — Mandatory: keep supabase/ folder in sync with production
+
+### What changed
+- Added a "Supabase changes (mandatory)" section to `CLAUDE.md` that requires `supabase/setup.sql` to be updated whenever schema-level SQL is proposed.
+- Future workflow: any DDL (tables, columns, policies, functions, triggers, indexes, RPCs, storage, realtime, cron) gets reflected in `setup.sql` in the same response that delivers the SQL block. Idempotent forms required (`IF NOT EXISTS`, `CREATE OR REPLACE`, `DROP IF EXISTS … CREATE`).
+- If the user runs SQL directly without going through Claude, re-running `supabase/audit.sql` and reconciling becomes the recovery path.
+
+### Why
+The `supabase/setup.sql` file is only useful if it stays in sync. The whole reason we built it was to make the database reproducible — and that breaks the moment production drifts ahead of the file without anyone noticing. Codifying this in CLAUDE.md means future conversations follow the rule automatically.
+
+### Files touched
+- `CLAUDE.md` — new "Supabase changes (mandatory)" section
+- DEVLOG.md
+
 ## 2026-06-27 — setup.sql reconciled with live DB (zero drift)
 
 ### What changed
