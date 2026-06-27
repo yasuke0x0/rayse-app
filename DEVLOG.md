@@ -1,4 +1,34 @@
 
+## 2026-06-27 — Single-file Supabase setup: supabase/setup.sql
+
+### What changed
+- New `supabase/setup.sql` — one runnable file that builds the entire Rayse database from scratch.
+- Pasted top-to-bottom into the SQL editor on a fresh Supabase project, it produces a fully working backend (after enabling pg_cron + creating two storage buckets from the dashboard, which can't be done via SQL on most tiers).
+- Idempotent throughout (`CREATE OR REPLACE`, `IF NOT EXISTS`, `DROP POLICY IF EXISTS … CREATE POLICY`, conditional ALTER PUBLICATION, conditional cron registration).
+
+### What's covered
+- Extensions: `pgcrypto` (`pg_cron` documented as dashboard-enabled).
+- Tables: `profiles`, `user_skill_progress`, `user_xp`, `challenges`, `community_videos`, `community_reactions`, `video_comments`, `notifications`.
+- Indexes on hot query paths (user submissions, status × time, challenge week × score, unread notifications, comments by video).
+- RLS enabled on every table, with policies covering owner-only reads/writes, creator-elevated access for admin screens, and special cases (notifications insert is open to authenticated for the comment flow).
+- Triggers + RPCs: `handle_new_user`, `toggle_reaction`, `handle_challenge_video_submit`, `handle_challenge_video_approval`, `finalize_challenge`, `finalize_past_challenges`, `handle_new_challenge`.
+- Storage policies for the `avatars` and `community-videos` buckets — public read, scoped write (user can only write to their own folder).
+- Realtime publication added for `notifications`, `challenges`, `profiles`.
+- pg_cron job for Monday 00:30 UTC auto-finalize (registered only if extension is installed).
+
+### Pre-flight (must be done in the dashboard)
+- Enable `pg_cron` from Database → Extensions.
+- Create storage buckets `avatars` (public) and `community-videos` (public) from Storage.
+
+### Files touched
+- `supabase/setup.sql` — NEW
+- DEVLOG.md
+
+### Gotchas
+- Tutorials and daily workouts use mock data in `lib/features/{content,workout}/data/` — not part of the DB. If you wire them to Supabase later, add the tables here.
+- The `toggle_reaction` RPC body was reconstructed from how the client uses it (return bool, atomic add/remove + score adjust). If your existing production RPC has different semantics (e.g., different score model), reconcile before running this script on top of a non-empty DB.
+- RLS policies in the file are a reasonable default; if your production project has tighter or looser policies, audit before running on a non-empty DB.
+
 ## 2026-06-27 — Privacy banner moved inside the upload flow
 
 ### What changed
