@@ -17,6 +17,10 @@
 -- Prereqs:
 --   - supabase/setup.sql       was run on the project
 --   - supabase/seed_personas.sql was run (the 5 named + 10 jumper accounts exist)
+--   - Storage bucket `for-demo-only` (public) exists with a file
+--     `for-rayse-demo.mp4` at its root. All seeded videos reuse this same
+--     playable URL so the demo actually plays a video when you tap any card.
+--     Change c_demo_video below if you swap the file/bucket.
 -- ════════════════════════════════════════════════════════════════════════════
 
 
@@ -110,6 +114,10 @@ DECLARE
   p1_wk  integer; p1_yr  integer;
   p2_wk  integer; p2_yr  integer;
   p3_wk  integer; p3_yr  integer;
+
+  -- Single public URL every demo video reuses (playable in the app).
+  -- See script header for the bucket / file naming convention.
+  c_demo_video text := 'https://wcaemsoglgsypzfjzcjf.supabase.co/storage/v1/object/public/for-demo-only/for-rayse-demo.mp4';
 BEGIN
   -- Resolve weeks
   SELECT wk, yr INTO cur_wk, cur_yr FROM public.rayse_seed_week(0);
@@ -165,11 +173,11 @@ BEGIN
   INSERT INTO public.community_videos
     (user_id, skill_id, video_url, caption, status, is_challenge, week_number, week_year, score, submitted_at, reviewed_at, reviewed_by, xp_awarded)
   VALUES
-    (v_j1,       'forward_jump', 'https://demo.rayse/v/fw1.mp4', 'First clean set!',     'approved', true, cur_wk, cur_yr, 12, now() - interval '2 days',   now() - interval '2 days',   v_admin, true),
-    (v_j2,       'forward_jump', 'https://demo.rayse/v/fw2.mp4', 'Found my rhythm 🔥',    'approved', true, cur_wk, cur_yr, 24, now() - interval '36 hours', now() - interval '36 hours', v_admin, true),
-    (v_j3,       'forward_jump', 'https://demo.rayse/v/fw3.mp4', 'Smooth as butter',     'approved', true, cur_wk, cur_yr, 18, now() - interval '20 hours', now() - interval '18 hours', v_admin, true),
-    (v_j4,       'forward_jump', 'https://demo.rayse/v/fw4.mp4', 'Long set this week',   'approved', true, cur_wk, cur_yr,  9, now() - interval '12 hours', now() - interval '8 hours',  v_admin, true),
-    (v_beginner, 'forward_jump', 'https://demo.rayse/v/fw5.mp4', 'My entry — clean form','approved', true, cur_wk, cur_yr,  6, now() - interval '6 hours',  now() - interval '4 hours',  v_admin, true)
+    (v_j1,       'forward_jump', c_demo_video, 'First clean set!',     'approved', true, cur_wk, cur_yr, 12, now() - interval '2 days',   now() - interval '2 days',   v_admin, true),
+    (v_j2,       'forward_jump', c_demo_video, 'Found my rhythm 🔥',    'approved', true, cur_wk, cur_yr, 24, now() - interval '36 hours', now() - interval '36 hours', v_admin, true),
+    (v_j3,       'forward_jump', c_demo_video, 'Smooth as butter',     'approved', true, cur_wk, cur_yr, 18, now() - interval '20 hours', now() - interval '18 hours', v_admin, true),
+    (v_j4,       'forward_jump', c_demo_video, 'Long set this week',   'approved', true, cur_wk, cur_yr,  9, now() - interval '12 hours', now() - interval '8 hours',  v_admin, true),
+    (v_beginner, 'forward_jump', c_demo_video, 'My entry — clean form','approved', true, cur_wk, cur_yr,  6, now() - interval '6 hours',  now() - interval '4 hours',  v_admin, true)
   RETURNING id INTO v_v_j1_beg;
   SELECT id INTO v_v_beth_beg FROM public.community_videos WHERE user_id = v_beginner AND week_number = cur_wk AND skill_id = 'forward_jump';
   SELECT id INTO v_v_j1_beg   FROM public.community_videos WHERE user_id = v_j1       AND week_number = cur_wk AND skill_id = 'forward_jump';
@@ -178,10 +186,10 @@ BEGIN
   INSERT INTO public.community_videos
     (user_id, skill_id, video_url, caption, status, is_challenge, week_number, week_year, score, submitted_at, reviewed_at, reviewed_by, xp_awarded)
   VALUES
-    (v_j5,           'double_unders', 'https://demo.rayse/v/du1.mp4', '34 in a row!',          'approved', true, cur_wk, cur_yr, 28, now() - interval '40 hours', now() - interval '38 hours', v_admin, true),
-    (v_j6,           'double_unders', 'https://demo.rayse/v/du2.mp4', 'Clean technique',       'approved', true, cur_wk, cur_yr, 17, now() - interval '24 hours', now() - interval '20 hours', v_admin, true),
-    (v_j7,           'double_unders', 'https://demo.rayse/v/du3.mp4', 'PR set 💪',             'approved', true, cur_wk, cur_yr, 22, now() - interval '18 hours', now() - interval '15 hours', v_admin, true),
-    (v_intermediate, 'double_unders', 'https://demo.rayse/v/du4.mp4', 'Working on speed',      'approved', true, cur_wk, cur_yr, 14, now() - interval '10 hours', now() - interval '6 hours',  v_admin, true);
+    (v_j5,           'double_unders', c_demo_video, '34 in a row!',          'approved', true, cur_wk, cur_yr, 28, now() - interval '40 hours', now() - interval '38 hours', v_admin, true),
+    (v_j6,           'double_unders', c_demo_video, 'Clean technique',       'approved', true, cur_wk, cur_yr, 17, now() - interval '24 hours', now() - interval '20 hours', v_admin, true),
+    (v_j7,           'double_unders', c_demo_video, 'PR set 💪',             'approved', true, cur_wk, cur_yr, 22, now() - interval '18 hours', now() - interval '15 hours', v_admin, true),
+    (v_intermediate, 'double_unders', c_demo_video, 'Working on speed',      'approved', true, cur_wk, cur_yr, 14, now() - interval '10 hours', now() - interval '6 hours',  v_admin, true);
   SELECT id INTO v_v_ian_int FROM public.community_videos WHERE user_id = v_intermediate AND week_number = cur_wk AND skill_id = 'double_unders';
   SELECT id INTO v_v_j5_int  FROM public.community_videos WHERE user_id = v_j5           AND week_number = cur_wk AND skill_id = 'double_unders';
 
@@ -189,10 +197,10 @@ BEGIN
   INSERT INTO public.community_videos
     (user_id, skill_id, video_url, caption, status, is_challenge, week_number, week_year, score, submitted_at, reviewed_at, reviewed_by, xp_awarded)
   VALUES
-    (v_j8,       'freestyle', 'https://demo.rayse/v/fs1.mp4', '30s combo flow',        'approved', true, cur_wk, cur_yr, 31, now() - interval '3 days',   now() - interval '3 days',   v_admin, true),
-    (v_j9,       'freestyle', 'https://demo.rayse/v/fs2.mp4', 'Crowner + cross combo', 'approved', true, cur_wk, cur_yr, 26, now() - interval '2 days',   now() - interval '2 days',   v_admin, true),
-    (v_j10,      'freestyle', 'https://demo.rayse/v/fs3.mp4', 'Triple-release flow',   'approved', true, cur_wk, cur_yr, 19, now() - interval '36 hours', now() - interval '30 hours', v_admin, true),
-    (v_advanced, 'freestyle', 'https://demo.rayse/v/fs4.mp4', 'Hardest combo yet',     'approved', true, cur_wk, cur_yr, 35, now() - interval '8 hours',  now() - interval '4 hours',  v_admin, true);
+    (v_j8,       'freestyle', c_demo_video, '30s combo flow',        'approved', true, cur_wk, cur_yr, 31, now() - interval '3 days',   now() - interval '3 days',   v_admin, true),
+    (v_j9,       'freestyle', c_demo_video, 'Crowner + cross combo', 'approved', true, cur_wk, cur_yr, 26, now() - interval '2 days',   now() - interval '2 days',   v_admin, true),
+    (v_j10,      'freestyle', c_demo_video, 'Triple-release flow',   'approved', true, cur_wk, cur_yr, 19, now() - interval '36 hours', now() - interval '30 hours', v_admin, true),
+    (v_advanced, 'freestyle', c_demo_video, 'Hardest combo yet',     'approved', true, cur_wk, cur_yr, 35, now() - interval '8 hours',  now() - interval '4 hours',  v_admin, true);
   SELECT id INTO v_v_ava_adv FROM public.community_videos WHERE user_id = v_advanced AND week_number = cur_wk AND skill_id = 'freestyle';
   SELECT id INTO v_v_j8_adv  FROM public.community_videos WHERE user_id = v_j8       AND week_number = cur_wk AND skill_id = 'freestyle';
   SELECT id INTO v_v_j9_adv  FROM public.community_videos WHERE user_id = v_j9       AND week_number = cur_wk AND skill_id = 'freestyle';
@@ -204,8 +212,8 @@ BEGIN
   INSERT INTO public.community_videos
     (user_id, skill_id, video_url, caption, status, is_challenge, week_number, week_year, submitted_at)
   VALUES
-    (v_j2, 'double_unders', 'https://demo.rayse/v/pending1.mp4', 'Fresh DU set, please review',  'pending', true, cur_wk, cur_yr, now() - interval '30 minutes'),
-    (v_j6, 'freestyle',     'https://demo.rayse/v/pending2.mp4', 'New freestyle combo',          'pending', true, cur_wk, cur_yr, now() - interval '5 minutes');
+    (v_j2, 'double_unders', c_demo_video, 'Fresh DU set, please review',  'pending', true, cur_wk, cur_yr, now() - interval '30 minutes'),
+    (v_j6, 'freestyle',     c_demo_video, 'New freestyle combo',          'pending', true, cur_wk, cur_yr, now() - interval '5 minutes');
 
   -- ────────────────────────────────────────────────────────────────────────
   -- PAST CHALLENGE VIDEOS (with placements that match the persona narrative)
@@ -215,30 +223,30 @@ BEGIN
   INSERT INTO public.community_videos
     (user_id, skill_id, video_url, caption, status, is_challenge, week_number, week_year, score, submitted_at, reviewed_at, reviewed_by, xp_awarded)
   VALUES
-    (v_advanced, 'basic_bounce', 'https://demo.rayse/v/bb1.mp4', 'My winning bounce!', 'approved', true, p1_wk, p1_yr, 42, now() - interval '8 days', now() - interval '7 days', v_admin, true),
-    (v_j1,       'basic_bounce', 'https://demo.rayse/v/bb2.mp4', 'Solid week',         'approved', true, p1_wk, p1_yr, 35, now() - interval '8 days', now() - interval '7 days', v_admin, true),
-    (v_j2,       'basic_bounce', 'https://demo.rayse/v/bb3.mp4', 'Third place 🥉',     'approved', true, p1_wk, p1_yr, 28, now() - interval '8 days', now() - interval '7 days', v_admin, true),
-    (v_j3,       'basic_bounce', 'https://demo.rayse/v/bb4.mp4', 'Cleanest yet',       'approved', true, p1_wk, p1_yr, 20, now() - interval '8 days', now() - interval '7 days', v_admin, true),
-    (v_beginner, 'basic_bounce', 'https://demo.rayse/v/bb5.mp4', 'My first entry',     'approved', true, p1_wk, p1_yr, 12, now() - interval '8 days', now() - interval '7 days', v_admin, true);
+    (v_advanced, 'basic_bounce', c_demo_video, 'My winning bounce!', 'approved', true, p1_wk, p1_yr, 42, now() - interval '8 days', now() - interval '7 days', v_admin, true),
+    (v_j1,       'basic_bounce', c_demo_video, 'Solid week',         'approved', true, p1_wk, p1_yr, 35, now() - interval '8 days', now() - interval '7 days', v_admin, true),
+    (v_j2,       'basic_bounce', c_demo_video, 'Third place 🥉',     'approved', true, p1_wk, p1_yr, 28, now() - interval '8 days', now() - interval '7 days', v_admin, true),
+    (v_j3,       'basic_bounce', c_demo_video, 'Cleanest yet',       'approved', true, p1_wk, p1_yr, 20, now() - interval '8 days', now() - interval '7 days', v_admin, true),
+    (v_beginner, 'basic_bounce', c_demo_video, 'My first entry',     'approved', true, p1_wk, p1_yr, 12, now() - interval '8 days', now() - interval '7 days', v_admin, true);
   SELECT id INTO v_v_past1_w FROM public.community_videos WHERE user_id = v_advanced AND week_number = p1_wk AND skill_id = 'basic_bounce';
 
   -- Past 2: cross_overs (Intermediate). v_advanced placed #2.
   INSERT INTO public.community_videos
     (user_id, skill_id, video_url, caption, status, is_challenge, week_number, week_year, score, submitted_at, reviewed_at, reviewed_by, xp_awarded)
   VALUES
-    (v_j7,           'cross_overs', 'https://demo.rayse/v/co1.mp4', 'Smoothest set',  'approved', true, p2_wk, p2_yr, 38, now() - interval '15 days', now() - interval '14 days', v_admin, true),
-    (v_advanced,     'cross_overs', 'https://demo.rayse/v/co2.mp4', 'Close second 🥈', 'approved', true, p2_wk, p2_yr, 33, now() - interval '15 days', now() - interval '14 days', v_admin, true),
-    (v_j5,           'cross_overs', 'https://demo.rayse/v/co3.mp4', 'Crisp form',     'approved', true, p2_wk, p2_yr, 25, now() - interval '15 days', now() - interval '14 days', v_admin, true),
-    (v_intermediate, 'cross_overs', 'https://demo.rayse/v/co4.mp4', 'Loving this',    'approved', true, p2_wk, p2_yr, 17, now() - interval '15 days', now() - interval '14 days', v_admin, true);
+    (v_j7,           'cross_overs', c_demo_video, 'Smoothest set',  'approved', true, p2_wk, p2_yr, 38, now() - interval '15 days', now() - interval '14 days', v_admin, true),
+    (v_advanced,     'cross_overs', c_demo_video, 'Close second 🥈', 'approved', true, p2_wk, p2_yr, 33, now() - interval '15 days', now() - interval '14 days', v_admin, true),
+    (v_j5,           'cross_overs', c_demo_video, 'Crisp form',     'approved', true, p2_wk, p2_yr, 25, now() - interval '15 days', now() - interval '14 days', v_admin, true),
+    (v_intermediate, 'cross_overs', c_demo_video, 'Loving this',    'approved', true, p2_wk, p2_yr, 17, now() - interval '15 days', now() - interval '14 days', v_admin, true);
 
   -- Past 3: triple_unders (Advanced). v_j8 placed #1, v_advanced placed #3.
   INSERT INTO public.community_videos
     (user_id, skill_id, video_url, caption, status, is_challenge, week_number, week_year, score, submitted_at, reviewed_at, reviewed_by, xp_awarded)
   VALUES
-    (v_j8,       'triple_unders', 'https://demo.rayse/v/tu1.mp4', '8 in a row 🥇', 'approved', true, p3_wk, p3_yr, 44, now() - interval '22 days', now() - interval '21 days', v_admin, true),
-    (v_j9,       'triple_unders', 'https://demo.rayse/v/tu2.mp4', '6 clean 🥈',    'approved', true, p3_wk, p3_yr, 36, now() - interval '22 days', now() - interval '21 days', v_admin, true),
-    (v_advanced, 'triple_unders', 'https://demo.rayse/v/tu3.mp4', '5 clean 🥉',    'approved', true, p3_wk, p3_yr, 30, now() - interval '22 days', now() - interval '21 days', v_admin, true),
-    (v_j10,      'triple_unders', 'https://demo.rayse/v/tu4.mp4', '4 attempted',   'approved', true, p3_wk, p3_yr, 18, now() - interval '22 days', now() - interval '21 days', v_admin, true);
+    (v_j8,       'triple_unders', c_demo_video, '8 in a row 🥇', 'approved', true, p3_wk, p3_yr, 44, now() - interval '22 days', now() - interval '21 days', v_admin, true),
+    (v_j9,       'triple_unders', c_demo_video, '6 clean 🥈',    'approved', true, p3_wk, p3_yr, 36, now() - interval '22 days', now() - interval '21 days', v_admin, true),
+    (v_advanced, 'triple_unders', c_demo_video, '5 clean 🥉',    'approved', true, p3_wk, p3_yr, 30, now() - interval '22 days', now() - interval '21 days', v_admin, true),
+    (v_j10,      'triple_unders', c_demo_video, '4 attempted',   'approved', true, p3_wk, p3_yr, 18, now() - interval '22 days', now() - interval '21 days', v_admin, true);
 
   -- ────────────────────────────────────────────────────────────────────────
   -- PERSONAL VIDEOS — populate skill detail / profile screens
@@ -247,10 +255,10 @@ BEGIN
   INSERT INTO public.community_videos
     (user_id, skill_id, video_url, title, notes, status, is_challenge, week_number, week_year, submitted_at)
   VALUES
-    (v_advanced,     'freestyle',     'https://demo.rayse/v/p_adv.mp4',   'Practice combo #4', 'Working on transition speed',     'approved', false, cur_wk, cur_yr, now() - interval '3 days'),
-    (v_intermediate, 'double_unders', 'https://demo.rayse/v/p_int.mp4',   'DU drill',          'Felt smoother today',             'approved', false, cur_wk, cur_yr, now() - interval '2 days'),
-    (v_beginner,     'forward_jump',  'https://demo.rayse/v/p_beg.mp4',   'Warm-up',           'Building rhythm',                 'approved', false, cur_wk, cur_yr, now() - interval '1 day'),
-    (v_admin,        'basic_bounce',  'https://demo.rayse/v/p_admin.mp4', 'Form check',        'Demoing how personal videos look','approved', false, cur_wk, cur_yr, now() - interval '4 days');
+    (v_advanced,     'freestyle',     c_demo_video,   'Practice combo #4', 'Working on transition speed',     'approved', false, cur_wk, cur_yr, now() - interval '3 days'),
+    (v_intermediate, 'double_unders', c_demo_video,   'DU drill',          'Felt smoother today',             'approved', false, cur_wk, cur_yr, now() - interval '2 days'),
+    (v_beginner,     'forward_jump',  c_demo_video,   'Warm-up',           'Building rhythm',                 'approved', false, cur_wk, cur_yr, now() - interval '1 day'),
+    (v_admin,        'basic_bounce',  c_demo_video, 'Form check',        'Demoing how personal videos look','approved', false, cur_wk, cur_yr, now() - interval '4 days');
 
   -- ────────────────────────────────────────────────────────────────────────
   -- FIRE REACTIONS — scatter ~80 across top approved videos

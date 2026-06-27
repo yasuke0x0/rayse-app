@@ -168,6 +168,17 @@ All use password `212324` (matches the dev password prefilled in `login_screen.d
 - ~7 comments from premium personas
 - ~25 notifications mixing read and unread states across all 4 notification types
 
+### One-time bucket setup (so videos actually play)
+The seed script makes every demo video point at one shared public URL. To set this up:
+
+1. Dashboard → **Storage → New bucket** → name: `for-demo-only` → **Public bucket: ON** → Create.
+2. Upload a short MP4 (≤ 60 seconds) named `for-rayse-demo.mp4` to the root of that bucket.
+3. The public URL should be:
+   `https://<your-project-ref>.supabase.co/storage/v1/object/public/for-demo-only/for-rayse-demo.mp4`
+4. If your project ref differs from the URL hard-coded in `seed_demo_data.sql`, edit the `c_demo_video` constant near the top of the DO block.
+
+When users tap any card in the demo, the same video plays. Cheap, looks real.
+
 ### Running the demo seed
 ```
 1. Open Supabase SQL editor
