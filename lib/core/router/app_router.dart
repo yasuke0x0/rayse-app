@@ -62,20 +62,18 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/workout',
       builder: (context, state) => const WorkoutsScreen(),
-      routes: [
-        GoRoute(
-          path: 'group/:groupId',
-          builder: (context, state) => WorkoutGroupDetailScreen(
-            groupId: state.pathParameters['groupId']!,
-          ),
-        ),
-        GoRoute(
-          path: 'play/:id',
-          builder: (context, state) => WorkoutPlayerScreen(
-            workoutId: state.pathParameters['id']!,
-          ),
-        ),
-      ],
+    ),
+    GoRoute(
+      path: '/workout/group/:groupId',
+      builder: (context, state) => WorkoutGroupDetailScreen(
+        groupId: state.pathParameters['groupId']!,
+      ),
+    ),
+    GoRoute(
+      path: '/workout/play/:id',
+      builder: (context, state) => WorkoutPlayerScreen(
+        workoutId: state.pathParameters['id']!,
+      ),
     ),
     GoRoute(
       path: '/skill-detail/:skillId',
