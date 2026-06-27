@@ -498,85 +498,10 @@ final mockWorkoutGroups = <WorkoutGroup>[
   ),
 
   // ═══════════════════════════════════════════════════════════════════════
-  // PREMIUM — Challenge Prep
+  // PREMIUM — Challenge Prep is built dynamically in challenge_prep_builder.dart
+  // (uses the user's tier's active challenge to inject the skill name).
+  // The workoutGroupsProvider stitches it in at runtime.
   // ═══════════════════════════════════════════════════════════════════════
-  WorkoutGroup(
-    id: 'challenge_prep',
-    title: 'CHALLENGE PREP',
-    tagline: 'Train for this week\'s challenge.',
-    emoji: '🏆',
-    accentColor: const Color(0xFFF97316),
-    isFreeTier: false,
-    workouts: [
-      const Workout(
-        id: 'prep_weekly',
-        title: 'Weekly Skill Prep',
-        description:
-            'A focused drill on the active challenge skill. Tune up before submitting.',
-        durationMinutes: 12,
-        difficulty: 'all',
-        focusArea: 'Challenge',
-        exercises: [
-          Exercise(
-            id: 'pw_1',
-            name: 'Skill Warmup',
-            instruction:
-                'Light bounce for 2 minutes. Loosen up wrists and shoulders.',
-            sets: 1,
-            reps: 1,
-            restSeconds: 30,
-          ),
-          Exercise(
-            id: 'pw_2',
-            name: 'Active Skill Drill',
-            instruction:
-                'Focus reps on the active challenge skill. 5 sets of 10.',
-            sets: 5,
-            reps: 10,
-            restSeconds: 60,
-          ),
-        ],
-      ),
-      const Workout(
-        id: 'prep_routine',
-        title: 'Pre-Submission Routine',
-        description: 'Quick prep before recording your challenge video.',
-        durationMinutes: 8,
-        difficulty: 'all',
-        focusArea: 'Challenge',
-        exercises: [
-          Exercise(
-            id: 'pr_1',
-            name: 'Camera-Ready Set',
-            instruction:
-                'Two clean attempts at the skill. Rest 60s between.',
-            sets: 2,
-            reps: 1,
-            restSeconds: 60,
-          ),
-        ],
-      ),
-      const Workout(
-        id: 'prep_power',
-        title: 'Power Hour',
-        description: '45 minutes of peak-performance practice.',
-        durationMinutes: 45,
-        difficulty: 'advanced',
-        focusArea: 'Challenge',
-        exercises: [
-          Exercise(
-            id: 'pp_1',
-            name: 'Full-Skill Cycle',
-            instruction:
-                'Cycle through every active challenge skill. 5 mins each.',
-            sets: 1,
-            reps: 1,
-            restSeconds: 120,
-          ),
-        ],
-      ),
-    ],
-  ),
 ];
 
 /// All workouts, flattened across groups (for player lookup, etc.)

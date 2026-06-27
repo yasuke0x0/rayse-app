@@ -12,22 +12,13 @@ class WorkoutGroupDetailScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final groupAsync = ref.watch(workoutGroupByIdProvider(groupId));
+    final group = ref.watch(workoutGroupByIdProvider(groupId));
 
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
-        child: groupAsync.when(
-          loading: () => const Center(
-            child: CircularProgressIndicator(color: AppColors.accent),
-          ),
-          error: (e, _) => Center(
-            child: Text(
-              'Could not load this program.',
-              style: GoogleFonts.inter(color: AppColors.textMuted),
-            ),
-          ),
-          data: (group) {
+        child: Builder(
+          builder: (context) {
             if (group == null) {
               return Center(
                 child: Text(
