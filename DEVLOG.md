@@ -4,7 +4,7 @@
 ### What changed
 - **Lock fires on finalized challenges (Option C):**
   - `toggle_reaction` RPC now refuses if the matching challenge's `finalized_at` is set, raising `Challenge finalized — reactions are locked` (errcode P0001). Comments remain open everywhere.
-  - Video detail screen now watches `challengesProvider`, matches the video to its challenge by (skill, week, year), and reads `isFinalized`. If finalized, the FIRE IT button renders as `🔒 LOCKED` (muted, no toggle). Tapping shows a snack bar instead of a state change.
+  - Video detail screen now watches `challengesProvider`, matches the video to its challenge by (skill, week, year), and reads `isFinalized`. If finalized, the FIRE IT button is **hidden entirely** (no locked state, no snack bar — just gone).
   - Keeps leaderboard ranks frozen at the moment XP / 🥇 badges are awarded — no post-facto drift.
 
 - **Fix seed unlock cascade:** `rayse_seed_progress` previously only marked the listed skills as `mastered`. Skills with all prereqs satisfied but not explicitly listed were left at the `mock_skills.dart` default of `locked`. Result: the intermediate persona had both Cross Overs and Double Unders mastered but Cross Double was still `locked`. Function now walks the prereq graph (encoded as jsonb, mirroring `skill_tree_data.dart`) and writes `available` for any skill whose prereqs are all satisfied.
