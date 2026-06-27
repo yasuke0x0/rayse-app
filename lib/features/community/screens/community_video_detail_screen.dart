@@ -244,6 +244,12 @@ class _CommunityVideoDetailScreenState
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // Privacy badge (only shown to the owner)
+                    if (_isOwner) ...[
+                      _PrivacyBadge(isChallenge: video.isChallenge),
+                      const SizedBox(height: 12),
+                    ],
+
                     // Personal video: title + edit button
                     if (!video.isChallenge) ...[
                       Row(
@@ -472,4 +478,64 @@ class _CommunityVideoDetailScreenState
   };
 
   String _skillLabel(String id) => _skillLabels[id] ?? id;
+}
+
+class _PrivacyBadge extends StatelessWidget {
+  final bool isChallenge;
+  const _PrivacyBadge({required this.isChallenge});
+
+  @override
+  Widget build(BuildContext context) {
+    final (icon, label, subtitle, bg, fg) = isChallenge
+        ? (
+            Icons.public_rounded,
+            'PUBLIC',
+            'Visible to everyone on the leaderboard',
+            const Color(0xFF14532D),
+            const Color(0xFF4ADE80),
+          )
+        : (
+            Icons.lock_outline_rounded,
+            'PRIVATE',
+            'Only you can see this video',
+            const Color(0xFF27272A),
+            AppColors.textSecondary,
+          );
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: bg.withValues(alpha: 0.35),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: bg),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: fg, size: 14),
+          const SizedBox(width: 8),
+          Text(
+            label,
+            style: GoogleFonts.inter(
+              fontSize: 10,
+              fontWeight: FontWeight.w800,
+              color: fg,
+              letterSpacing: 1,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Container(width: 1, height: 12, color: fg.withValues(alpha: 0.3)),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              subtitle,
+              style: GoogleFonts.inter(
+                fontSize: 11,
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }

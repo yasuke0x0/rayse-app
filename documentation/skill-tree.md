@@ -152,7 +152,9 @@ This reinforces that personal practice comes first, then community competition o
 
 ### Record Video
 
-"RECORD VIDEO" button navigates to the 3-step upload flow:
+The "RECORD VIDEO" button has a small italic line beneath it: *"🔒 Personal videos are private — only you can see them"* — so users understand the upload from this screen is for their own diary, not for the community.
+
+Tap → navigates to the 3-step upload flow:
 1. Pick video from gallery (max 60 seconds)
 2. Add **title** (60 chars) + **notes** (500 chars) — for progress tracking
 3. Review and submit
@@ -168,6 +170,14 @@ Tapping a video in the list opens the video detail screen showing:
 - Notes card (if notes exist)
 
 The owner can tap the **edit button** (pencil icon) to update the title and notes via a dialog. No fire reactions or comments on personal videos.
+
+### Privacy Badge
+
+When the **owner** views one of their own videos in the community video detail screen, a privacy badge appears at the top:
+- 🔒 **PRIVATE — Only you can see this video** (personal videos, muted color)
+- 🌐 **PUBLIC — Visible to everyone on the leaderboard** (challenge videos, green accent)
+
+The badge is hidden for non-owners (they wouldn't see the personal video in the first place; for challenge videos it's obviously public). This removes any ambiguity about who can see the video the user just opened.
 
 ---
 

@@ -1,4 +1,25 @@
 
+## 2026-06-27 — Privacy hints: RECORD VIDEO subtext + owner privacy badge
+
+### What changed
+- **Skill detail RECORD VIDEO button** now has a small italic hint beneath it: "🔒 Personal videos are private — only you can see them". Removes ambiguity about whether tapping uploads a community video or a private diary entry.
+- **Community video detail screen** shows a privacy badge at the top of the body, but only when the viewer is the owner of the video:
+  - 🔒 **PRIVATE — Only you can see this video** (muted, for personal videos)
+  - 🌐 **PUBLIC — Visible to everyone on the leaderboard** (green, for challenge videos)
+- Non-owners don't see the badge (it would either be redundant or impossible — they can't see personal videos at all)
+
+### Why
+We mix personal and challenge videos on the same screens now (skill detail MY VIDEOS, profile MY VIDEOS). Users need a clear answer to "if I tap RECORD VIDEO here, who can see this?" and "this video I just opened — is it public?".
+
+### Files touched
+- `lib/features/skill_tree/screens/skill_detail_screen.dart` — italic privacy hint under RECORD VIDEO button
+- `lib/features/community/screens/community_video_detail_screen.dart` — new `_PrivacyBadge` widget rendered when `_isOwner`
+- `documentation/skill-tree.md` — RECORD VIDEO subtext mentioned + Privacy Badge subsection added
+- DEVLOG.md
+
+### Gotchas
+- The badge logic is `_isOwner` only — non-owners viewing a public challenge video see no badge. Acceptable since a non-owner can never see a personal video (filtered server/client side), and a public challenge video is self-evidently public.
+
 ## 2026-06-27 — Skill detail MY VIDEOS now distinguishes personal vs challenge
 
 ### What changed
