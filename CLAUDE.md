@@ -110,5 +110,5 @@ The `supabase/seed_demo_data.sql` script is what the user runs to populate a cle
 - [x] Phase 3 — Home + content library
 - [x] Phase 4 — Skill tree
 - [x] Phase 5 — Challenges + leaderboard
-- [x] Phase 6 — Daily workout program
+- [x] Phase 6 — Programs (workout groups with premium gating)
 - [ ] Phase 7 — Subscriptions (RevenueCat)

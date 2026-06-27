@@ -13,6 +13,7 @@ import '../../challenges/providers/challenge_provider.dart';
 import '../../challenges/screens/challenges_screen.dart';
 import '../../profile/screens/profile_screen.dart';
 import '../../workout/providers/workout_provider.dart';
+import '../../workout/screens/workouts_screen.dart';
 import '../providers/content_provider.dart';
 import '../widgets/tutorial_card.dart';
 
@@ -95,6 +96,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           _HomeTabBody(onSwitchTab: (i) => setState(() => _currentIndex = i)),
           const SkillTreeScreen(),
           const ChallengesScreen(),
+          const WorkoutsScreen(),
           const ProfileScreen(),
         ],
       ),
@@ -132,6 +134,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   icon: Icon(Icons.emoji_events_outlined),
                   activeIcon: Icon(Icons.emoji_events),
                   label: 'Challenges',
+                ),
+                const BottomNavigationBarItem(
+                  icon: Icon(Icons.fitness_center_outlined),
+                  activeIcon: Icon(Icons.fitness_center),
+                  label: 'Programs',
                 ),
                 BottomNavigationBarItem(
                   icon: _IconWithDot(
@@ -407,7 +414,8 @@ class _TodayWorkoutBanner extends ConsumerWidget {
       data: (workout) {
         final isDone = completed.contains(workout.id);
         return GestureDetector(
-          onTap: () => context.push('/workout'),
+          onTap: () =>
+              ref.read(homeTabIndexProvider.notifier).state = 3,
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             decoration: BoxDecoration(

@@ -4,9 +4,9 @@ class Workout {
   final String id;
   final String title;
   final String description;
-  final int weekday; // 1 = Monday … 7 = Sunday
+  final int? weekday; // 1 = Monday … 7 = Sunday — null for non-daily workouts
   final int durationMinutes;
-  final String difficulty; // 'beginner' | 'intermediate' | 'advanced'
+  final String difficulty; // 'beginner' | 'intermediate' | 'advanced' | 'all'
   final String focusArea;
   final List<Exercise> exercises;
 
@@ -14,7 +14,7 @@ class Workout {
     required this.id,
     required this.title,
     required this.description,
-    required this.weekday,
+    this.weekday,
     required this.durationMinutes,
     required this.difficulty,
     required this.focusArea,

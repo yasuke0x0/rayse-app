@@ -11,8 +11,9 @@ import 'package:rayse/features/skill_tree/screens/practice_screen.dart';
 import 'package:rayse/features/skill_tree/screens/result_screen.dart';
 import 'package:rayse/features/skill_tree/screens/mastered_screen.dart';
 import 'package:rayse/features/subscription/screens/paywall_screen.dart';
-import 'package:rayse/features/workout/screens/daily_workout_screen.dart';
+import 'package:rayse/features/workout/screens/workout_group_detail_screen.dart';
 import 'package:rayse/features/workout/screens/workout_player_screen.dart';
+import 'package:rayse/features/workout/screens/workouts_screen.dart';
 import 'package:rayse/features/community/screens/submit_video_screen.dart';
 import 'package:rayse/features/community/screens/admin_panel_screen.dart';
 import 'package:rayse/features/community/screens/admin_users_screen.dart';
@@ -60,8 +61,14 @@ final appRouter = GoRouter(
     ),
     GoRoute(
       path: '/workout',
-      builder: (context, state) => const DailyWorkoutScreen(),
+      builder: (context, state) => const WorkoutsScreen(),
       routes: [
+        GoRoute(
+          path: 'group/:groupId',
+          builder: (context, state) => WorkoutGroupDetailScreen(
+            groupId: state.pathParameters['groupId']!,
+          ),
+        ),
         GoRoute(
           path: 'play/:id',
           builder: (context, state) => WorkoutPlayerScreen(

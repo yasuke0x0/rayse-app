@@ -1,4 +1,42 @@
 
+## 2026-06-27 — Workouts → Programs (Pattern A: group grid + premium gating)
+
+### What changed
+- Workouts upgraded from a flat 7-day list to a two-level hierarchy: **groups** (themes like Foundations, Cardio Burn, Skill Builders) → **workouts** within each group.
+- 6 groups: 2 free (Foundations 🌱, Quick Sessions ⚡) + 4 premium (Cardio Burn 🔥, Skill Builders 🎯, Freestyle Lab 🎨, Challenge Prep 🏆). Each group has 3–5 workouts.
+- New 5th bottom-nav tab: **Programs** (fitness_center icon). Tab order: Home / Learn / Challenges / Programs / Profile.
+- Anyone (regardless of mastered tier) can do any workout. Premium gating is monetization, not skill gating.
+
+### New screens
+- `WorkoutsScreen` (`/workout`) — Pattern A: today's hero card + grid of program groups (2 cols). Locked groups show a 🔒 PREMIUM pill; tap goes to paywall.
+- `WorkoutGroupDetailScreen` (`/workout/group/:groupId`) — hero with group identity + list of workouts inside.
+- `WorkoutPlayerScreen` (`/workout/play/:id`) — unchanged.
+
+### Files touched
+- NEW: `lib/features/workout/models/workout_group.dart`
+- NEW: `lib/features/workout/data/mock_workout_groups.dart`
+- NEW: `lib/features/workout/screens/workouts_screen.dart`
+- NEW: `lib/features/workout/screens/workout_group_detail_screen.dart`
+- DELETED: `lib/features/workout/screens/daily_workout_screen.dart`
+- DELETED: `lib/features/workout/data/mock_workouts.dart`
+- `lib/features/workout/models/workout.dart` — `weekday` nullable for non-daily workouts; difficulty can be `'all'`
+- `lib/features/workout/repository/workout_repository.dart` — exposes groups, derives today's pick across catalog
+- `lib/features/workout/providers/workout_provider.dart` — `workoutGroupsProvider`, `workoutGroupByIdProvider`
+- `lib/features/content/screens/home_screen.dart` — 5th tab, today banner taps now switch tabs instead of pushing
+- `lib/core/router/app_router.dart` — `/workout` → `WorkoutsScreen`, added `/workout/group/:groupId`
+- `CLAUDE.md` — Phase 6 description updated
+
+### Notes
+- Today's workout banner stays on Home; tap now switches to the Programs tab via `homeTabIndexProvider` (smooth tab transition instead of push).
+- Each workout still has the existing exercises list, so the player works unchanged.
+- The "Challenge Prep" group ties to the challenges system conceptually (workouts that warm you up for the active challenge skill). Currently static; dynamic per-week skill selection is a future enhancement.
+
+### Future enhancements (deferred)
+- Dynamic "Challenge Prep" content that mirrors the active challenge skill each week.
+- Completion tracking + XP rewards for workouts (currently `completedWorkoutsProvider` is in-memory).
+- Move workouts to Supabase so creators can publish via admin (similar to challenges).
+- Soft paywall on locked groups (show 1 preview workout instead of hard paywall).
+
 ## 2026-06-27 — Lock fires on finalized challenges + fix seed unlock cascade
 
 ### What changed
