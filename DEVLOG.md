@@ -1,4 +1,25 @@
 
+## 2026-06-27 — Home tab redesign: status dashboard
+
+### What changed
+Replaced the messy home with a focused status dashboard:
+
+- **Compact greeting** — kept (smaller).
+- **NEW: Stats strip** — 3 cards: Total XP, Skills Mastered (n/total), Best Rank. Wired to `xpProvider`, `skillsProvider`, and `myChallengeStatsProvider`.
+- **Today's Mission** — bigger card with title, duration · focus area, full-width orange `START WORKOUT` button (green `MISSION COMPLETE` + `DO IT AGAIN` when done). Tap goes straight to `/workout/play/:id` (no extra hop through the Programs tab).
+- **NEW: Keep Learning** — next available skill from the tree with a progress bar (sessionsCompleted/5) and a chevron tile that switches to the Learn tab. Falls back gracefully when no skill is available.
+- **This week's challenge** — promoted to a labelled section with two meta pills (`{n}d left`, `You're #{rank}` / `Not entered`) and a full-width CTA that flips between `VIEW LEADERBOARD` and `SUBMIT YOUR VIDEO` depending on placement.
+- **NEW: Trending This Week** — top 3 community videos by score with medal-coloured rank (gold/silver/bronze), `@username`, and 🔥 score. Reads from `approvedVideosProvider((isoWeek, year))`.
+
+### What was removed
+- Free Tutorials horizontal carousel (still reachable via tutorial detail screens / Learn tab).
+- Your Level horizontal carousel (was just the same tutorials filtered to beginner — redundant).
+- Random orange status dot in the top-right corner (didn't do anything).
+- Old standalone `_FeaturedChallengeCard` widget (replaced by the richer `_WeeklyChallenge` with placement awareness).
+
+### Files touched
+- `lib/features/content/screens/home_screen.dart` — complete rewrite of `_HomeTabBody` and supporting widgets
+
 ## 2026-06-27 — Programs: skill chips on workout rows
 
 ### What changed

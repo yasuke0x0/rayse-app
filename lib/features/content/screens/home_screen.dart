@@ -1,21 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:go_router/go_router.dart';
 import '../../../core/services/supabase_service.dart';
 import '../../../core/theme/app_colors.dart';
-import 'package:go_router/go_router.dart';
 import '../../auth/providers/auth_provider.dart';
-import '../../community/providers/community_provider.dart';
-import '../../notifications/providers/notification_provider.dart';
-import '../../skill_tree/providers/skill_provider.dart';
-import '../../skill_tree/screens/skill_tree_screen.dart';
 import '../../challenges/providers/challenge_provider.dart';
 import '../../challenges/screens/challenges_screen.dart';
+import '../../community/models/community_video.dart';
+import '../../community/providers/community_provider.dart';
+import '../../community/repository/community_video_repository.dart';
+import '../../notifications/providers/notification_provider.dart';
 import '../../profile/screens/profile_screen.dart';
+import '../../skill_tree/models/skill.dart';
+import '../../skill_tree/providers/skill_provider.dart';
+import '../../skill_tree/screens/skill_tree_screen.dart';
 import '../../workout/providers/workout_provider.dart';
 import '../../workout/screens/workouts_screen.dart';
-import '../providers/content_provider.dart';
-import '../widgets/tutorial_card.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -204,7 +205,37 @@ class _HomeTabBody extends ConsumerWidget {
 
   const _HomeTabBody({required this.onSwitchTab});
 
-  String get _greeting {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Stack(
+      children: [
+        const Positioned.fill(child: _GridOverlay()),
+        SafeArea(
+          child: CustomScrollView(
+            slivers: [
+              const SliverToBoxAdapter(child: _Greeting()),
+              const SliverToBoxAdapter(child: _StatsStrip()),
+              const SliverToBoxAdapter(child: _TodaysMission()),
+              SliverToBoxAdapter(
+                  child: _KeepLearning(onSwitchTab: onSwitchTab)),
+              SliverToBoxAdapter(
+                  child: _WeeklyChallenge(onSwitchTab: onSwitchTab)),
+              const SliverToBoxAdapter(child: _Trending()),
+              const SliverToBoxAdapter(child: SizedBox(height: 32)),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ─── Greeting ─────────────────────────────────────────────────────────────────
+
+class _Greeting extends ConsumerWidget {
+  const _Greeting();
+
+  String _greeting() {
     final hour = DateTime.now().hour;
     if (hour < 12) return 'GOOD MORNING,';
     if (hour < 17) return 'GOOD AFTERNOON,';
@@ -222,268 +253,274 @@ class _HomeTabBody extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final tutorialsAsync = ref.watch(tutorialsProvider);
-
-    return Stack(
-      children: [
-        const Positioned.fill(child: _GridOverlay()),
-        SafeArea(
-          child: CustomScrollView(
-            slivers: [
-              // ── Greeting header ──────────────────────────────────────────
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              _greeting,
-                              style: GoogleFonts.inter(
-                                fontSize: 12,
-                                color: AppColors.textSecondary,
-                                letterSpacing: 1.5,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              _displayName(ref),
-                              style: GoogleFonts.poppins(
-                                fontSize: 28,
-                                fontWeight: FontWeight.w700,
-                                color: AppColors.textPrimary,
-                                height: 1.1,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Container(
-                        width: 10,
-                        height: 10,
-                        decoration: const BoxDecoration(
-                          color: AppColors.accent,
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
-              // ── Today's workout card ──────────────────────────────────────
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 28, 24, 0),
-                  child: _TodayWorkoutBanner(),
-                ),
-              ),
-
-              // ── Featured challenge card ───────────────────────────────────
-              SliverToBoxAdapter(
-                child: _FeaturedChallengeCard(onTap: () => onSwitchTab(2)),
-              ),
-
-              // ── Free tutorials section ────────────────────────────────────
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 36, 24, 0),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'FREE TUTORIALS',
-                        style: GoogleFonts.poppins(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.textPrimary,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                      Text(
-                        'SEE ALL',
-                        style: GoogleFonts.inter(
-                          fontSize: 12,
-                          color: AppColors.accent,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.only(top: 16),
-                  child: tutorialsAsync.when(
-                    loading: () => const _HorizontalLoadingRow(),
-                    error: (_, _) => const _ErrorRow(),
-                    data: (tutorials) => SizedBox(
-                      height: 228,
-                      child: ListView.builder(
-                        scrollDirection: Axis.horizontal,
-                        padding: const EdgeInsets.symmetric(horizontal: 24),
-                        itemCount: tutorials.length,
-                        itemBuilder: (context, i) => Padding(
-                          padding: EdgeInsets.only(
-                              right: i < tutorials.length - 1 ? 12 : 0),
-                          child: TutorialCard(tutorial: tutorials[i]),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-
-              // ── Your level section ────────────────────────────────────────
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 36, 24, 0),
-                  child: Text(
-                    'YOUR LEVEL',
-                    style: GoogleFonts.poppins(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textPrimary,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                ),
-              ),
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.only(top: 16, bottom: 32),
-                  child: tutorialsAsync.when(
-                    loading: () => const _HorizontalLoadingRow(),
-                    error: (_, _) => const _ErrorRow(),
-                    data: (tutorials) {
-                      final filtered = tutorials
-                          .where((t) => t.level == 'beginner')
-                          .toList();
-                      final display =
-                          filtered.isNotEmpty ? filtered : tutorials;
-                      return SizedBox(
-                        height: 228,
-                        child: ListView.builder(
-                          scrollDirection: Axis.horizontal,
-                          padding: const EdgeInsets.symmetric(horizontal: 24),
-                          itemCount: display.length,
-                          itemBuilder: (context, i) => Padding(
-                            padding: EdgeInsets.only(
-                                right: i < display.length - 1 ? 12 : 0),
-                            child: TutorialCard(tutorial: display[i]),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ),
-            ],
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            _greeting(),
+            style: GoogleFonts.inter(
+              fontSize: 11,
+              color: AppColors.textSecondary,
+              letterSpacing: 1.5,
+              fontWeight: FontWeight.w500,
+            ),
           ),
-        ),
-      ],
+          const SizedBox(height: 2),
+          Text(
+            _displayName(ref),
+            style: GoogleFonts.poppins(
+              fontSize: 24,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textPrimary,
+              height: 1.1,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
 
-// ─── Today's workout banner ───────────────────────────────────────────────────
+// ─── Stats strip (3 cards: XP / Mastered / Best placement) ────────────────────
 
-class _TodayWorkoutBanner extends ConsumerWidget {
+class _StatsStrip extends ConsumerWidget {
+  const _StatsStrip();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final xp = ref.watch(xpProvider);
+    final skills = ref.watch(skillsProvider);
+    final mastered =
+        skills.where((s) => s.status == SkillStatus.mastered).length;
+    final total = skills.length;
+    final statsAsync = ref.watch(myChallengeStatsProvider);
+    final best = statsAsync.valueOrNull?.bestPlacement;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
+      child: Row(
+        children: [
+          Expanded(
+            child: _StatCard(
+              value: _formatXp(xp),
+              label: 'TOTAL XP',
+              icon: Icons.bolt_rounded,
+              iconColor: AppColors.accent,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: _StatCard(
+              value: total == 0 ? '—' : '$mastered/$total',
+              label: 'MASTERED',
+              icon: Icons.workspace_premium_rounded,
+              iconColor: const Color(0xFF4ADE80),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: _StatCard(
+              value: best == null ? '—' : '#$best',
+              label: 'BEST RANK',
+              icon: Icons.emoji_events_rounded,
+              iconColor: const Color(0xFFFBBF24),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatXp(int xp) {
+    if (xp >= 1000) {
+      final k = xp / 1000;
+      return '${k.toStringAsFixed(k >= 10 ? 0 : 1)}k';
+    }
+    return '$xp';
+  }
+}
+
+class _StatCard extends StatelessWidget {
+  final String value;
+  final String label;
+  final IconData icon;
+  final Color iconColor;
+  const _StatCard({
+    required this.value,
+    required this.label,
+    required this.icon,
+    required this.iconColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        children: [
+          Icon(icon, color: iconColor, size: 18),
+          const SizedBox(height: 8),
+          Text(
+            value,
+            style: GoogleFonts.poppins(
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+              color: AppColors.textPrimary,
+              height: 1,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: GoogleFonts.inter(
+              fontSize: 9,
+              color: AppColors.textMuted,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.8,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Today's mission (big card) ───────────────────────────────────────────────
+
+class _TodaysMission extends ConsumerWidget {
+  const _TodaysMission();
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final todayAsync = ref.watch(todayWorkoutProvider);
     final completed = ref.watch(completedWorkoutsProvider);
 
     return todayAsync.when(
-      loading: () => Container(
-        height: 72,
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.border),
+      loading: () => Padding(
+        padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
+        child: Container(
+          height: 140,
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: AppColors.border),
+          ),
         ),
       ),
       error: (_, _) => const SizedBox.shrink(),
       data: (workout) {
         final isDone = completed.contains(workout.id);
-        return GestureDetector(
-          onTap: () =>
-              ref.read(homeTabIndexProvider.notifier).state = 3,
+        final accent =
+            isDone ? const Color(0xFF22C55E) : AppColors.accent;
+
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             decoration: BoxDecoration(
               color: AppColors.surface,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: isDone
-                    ? const Color(0xFF22C55E)
-                    : AppColors.accent.withValues(alpha: 0.5),
-              ),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: accent.withValues(alpha: 0.55)),
             ),
-            child: Row(
+            padding: const EdgeInsets.all(18),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: isDone
-                        ? const Color(0xFF22C55E).withValues(alpha: 0.15)
-                        : AppColors.accent.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Icon(
-                    isDone ? Icons.check : Icons.fitness_center_outlined,
-                    color: isDone
-                        ? const Color(0xFF22C55E)
-                        : AppColors.accent,
-                    size: 20,
-                  ),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        isDone ? 'WORKOUT DONE' : "TODAY'S WORKOUT",
-                        style: GoogleFonts.inter(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w700,
-                          color: isDone
-                              ? const Color(0xFF22C55E)
-                              : AppColors.accent,
-                          letterSpacing: 0.8,
-                        ),
+                Row(
+                  children: [
+                    Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: accent.withValues(alpha: 0.18),
+                        borderRadius: BorderRadius.circular(10),
                       ),
-                      const SizedBox(height: 2),
-                      Text(
-                        workout.title,
-                        style: GoogleFonts.inter(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.textPrimary,
-                        ),
+                      alignment: Alignment.center,
+                      child: Icon(
+                        isDone
+                            ? Icons.check_rounded
+                            : Icons.local_fire_department_rounded,
+                        color: accent,
+                        size: 20,
                       ),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      isDone ? 'MISSION COMPLETE' : "TODAY'S MISSION",
+                      style: GoogleFonts.inter(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
+                        color: accent,
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                  ],
                 ),
+                const SizedBox(height: 14),
                 Text(
-                  '${workout.durationMinutes} min',
-                  style: GoogleFonts.inter(
-                    fontSize: 12,
-                    color: AppColors.textMuted,
+                  workout.title,
+                  style: GoogleFonts.poppins(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.textPrimary,
+                    height: 1.15,
                   ),
                 ),
-                const SizedBox(width: 8),
-                const Icon(Icons.arrow_forward_ios,
-                    color: AppColors.textMuted, size: 14),
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    const Icon(Icons.schedule_rounded,
+                        color: AppColors.textMuted, size: 14),
+                    const SizedBox(width: 4),
+                    Text(
+                      '${workout.durationMinutes} min',
+                      style: GoogleFonts.inter(
+                        fontSize: 13,
+                        color: AppColors.textMuted,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      '· ${workout.focusArea}',
+                      style: GoogleFonts.inter(
+                        fontSize: 13,
+                        color: AppColors.textMuted,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () =>
+                        context.push('/workout/play/${workout.id}'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: accent,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 0,
+                    ),
+                    child: Text(
+                      isDone ? 'DO IT AGAIN' : 'START WORKOUT',
+                      style: GoogleFonts.inter(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
@@ -493,47 +530,420 @@ class _TodayWorkoutBanner extends ConsumerWidget {
   }
 }
 
+// ─── Keep learning (next skill) ───────────────────────────────────────────────
 
-// ─── Loading / error states ───────────────────────────────────────────────────
-
-class _HorizontalLoadingRow extends StatelessWidget {
-  const _HorizontalLoadingRow();
+class _KeepLearning extends ConsumerWidget {
+  final ValueChanged<int> onSwitchTab;
+  const _KeepLearning({required this.onSwitchTab});
 
   @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 228,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 24),
-        itemCount: 3,
-        itemBuilder: (_, i) => Padding(
-          padding: EdgeInsets.only(right: i < 2 ? 12 : 0),
-          child: Container(
-            width: 200,
-            height: 228,
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.border),
+  Widget build(BuildContext context, WidgetRef ref) {
+    final skills = ref.watch(skillsProvider);
+    // Next = first available (unlocked but not mastered), else first completed
+    // (passed but not yet earned mastery), else first non-mastered.
+    Skill? next = skills
+        .where((s) => s.status == SkillStatus.available)
+        .toList()
+        .firstOrNull;
+    next ??= skills
+        .where((s) => s.status == SkillStatus.completed)
+        .toList()
+        .firstOrNull;
+
+    if (next == null) return const SizedBox.shrink();
+
+    final progress = (next.sessionsCompleted / 5).clamp(0.0, 1.0);
+    final progressPct = (progress * 100).round();
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 28, 24, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'KEEP LEARNING',
+            style: GoogleFonts.inter(
+              fontSize: 11,
+              fontWeight: FontWeight.w800,
+              color: AppColors.textMuted,
+              letterSpacing: 1.4,
             ),
           ),
-        ),
+          const SizedBox(height: 10),
+          GestureDetector(
+            onTap: () => onSwitchTab(1),
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: AppColors.border),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        width: 38,
+                        height: 38,
+                        decoration: BoxDecoration(
+                          color: AppColors.accent.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        alignment: Alignment.center,
+                        child: const Icon(
+                          Icons.school_rounded,
+                          color: AppColors.accent,
+                          size: 20,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'NEXT UP',
+                              style: GoogleFonts.inter(
+                                fontSize: 9,
+                                fontWeight: FontWeight.w800,
+                                color: AppColors.accent,
+                                letterSpacing: 1.0,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              next.title.toUpperCase(),
+                              style: GoogleFonts.poppins(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w800,
+                                color: AppColors.textPrimary,
+                                letterSpacing: 0.3,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Icon(Icons.chevron_right_rounded,
+                          color: AppColors.textMuted, size: 22),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(999),
+                    child: LinearProgressIndicator(
+                      value: progress,
+                      minHeight: 6,
+                      backgroundColor: AppColors.border,
+                      valueColor: const AlwaysStoppedAnimation<Color>(
+                          AppColors.accent),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '${next.sessionsCompleted}/5 sessions · $progressPct%',
+                    style: GoogleFonts.inter(
+                      fontSize: 11,
+                      color: AppColors.textMuted,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
 }
 
-class _ErrorRow extends StatelessWidget {
-  const _ErrorRow();
+// ─── This week's challenge ────────────────────────────────────────────────────
+
+class _WeeklyChallenge extends ConsumerWidget {
+  final ValueChanged<int> onSwitchTab;
+  const _WeeklyChallenge({required this.onSwitchTab});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final challenge = ref.watch(activeChallengeProvider);
+    if (challenge == null) return const SizedBox.shrink();
+
+    final placementAsync =
+        ref.watch(myChallengePlacementProvider(challenge.id));
+    final placement = placementAsync.valueOrNull;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 28, 24, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            "THIS WEEK'S CHALLENGE",
+            style: GoogleFonts.inter(
+              fontSize: 11,
+              fontWeight: FontWeight.w800,
+              color: AppColors.textMuted,
+              letterSpacing: 1.4,
+            ),
+          ),
+          const SizedBox(height: 10),
+          GestureDetector(
+            onTap: () => onSwitchTab(2),
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: AppColors.accent),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        width: 38,
+                        height: 38,
+                        decoration: BoxDecoration(
+                          color: AppColors.accent.withValues(alpha: 0.18),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        alignment: Alignment.center,
+                        child: const Icon(
+                          Icons.emoji_events_rounded,
+                          color: AppColors.accent,
+                          size: 20,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          challenge.title,
+                          style: GoogleFonts.poppins(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.textPrimary,
+                            height: 1.2,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  Row(
+                    children: [
+                      _MetaPill(
+                        icon: Icons.schedule_rounded,
+                        text: '${challenge.daysLeft}d left',
+                      ),
+                      const SizedBox(width: 8),
+                      if (placement != null)
+                        _MetaPill(
+                          icon: Icons.local_fire_department_rounded,
+                          text: "You're #$placement",
+                          highlight: true,
+                        )
+                      else
+                        _MetaPill(
+                          icon: Icons.add_rounded,
+                          text: 'Not entered',
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () => onSwitchTab(2),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.accent,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: Text(
+                        placement != null
+                            ? 'VIEW LEADERBOARD'
+                            : 'SUBMIT YOUR VIDEO',
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 1.2,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MetaPill extends StatelessWidget {
+  final IconData icon;
+  final String text;
+  final bool highlight;
+  const _MetaPill({
+    required this.icon,
+    required this.text,
+    this.highlight = false,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final color = highlight ? AppColors.accent : AppColors.textMuted;
+    final bg = highlight
+        ? AppColors.accent.withValues(alpha: 0.15)
+        : const Color(0xFF1F1F23);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: color, size: 12),
+          const SizedBox(width: 4),
+          Text(
+            text,
+            style: GoogleFonts.inter(
+              fontSize: 11,
+              color: color,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Trending this week ───────────────────────────────────────────────────────
+
+class _Trending extends ConsumerWidget {
+  const _Trending();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final now = DateTime.now().toUtc();
+    final weekKey = (CommunityVideoRepository.isoWeek(now), now.year);
+    final videosAsync = ref.watch(approvedVideosProvider(weekKey));
+
+    return videosAsync.when(
+      loading: () => const SizedBox.shrink(),
+      error: (_, _) => const SizedBox.shrink(),
+      data: (videos) {
+        if (videos.isEmpty) return const SizedBox.shrink();
+        final top = [...videos]..sort((a, b) => b.score.compareTo(a.score));
+        final top3 = top.take(3).toList();
+
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(24, 28, 24, 0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'TRENDING THIS WEEK',
+                style: GoogleFonts.inter(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.textMuted,
+                  letterSpacing: 1.4,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Container(
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppColors.border),
+                ),
+                child: Column(
+                  children: [
+                    for (var i = 0; i < top3.length; i++) ...[
+                      _TrendingRow(rank: i + 1, video: top3[i]),
+                      if (i < top3.length - 1)
+                        Container(
+                          height: 1,
+                          color: AppColors.border,
+                          margin:
+                              const EdgeInsets.symmetric(horizontal: 14),
+                        ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _TrendingRow extends StatelessWidget {
+  final int rank;
+  final CommunityVideo video;
+  const _TrendingRow({required this.rank, required this.video});
+
+  @override
+  Widget build(BuildContext context) {
+    final medal = switch (rank) {
+      1 => const Color(0xFFFBBF24),
+      2 => const Color(0xFFD4D4D8),
+      3 => const Color(0xFFD97706),
+      _ => AppColors.textMuted,
+    };
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: Text(
-        'Failed to load tutorials.',
-        style: GoogleFonts.inter(fontSize: 13, color: AppColors.textMuted),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 24,
+            child: Text(
+              '#$rank',
+              style: GoogleFonts.poppins(
+                fontSize: 13,
+                fontWeight: FontWeight.w800,
+                color: medal,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              '@${video.username}',
+              style: GoogleFonts.inter(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimary,
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          Icon(Icons.local_fire_department_rounded,
+              color: AppColors.accent, size: 16),
+          const SizedBox(width: 4),
+          Text(
+            '${video.score}',
+            style: GoogleFonts.inter(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textPrimary,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -565,89 +975,4 @@ class _GridPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
-
-// ─── Featured challenge card (dynamic) ────────────────────────────────────────
-
-class _FeaturedChallengeCard extends ConsumerWidget {
-  final VoidCallback onTap;
-  const _FeaturedChallengeCard({required this.onTap});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final challenge = ref.watch(activeChallengeProvider);
-    if (challenge == null) return const SizedBox.shrink();
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 12, 24, 0),
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: AppColors.accent),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: AppColors.accent,
-                  borderRadius: BorderRadius.circular(999),
-                ),
-                child: Text(
-                  "THIS WEEK'S CHALLENGE",
-                  style: GoogleFonts.inter(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                    letterSpacing: 0.8,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          challenge.title,
-                          style: GoogleFonts.poppins(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.textPrimary,
-                            height: 1.2,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          '${challenge.daysLeft}d left · Community challenge',
-                          style: GoogleFonts.inter(
-                            fontSize: 13,
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const Icon(
-                    Icons.arrow_forward,
-                    color: AppColors.accent,
-                    size: 20,
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 }
