@@ -138,6 +138,16 @@ SELECT * FROM cron.job_run_details
 
 ---
 
+## Verifying an existing project matches `setup.sql`
+
+If you already have a live Supabase project and want to confirm it matches the schema in `setup.sql` (e.g. after months of ad-hoc dashboard tweaks), run [`audit.sql`](./audit.sql) in the SQL editor. It returns one big table covering every schema-level object: tables, columns, constraints, indexes, RLS state and policies, functions, triggers, extensions, storage buckets, realtime publication, and pg_cron jobs.
+
+Copy the result and diff against `setup.sql`. Anything in the audit that isn't in `setup.sql` is local drift; anything in `setup.sql` that's missing from the audit is something to apply via a focused migration.
+
+If `cron.job` doesn't exist on your project (pg_cron not installed), the `cron_` CTE at the bottom of `audit.sql` will fail — comment out both lines that reference it and rerun.
+
+---
+
 ## What's NOT in `setup.sql`
 
 - **Tutorials and daily workouts** — these currently use mock data in `lib/features/{content,workout}/data/`. If you wire them to Supabase later, add the tables to `setup.sql` so future fresh setups pick them up.

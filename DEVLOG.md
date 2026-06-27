@@ -1,4 +1,21 @@
 
+## 2026-06-27 — Audit script for verifying live DB matches setup.sql
+
+### What changed
+- New `supabase/audit.sql` — a single read-only query that returns one big table dumping the live DB's schema-level objects: tables, columns, constraints, indexes, RLS state and policies, functions, triggers, extensions, storage buckets, realtime publication membership, and pg_cron jobs.
+- `SETUP.md` got a new "Verifying an existing project matches setup.sql" section explaining how to run it and what to do with the output.
+
+### Why
+`setup.sql` was reconstructed from reading the codebase, not from the live DB. There's a real possibility of drift: missing columns/policies/triggers, or extra ones that should be added back to setup.sql. The audit gives the user a single command they can run in the SQL editor and paste back for diffing.
+
+### Files touched
+- `supabase/audit.sql` — NEW
+- `supabase/SETUP.md` — added the verifying section
+- DEVLOG.md
+
+### Gotchas
+- The `cron_` CTE will fail to parse if `pg_cron` isn't installed (`cron.job` table absent). Documented in SETUP.md: comment out the two cron-related lines if needed.
+
 ## 2026-06-27 — Split Supabase setup: SQL ≠ tutorial
 
 ### What changed
