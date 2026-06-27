@@ -1,4 +1,13 @@
 
+## 2026-06-27 — Programs: skill chips on workout rows
+
+### What changed
+- Replaced the muted italic "Master X first" advisory with **prereq skill chips**, one per skill the workout uses. Mastered skills render as a dim chip with a check; unmastered skills render in the Rayse orange accent with a lock icon, drawing the eye to what to learn next.
+- Same behavior contract — tap still starts the workout; advisory only.
+
+### Files touched
+- `lib/features/workout/screens/workout_group_detail_screen.dart` — new `_SkillChip` widget; `_WorkoutRow` builds `skillChips` (record list of id/label/isMastered) and renders them in a `Wrap`
+
 ## 2026-06-27 — Programs polish: skill prereqs, drop challenge link, fix player
 
 ### What changed

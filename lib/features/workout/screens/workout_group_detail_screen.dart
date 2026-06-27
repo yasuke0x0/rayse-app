@@ -212,20 +212,20 @@ class _WorkoutRow extends ConsumerWidget {
         ),
     };
 
-    // Compute unmet prereqs (skills the user hasn't mastered yet).
+    // Build "skills used" chips — one per prereq. Mastered ones look subtle,
+    // unmastered ones pop in orange to flag what the user should learn first.
     final allSkills = ref.watch(skillsProvider);
     final masteredIds = allSkills
         .where((s) => s.status == SkillStatus.mastered)
         .map((s) => s.id)
         .toSet();
-    final unmetPrereqs = workout.prerequisiteSkillIds
-        .where((id) => !masteredIds.contains(id))
+    final skillChips = workout.prerequisiteSkillIds
+        .map((id) => (
+              id: id,
+              label: _skillLabels[id] ?? id,
+              isMastered: masteredIds.contains(id),
+            ))
         .toList();
-    final unmetLabel = unmetPrereqs.isEmpty
-        ? null
-        : unmetPrereqs.length == 1
-            ? 'Master ${_skillLabels[unmetPrereqs.first] ?? unmetPrereqs.first} first'
-            : 'Master ${unmetPrereqs.length} skills first';
 
     return GestureDetector(
       onTap: () => context.push('/workout/play/${workout.id}'),
@@ -304,25 +304,17 @@ class _WorkoutRow extends ConsumerWidget {
                       ),
                     ],
                   ),
-                  if (unmetLabel != null) ...[
-                    const SizedBox(height: 6),
-                    Row(
-                      children: [
-                        const Icon(Icons.lightbulb_outline_rounded,
-                            color: AppColors.textMuted, size: 11),
-                        const SizedBox(width: 4),
-                        Flexible(
-                          child: Text(
-                            unmetLabel,
-                            style: GoogleFonts.inter(
-                              fontSize: 10,
-                              color: AppColors.textMuted,
-                              fontStyle: FontStyle.italic,
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
+                  if (skillChips.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
+                      children: skillChips
+                          .map((c) => _SkillChip(
+                                label: c.label,
+                                isMastered: c.isMastered,
+                              ))
+                          .toList(),
                     ),
                   ],
                 ],
@@ -332,6 +324,56 @@ class _WorkoutRow extends ConsumerWidget {
                 color: AppColors.textMuted, size: 22),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _SkillChip extends StatelessWidget {
+  final String label;
+  final bool isMastered;
+  const _SkillChip({required this.label, required this.isMastered});
+
+  @override
+  Widget build(BuildContext context) {
+    // Mastered = subtle dim chip (just shows it's covered).
+    // Unmastered = loud orange-accent chip with lock — draws the eye.
+    final bg = isMastered
+        ? const Color(0xFF1F1F23)
+        : AppColors.accent.withValues(alpha: 0.16);
+    final border = isMastered
+        ? AppColors.border
+        : AppColors.accent.withValues(alpha: 0.55);
+    final fg = isMastered ? AppColors.textMuted : AppColors.accent;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: border),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            isMastered
+                ? Icons.check_rounded
+                : Icons.lock_outline_rounded,
+            color: fg,
+            size: 11,
+          ),
+          const SizedBox(width: 4),
+          Text(
+            label.toUpperCase(),
+            style: GoogleFonts.inter(
+              fontSize: 9,
+              fontWeight: FontWeight.w700,
+              color: fg,
+              letterSpacing: 0.4,
+            ),
+          ),
+        ],
       ),
     );
   }
