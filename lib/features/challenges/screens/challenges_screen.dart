@@ -98,26 +98,33 @@ class _ChallengesBody extends ConsumerWidget {
     if (challenges.isEmpty) return const _EmptyState();
 
     final activeAll = challenges.where((c) => c.isCurrentWeek).toList();
-    final upcoming = challenges.where((c) => c.isUpcoming).toList()
+
+    // Determine selected tier — drives upcoming, past, and active filters.
+    final skills = ref.watch(skillsProvider);
+    final userTier = highestMasteredTier(skills);
+    final selectedTierState = ref.watch(selectedChallengeTierProvider);
+    final hasMultiTier = activeAll.length > 1;
+    final effectiveTier = selectedTierState ?? userTier;
+
+    // Upcoming + past filtered by the selected tier so the teaser, winner
+    // spotlight, and past list all match what the user is browsing.
+    final upcoming = challenges
+        .where((c) => c.isUpcoming && tierForSkill(c.skillId) == effectiveTier)
+        .toList()
       ..sort((a, b) {
         // Soonest first
         final yearCmp = a.weekYear.compareTo(b.weekYear);
         return yearCmp != 0 ? yearCmp : a.weekNumber.compareTo(b.weekNumber);
       });
-    final past = challenges.where((c) => c.isPast).toList();
+    final past = challenges
+        .where((c) => c.isPast && tierForSkill(c.skillId) == effectiveTier)
+        .toList();
     final nextUp = upcoming.firstOrNull;
     final lastWinner = past.firstOrNull;
-
-    // Determine selected active challenge for multi-tier flow
-    final skills = ref.watch(skillsProvider);
-    final userTier = highestMasteredTier(skills);
-    final selectedTierState = ref.watch(selectedChallengeTierProvider);
-    final hasMultiTier = activeAll.length > 1;
 
     Challenge? active;
     if (activeAll.isNotEmpty) {
       if (hasMultiTier) {
-        final effectiveTier = selectedTierState ?? userTier;
         active = activeAll
                 .where((c) => tierForSkill(c.skillId) == effectiveTier)
                 .firstOrNull ??

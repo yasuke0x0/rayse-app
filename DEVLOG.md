@@ -1,4 +1,17 @@
 
+## 2026-06-27 — Tier-aware upcoming / last winner / past challenges
+
+### What changed
+- `_ChallengesBody` previously filtered the active hero by tier but left `upcoming`, `past`, `nextUp`, and `lastWinner` global. So tapping the Intermediate tab still showed Beginner's last winner, Beginner's upcoming teaser, and the full unfiltered past list.
+- Extracted `effectiveTier` once near the top of the body build, then used it to filter the upcoming + past lists. This carries through to the `_UpcomingChallengeCard`, `_LastWinnerSpotlight`, and "PAST CHALLENGES" list.
+
+### Why
+When users switch tiers via the tier selector, every section below should follow. Otherwise the tab feels like only the hero is tier-aware while the rest of the page is broken.
+
+### Files touched
+- `lib/features/challenges/screens/challenges_screen.dart` — hoist `effectiveTier`, filter `upcoming` + `past` by it
+- DEVLOG.md
+
 ## 2026-06-27 — Demo seed scripts (personas + dynamic-week data)
 
 ### What changed

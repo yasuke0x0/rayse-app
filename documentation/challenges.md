@@ -168,6 +168,8 @@ If a challenge exists with a future `week_number` (computed from `Challenge.isUp
 
 Sorted by soonest first if multiple upcoming challenges exist (only the closest is shown). Hidden when no upcoming challenges exist in the DB. Gives users a reason to push toward mastering the next skill in advance.
 
+**Tier-aware**: filtered by the selected tier (or the user's default tier). Tapping a different tier in the tier selector swaps the upcoming card to that tier's next challenge.
+
 ### 7. Last Week's Winner Spotlight
 
 The most recent past challenge's winner is highlighted in a dedicated card above the past challenges list:
@@ -181,6 +183,8 @@ The most recent past challenge's winner is highlighted in a dedicated card above
 
 Reuses the existing `challengeLeaderboardProvider` — no extra DB query.
 
+**Tier-aware**: shows the most recent past challenge **for the selected tier**. Switching tier tabs swaps the spotlight to that tier's last winner.
+
 ### 8. Past Challenges
 - List of previous week challenges
 - Each card shows: title, week number, skill name, **placement chip**
@@ -191,6 +195,8 @@ Reuses the existing `challengeLeaderboardProvider` — no extra DB query.
   - "You didn't enter" (muted pill) if no submission
 - **Free users:** locked with "🔒 PREMIUM" badge, tapping → `/paywall`. Placement chip is hidden.
 - **Premium users:** can browse past challenges with their placement context
+
+**Tier-aware**: filtered by the selected tier. Switching tier tabs scopes the list to that tier's past challenges only.
 
 ### Empty States
 - No challenges in DB: "NO CHALLENGES YET — Challenges are coming soon!"
