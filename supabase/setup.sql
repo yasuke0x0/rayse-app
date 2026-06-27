@@ -1,29 +1,13 @@
 -- ════════════════════════════════════════════════════════════════════════════
--- RAYSE — Supabase setup
+-- Rayse — Supabase schema
 -- ════════════════════════════════════════════════════════════════════════════
--- Runnable top-to-bottom in the Supabase SQL editor on a FRESH project.
--- Idempotent where possible (CREATE OR REPLACE / IF NOT EXISTS).
---
--- Before running:
---   1. Enable pg_cron from Supabase dashboard → Database → Extensions
---      (cannot be enabled via SQL on most tiers).
---   2. Create two storage buckets from Supabase dashboard → Storage:
---        - 'avatars'          (public)
---        - 'community-videos' (public)
---      Storage policies are set further down this file.
---
--- After running:
---   - Confirm Supabase Database → Replication has these tables published on
---     supabase_realtime: notifications, challenges, profiles
---     (the script ALTER PUBLICATION calls below should handle it, but verify).
---   - Confirm cron job is registered: SELECT * FROM cron.job;
+-- Setup instructions and verification queries: see ./SETUP.md
+-- Runnable top-to-bottom on a fresh project. Idempotent (safe to re-run).
 -- ════════════════════════════════════════════════════════════════════════════
 
 
 -- ─── EXTENSIONS ─────────────────────────────────────────────────────────────
-
--- pg_cron is enabled via the dashboard (see note above).
--- pgcrypto provides gen_random_uuid() (usually pre-installed).
+-- pg_cron must be enabled separately from the dashboard (see SETUP.md).
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 
@@ -624,10 +608,10 @@ CREATE TRIGGER challenge_new_trigger
 
 
 -- ════════════════════════════════════════════════════════════════════════════
--- STORAGE BUCKETS + POLICIES
+-- STORAGE BUCKET POLICIES
 -- ════════════════════════════════════════════════════════════════════════════
--- Buckets themselves must be created in the dashboard FIRST (see header).
--- Policies below allow the right people to read/write.
+-- Buckets `avatars` and `community-videos` must be created in the dashboard
+-- (public). See SETUP.md.
 
 -- ─── avatars bucket ────────────────────────────────────────────────────────
 -- Path convention: <user_id>/avatar.<ext>
@@ -667,8 +651,8 @@ CREATE POLICY "community_videos_self_write" ON storage.objects
 -- ════════════════════════════════════════════════════════════════════════════
 -- REALTIME PUBLICATION
 -- ════════════════════════════════════════════════════════════════════════════
--- The app uses supabase realtime streams on these tables. Some Supabase tiers
--- require enabling Replication via dashboard if these ALTER statements fail.
+-- Per-table toggles in Database → Publications → supabase_realtime may also
+-- need to be flipped on (see SETUP.md).
 
 DO $$
 BEGIN
@@ -697,7 +681,6 @@ END $$;
 -- PG_CRON SCHEDULE
 -- ════════════════════════════════════════════════════════════════════════════
 -- Auto-finalize past unfinalized challenges every Monday at 00:30 UTC.
--- Skipped quietly if pg_cron isn't installed yet.
 
 DO $$
 BEGIN
@@ -721,12 +704,5 @@ END $$;
 
 
 -- ════════════════════════════════════════════════════════════════════════════
--- DONE
--- ════════════════════════════════════════════════════════════════════════════
--- Quick sanity checks:
---   SELECT * FROM pg_publication_tables WHERE pubname = 'supabase_realtime';
---   SELECT * FROM cron.job;
---   SELECT * FROM pg_policies WHERE schemaname = 'public' ORDER BY tablename;
---   SELECT proname FROM pg_proc WHERE pronamespace = 'public'::regnamespace
---     ORDER BY proname;
+-- End of schema. See ./SETUP.md for verification queries and admin bootstrap.
 -- ════════════════════════════════════════════════════════════════════════════

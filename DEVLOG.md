@@ -1,4 +1,19 @@
 
+## 2026-06-27 — Split Supabase setup: SQL ≠ tutorial
+
+### What changed
+- Moved the pre-flight checklist, post-run verification queries, admin bootstrap, common operations, and troubleshooting from comments inside `supabase/setup.sql` into a new `supabase/SETUP.md` guide.
+- Stripped the long prose blocks from `setup.sql`; only minimal section-level comments remain. The file is now pure schema.
+- Fixed dashboard reference: `supabase_realtime` lives at **Database → Publications**, not Database → Replication.
+
+### Why
+The previous single-file setup mixed prose ("after running, verify…") with executable SQL. Pure SQL is easier to scan, copy, and re-run. Prose belongs in a guide that can link to the SQL and explain context.
+
+### Files touched
+- `supabase/setup.sql` — stripped prose, kept schema-level comments
+- `supabase/SETUP.md` — NEW: dashboard pre-flight, run instructions, verification queries, admin bootstrap, common operations, troubleshooting
+- DEVLOG.md
+
 ## 2026-06-27 — Single-file Supabase setup: supabase/setup.sql
 
 ### What changed
