@@ -1,4 +1,27 @@
 
+## 2026-06-27 — pg_cron auto-finalize (closes manual ops gap)
+
+### What changed
+- New wrapper SQL function `finalize_past_challenges()` finds all `challenges` where `finalized_at IS NULL` and the (week_year, week_number) is strictly before now (using `EXTRACT(isoyear ...)` / `EXTRACT(week ...)` for correct ISO-week boundaries) and calls `finalize_challenge(id)` on each.
+- Weekly cron job `finalize-past-challenges-weekly` runs every Monday at 00:30 UTC and invokes the wrapper.
+- Idempotent: `finalize_challenge` short-circuits on already-finalized rows, so the cron is safe to re-run, and the manual admin FINALIZE button still works (cron just becomes a backstop).
+
+### Why
+The admin had to remember to click FINALIZE every Monday. Forgetting it meant the top 3 didn't get their XP bonus or "🥇 You won!" notification. The cron makes this self-healing without removing manual control.
+
+### SQL needed
+See `documentation/challenges.md` → Finalizing a challenge → Auto-finalize via pg_cron → SQL needed for auto-finalize.
+
+### Files touched
+- No code — pure SQL feature
+- `documentation/challenges.md` — new "Auto-finalize via pg_cron" subsection + struck-through future enhancement
+- DEVLOG.md
+
+### Gotchas
+- `pg_cron` must be enabled via the Supabase dashboard (Database → Extensions). On most tiers it cannot be enabled via SQL.
+- Cron uses UTC. 00:30 Monday UTC = Sunday evening in the Americas, early Monday in Europe/Asia.
+- Inspect runs via `SELECT * FROM cron.job_run_details ORDER BY start_time DESC LIMIT 20;`. Failures are visible in `status` and `return_message` columns.
+
 ## 2026-06-27 — Notification deep-linking (close the UX hole)
 
 ### What changed

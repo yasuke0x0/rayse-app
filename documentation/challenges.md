@@ -385,6 +385,49 @@ The admin challenges screen shows a "🏆 FINALIZE · AWARD TOP 3" button on eve
 
 Finalizing is idempotent at the row level — the RPC checks `finalized_at IS NULL` before doing anything. Reverting requires a manual `UPDATE challenges SET finalized_at = NULL WHERE id = ?` (no UI for this).
 
+### Auto-finalize via pg_cron
+
+A weekly cron job runs every Monday at 00:30 UTC and auto-finalizes any past challenge whose `finalized_at IS NULL`. The job calls a wrapper function `finalize_past_challenges()` which loops through eligible challenges and invokes `finalize_challenge(id)` on each. The wrapper uses `EXTRACT(isoyear FROM now())` and `EXTRACT(week FROM now())` so ISO-week year boundaries are handled correctly.
+
+The admin FINALIZE button still works — the cron is a backstop that catches anything you forgot to finalize manually. If a challenge is finalized before Monday by the admin, the cron skips it (idempotency via `finalized_at IS NULL`).
+
+### SQL needed for auto-finalize
+```sql
+-- 1. Enable pg_cron from Supabase: Database → Extensions → search "pg_cron" → enable.
+--    (Cannot be done via SQL on most Supabase tiers — use the dashboard.)
+
+-- 2. Wrapper that finalizes all past unfinalized challenges
+CREATE OR REPLACE FUNCTION public.finalize_past_challenges()
+RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE
+  v_row record;
+BEGIN
+  FOR v_row IN
+    SELECT id
+      FROM public.challenges
+      WHERE finalized_at IS NULL
+        AND (
+          week_year < EXTRACT(isoyear FROM now())
+          OR (week_year = EXTRACT(isoyear FROM now())
+              AND week_number < EXTRACT(week FROM now()))
+        )
+  LOOP
+    PERFORM public.finalize_challenge(v_row.id);
+  END LOOP;
+END; $$;
+
+-- 3. Schedule weekly on Monday at 00:30 UTC
+SELECT cron.schedule(
+  'finalize-past-challenges-weekly',
+  '30 0 * * 1',
+  $$SELECT public.finalize_past_challenges();$$
+);
+```
+
+To verify the job is registered: `SELECT * FROM cron.job;`
+To inspect runs: `SELECT * FROM cron.job_run_details ORDER BY start_time DESC LIMIT 20;`
+To unschedule: `SELECT cron.unschedule('finalize-past-challenges-weekly');`
+
 ### Locking finalized challenges from edits
 
 Once finalized, the edit form goes into **locked mode**:
@@ -613,4 +656,4 @@ CREATE TRIGGER challenge_new_trigger
 - **Challenge history on profile:** show past challenge placements
 - **Multiple challenges per week per tier:** current admin form prevents this; if needed, drop the tier uniqueness check
 - **Push notifications (OS-level):** wire APNs/FCM so users get notified even with the app closed; the in-app notification rows are already in place
-- **pg_cron auto-finalize:** Sunday-night job to finalize any past unfinalized challenges (closes the manual-FINALIZE operational gap)
+- ~~**pg_cron auto-finalize**~~ — shipped 2026-06-27 (Monday 00:30 UTC; see Finalizing a challenge → Auto-finalize via pg_cron)
