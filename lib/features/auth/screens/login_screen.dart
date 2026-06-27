@@ -18,7 +18,7 @@ class LoginScreen extends ConsumerStatefulWidget {
 
 class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _emailController = TextEditingController(
-    text: const bool.fromEnvironment('dart.vm.product') ? '' : 'admin@rayse.com',
+    text: const bool.fromEnvironment('dart.vm.product') ? '' : 'admin@rayse.ch',
   );
   final _passwordController = TextEditingController(
     text: const bool.fromEnvironment('dart.vm.product') ? '' : '212324',

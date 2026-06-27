@@ -150,12 +150,12 @@ All use password `212324` (matches the dev password prefilled in `login_screen.d
 
 | Email | Premium | Creator | Mastery | What to demo |
 |-------|---------|---------|---------|--------------|
-| `admin@rayse.demo`        | yes | **yes** | all 11      | Admin panel: approve pending videos, manage users, create/finalize challenges |
-| `advanced@rayse.demo`     | yes | no  | all 11      | Top-tier user: 🥇/🥈/🥉 placements on profile history, big XP, all features unlocked |
-| `intermediate@rayse.demo` | yes | no  | tier 0–2    | "FOR YOU" Intermediate tier, eligible to submit double_unders |
-| `beginner@rayse.demo`     | yes | no  | tier 0–1    | Eligibility-aware hero, "GO PRACTICE →" for higher tiers |
-| `free@rayse.demo`         | no  | no  | basic_bounce | Paywall flows and premium gating |
-| `jumper1…jumper10@rayse.demo` | yes | no | mixed | Populates leaderboards and notification fanout |
+| `admin@rayse.ch`        | yes | **yes** | all 11      | Admin panel: approve pending videos, manage users, create/finalize challenges |
+| `advanced@rayse.ch`     | yes | no  | all 11      | Top-tier user: 🥇/🥈/🥉 placements on profile history, big XP, all features unlocked |
+| `intermediate@rayse.ch` | yes | no  | tier 0–2    | "FOR YOU" Intermediate tier, eligible to submit double_unders |
+| `beginner@rayse.ch`     | yes | no  | tier 0–1    | Eligibility-aware hero, "GO PRACTICE →" for higher tiers |
+| `free@rayse.ch`         | no  | no  | basic_bounce | Paywall flows and premium gating |
+| `jumper1…jumper10@rayse.ch` | yes | no | mixed | Populates leaderboards and notification fanout |
 
 ### What `seed_demo_data.sql` creates
 - 3 active-week challenges (Beginner / Intermediate / Advanced), with `week_number` = today's ISO week
@@ -192,8 +192,8 @@ Both scripts are idempotent — safe to re-run.
 ### Resetting between demos
 If you used the app to add real data and want to wipe it before a fresh demo:
 ```sql
--- Wipe everything from the @rayse.demo accounts (cascades cleanly)
-DELETE FROM auth.users WHERE email LIKE '%@rayse.demo';
+-- Wipe everything from the @rayse.ch accounts (cascades cleanly)
+DELETE FROM auth.users WHERE email LIKE '%@rayse.ch';
 ```
 Then re-run both seed scripts.
 

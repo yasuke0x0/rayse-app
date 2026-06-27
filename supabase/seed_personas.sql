@@ -2,10 +2,10 @@
 -- Rayse — Demo personas seed
 -- ════════════════════════════════════════════════════════════════════════════
 -- Creates 5 named demo accounts + 10 fake community jumpers.
--- Every account uses email pattern @rayse.demo and password '212324'
+-- Every account uses email pattern @rayse.ch and password '212324'
 -- (matching the dev password prefilled in login_screen.dart).
 --
--- Idempotent: re-running drops & recreates every @rayse.demo account.
+-- Idempotent: re-running drops & recreates every @rayse.ch account.
 --
 -- Run order:
 --   1. supabase/setup.sql   (once on a fresh project)
@@ -15,7 +15,7 @@
 
 
 -- Wipe every existing demo account (cascades to profile + everything tied to it).
-DELETE FROM auth.users WHERE email LIKE '%@rayse.demo';
+DELETE FROM auth.users WHERE email LIKE '%@rayse.ch';
 
 
 -- ─── Helper: create a demo auth user + return its UUID ─────────────────────
@@ -125,28 +125,28 @@ DECLARE
     'triple_unders','cross_double','releases','freestyle'
   ];
 BEGIN
-  -- admin@rayse.demo — premium + creator, fully mastered
-  v_admin := public.rayse_seed_user('admin@rayse.demo',        '212324', 'Demo', 'Admin',        'demo_admin');
+  -- admin@rayse.ch — premium + creator, fully mastered
+  v_admin := public.rayse_seed_user('admin@rayse.ch',        '212324', 'Demo', 'Admin',        'demo_admin');
   PERFORM public.rayse_seed_role(v_admin,        true, true);
   PERFORM public.rayse_seed_progress(v_admin,    c_allskills, 1500);
 
-  -- advanced@rayse.demo — premium, fully mastered (no admin)
-  v_advanced := public.rayse_seed_user('advanced@rayse.demo',  '212324', 'Ava',  'Advanced',     'ava_pro');
+  -- advanced@rayse.ch — premium, fully mastered (no admin)
+  v_advanced := public.rayse_seed_user('advanced@rayse.ch',  '212324', 'Ava',  'Advanced',     'ava_pro');
   PERFORM public.rayse_seed_role(v_advanced,     true, false);
   PERFORM public.rayse_seed_progress(v_advanced, c_allskills, 1475);
 
-  -- intermediate@rayse.demo — premium, tier 0-2 mastered
-  v_intermediate := public.rayse_seed_user('intermediate@rayse.demo', '212324', 'Ian', 'Intermediate', 'ian_mid');
+  -- intermediate@rayse.ch — premium, tier 0-2 mastered
+  v_intermediate := public.rayse_seed_user('intermediate@rayse.ch', '212324', 'Ian', 'Intermediate', 'ian_mid');
   PERFORM public.rayse_seed_role(v_intermediate, true, false);
   PERFORM public.rayse_seed_progress(v_intermediate, c_tier01 || c_tier2, 675);
 
-  -- beginner@rayse.demo — premium, tier 0-1 mastered
-  v_beginner := public.rayse_seed_user('beginner@rayse.demo',  '212324', 'Beth', 'Beginner',     'beth_beg');
+  -- beginner@rayse.ch — premium, tier 0-1 mastered
+  v_beginner := public.rayse_seed_user('beginner@rayse.ch',  '212324', 'Beth', 'Beginner',     'beth_beg');
   PERFORM public.rayse_seed_role(v_beginner,     true, false);
   PERFORM public.rayse_seed_progress(v_beginner, c_tier01, 275);
 
-  -- free@rayse.demo — free, only basic_bounce mastered
-  v_free := public.rayse_seed_user('free@rayse.demo',          '212324', 'Finn', 'Free',         'finn_free');
+  -- free@rayse.ch — free, only basic_bounce mastered
+  v_free := public.rayse_seed_user('free@rayse.ch',          '212324', 'Finn', 'Free',         'finn_free');
   PERFORM public.rayse_seed_role(v_free,         false, false);
   PERFORM public.rayse_seed_progress(v_free,     ARRAY['basic_bounce'], 50);
 END $$;
@@ -172,7 +172,7 @@ DECLARE
   c_firstnames text[] := ARRAY['Sam','Jordan','Riley','Casey','Morgan','Taylor','Pat','Quinn','Cameron','Drew'];
 BEGIN
   FOR i IN 1..10 LOOP
-    v_email := 'jumper' || i || '@rayse.demo';
+    v_email := 'jumper' || i || '@rayse.ch';
     v_first := c_firstnames[i];
     v_user  := LOWER(v_first) || i;
     v_id    := public.rayse_seed_user(v_email, '212324', v_first, 'J' || i, v_user);

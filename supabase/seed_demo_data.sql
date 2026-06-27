@@ -37,23 +37,23 @@ END $$;
 
 
 -- ════════════════════════════════════════════════════════════════════════════
--- WIPE PRIOR DEMO DATA (only rows belonging to @rayse.demo users)
+-- WIPE PRIOR DEMO DATA (only rows belonging to @rayse.ch users)
 -- Auth.users → profiles → community_videos → reactions/comments cascade.
 -- We just wipe the auxiliary tables and the challenges/videos that reference
 -- those demo users.
 -- ════════════════════════════════════════════════════════════════════════════
 
 DELETE FROM public.notifications
- WHERE user_id IN (SELECT id FROM auth.users WHERE email LIKE '%@rayse.demo');
+ WHERE user_id IN (SELECT id FROM auth.users WHERE email LIKE '%@rayse.ch');
 
 DELETE FROM public.community_reactions
- WHERE user_id IN (SELECT id FROM auth.users WHERE email LIKE '%@rayse.demo');
+ WHERE user_id IN (SELECT id FROM auth.users WHERE email LIKE '%@rayse.ch');
 
 DELETE FROM public.video_comments
- WHERE user_id IN (SELECT id FROM auth.users WHERE email LIKE '%@rayse.demo');
+ WHERE user_id IN (SELECT id FROM auth.users WHERE email LIKE '%@rayse.ch');
 
 DELETE FROM public.community_videos
- WHERE user_id IN (SELECT id FROM auth.users WHERE email LIKE '%@rayse.demo');
+ WHERE user_id IN (SELECT id FROM auth.users WHERE email LIKE '%@rayse.ch');
 
 -- Wipe challenges last (FK from videos via skill+week, not enforced, but tidy)
 DELETE FROM public.challenges WHERE created_at > now() - interval '60 days';
@@ -61,9 +61,9 @@ DELETE FROM public.challenges WHERE created_at > now() - interval '60 days';
 -- Reset XP & skill progress (will be reseeded by seed_personas.sql; if you
 -- want demo data without re-running personas, comment these two lines out)
 -- DELETE FROM public.user_xp
---  WHERE user_id IN (SELECT id FROM auth.users WHERE email LIKE '%@rayse.demo');
+--  WHERE user_id IN (SELECT id FROM auth.users WHERE email LIKE '%@rayse.ch');
 -- DELETE FROM public.user_skill_progress
---  WHERE user_id IN (SELECT id FROM auth.users WHERE email LIKE '%@rayse.demo');
+--  WHERE user_id IN (SELECT id FROM auth.users WHERE email LIKE '%@rayse.ch');
 
 
 -- ════════════════════════════════════════════════════════════════════════════
@@ -73,21 +73,21 @@ DELETE FROM public.challenges WHERE created_at > now() - interval '60 days';
 DO $$
 DECLARE
   -- Persona UUIDs
-  v_admin        uuid := (SELECT id FROM auth.users WHERE email = 'admin@rayse.demo');
-  v_advanced     uuid := (SELECT id FROM auth.users WHERE email = 'advanced@rayse.demo');
-  v_intermediate uuid := (SELECT id FROM auth.users WHERE email = 'intermediate@rayse.demo');
-  v_beginner     uuid := (SELECT id FROM auth.users WHERE email = 'beginner@rayse.demo');
-  v_free         uuid := (SELECT id FROM auth.users WHERE email = 'free@rayse.demo');
-  v_j1  uuid := (SELECT id FROM auth.users WHERE email = 'jumper1@rayse.demo');
-  v_j2  uuid := (SELECT id FROM auth.users WHERE email = 'jumper2@rayse.demo');
-  v_j3  uuid := (SELECT id FROM auth.users WHERE email = 'jumper3@rayse.demo');
-  v_j4  uuid := (SELECT id FROM auth.users WHERE email = 'jumper4@rayse.demo');
-  v_j5  uuid := (SELECT id FROM auth.users WHERE email = 'jumper5@rayse.demo');
-  v_j6  uuid := (SELECT id FROM auth.users WHERE email = 'jumper6@rayse.demo');
-  v_j7  uuid := (SELECT id FROM auth.users WHERE email = 'jumper7@rayse.demo');
-  v_j8  uuid := (SELECT id FROM auth.users WHERE email = 'jumper8@rayse.demo');
-  v_j9  uuid := (SELECT id FROM auth.users WHERE email = 'jumper9@rayse.demo');
-  v_j10 uuid := (SELECT id FROM auth.users WHERE email = 'jumper10@rayse.demo');
+  v_admin        uuid := (SELECT id FROM auth.users WHERE email = 'admin@rayse.ch');
+  v_advanced     uuid := (SELECT id FROM auth.users WHERE email = 'advanced@rayse.ch');
+  v_intermediate uuid := (SELECT id FROM auth.users WHERE email = 'intermediate@rayse.ch');
+  v_beginner     uuid := (SELECT id FROM auth.users WHERE email = 'beginner@rayse.ch');
+  v_free         uuid := (SELECT id FROM auth.users WHERE email = 'free@rayse.ch');
+  v_j1  uuid := (SELECT id FROM auth.users WHERE email = 'jumper1@rayse.ch');
+  v_j2  uuid := (SELECT id FROM auth.users WHERE email = 'jumper2@rayse.ch');
+  v_j3  uuid := (SELECT id FROM auth.users WHERE email = 'jumper3@rayse.ch');
+  v_j4  uuid := (SELECT id FROM auth.users WHERE email = 'jumper4@rayse.ch');
+  v_j5  uuid := (SELECT id FROM auth.users WHERE email = 'jumper5@rayse.ch');
+  v_j6  uuid := (SELECT id FROM auth.users WHERE email = 'jumper6@rayse.ch');
+  v_j7  uuid := (SELECT id FROM auth.users WHERE email = 'jumper7@rayse.ch');
+  v_j8  uuid := (SELECT id FROM auth.users WHERE email = 'jumper8@rayse.ch');
+  v_j9  uuid := (SELECT id FROM auth.users WHERE email = 'jumper9@rayse.ch');
+  v_j10 uuid := (SELECT id FROM auth.users WHERE email = 'jumper10@rayse.ch');
 
   -- Challenge UUIDs (resolved after insert)
   v_ch_beg_now  uuid;
