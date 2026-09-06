@@ -1,4 +1,20 @@
 
+## 2026-09-06 — Standalone "create this week's challenge" SQL
+
+### What changed
+Added `supabase/create_weekly_challenge.sql` — a self-contained, idempotent script that drops this week's challenge set (one per tier) anchored to the current ISO week, without re-running the full demo seed. Useful for lighting up a live weekly challenge mid-demo.
+
+- Anchors via `EXTRACT(week/isoyear FROM now())` — same pairing as `rayse_seed_week(0)` and the Flutter `isoWeek`, so the app's `isCurrentWeek` treats them as active.
+- `ON CONFLICT (skill_id, week_number, week_year) DO UPDATE` → re-runnable; refreshes rather than errors.
+- Reuses the seed's active-week skills (`forward_jump`/`double_unders`/`freestyle` = BEGINNER/INTERMEDIATE/ADVANCED) so it upserts the same rows instead of creating a second challenge per tier — stays in sync with `seed_demo_data.sql`.
+- `challenge_new_trigger` (AFTER INSERT only) fans a 🏆 notification to all users for genuinely new rows; re-runs hit UPDATE and don't re-notify.
+
+### Files touched
+- `supabase/create_weekly_challenge.sql` — new operational script (no schema change; `setup.sql` untouched)
+
+### Notes
+- Not a schema change, so `setup.sql` was not modified. `seed_demo_data.sql` already covers the same active-week challenges.
+
 ## 2026-06-27 — Skill detail: "Watch the video first" now scrolls + plays
 
 Previously the dim CTA was inert (`onTap: null`) — users had no idea why it wouldn't react. Now tapping it animates the scroll view back to the top (450 ms easeOutCubic) and starts the video so the user immediately sees what they need to watch. Once they pass 80% of the runtime, `_hasWatchedEnough` flips and the CTA upgrades to "START PRACTICE →" as before.
